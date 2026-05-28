@@ -1,0 +1,1 @@
+export { resumeData } from "./resume";

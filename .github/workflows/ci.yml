@@ -1,0 +1,174 @@
+# .github/workflows/ci.yml
+#
+# Continuous Integration pipeline for the Koundinya Pidaparthy portfolio.
+#
+# Triggers:
+#   - Every push to any branch
+#   - Every pull request targeting main or develop
+#
+# Jobs:
+#   1. test    — Jest unit tests + coverage
+#   2. cypress — Cypress E2E / component tests
+#   3. build   — next build (TypeScript + lint gate)
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main, develop]
+
+# Cancel in-flight runs for the same ref so fast-pushes don't queue up.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "18"
+
+jobs:
+  # ── 1. Unit tests ────────────────────────────────────────────────────────────
+  test:
+    name: Jest unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Jest with coverage
+        run: npm run test:coverage
+        env:
+          # Minimal env vars so the Next.js build context is valid during tests
+          NEXTAUTH_SECRET: ci-test-secret
+          NEXTAUTH_URL: http://localhost:3000
+          ADMIN_EMAIL: admin@example.com
+          ADMIN_PASSWORD: ci-password
+          SMTP_HOST: localhost
+          SMTP_PORT: "1025"
+          SMTP_USER: test@example.com
+          SMTP_PASS: test
+          SMTP_FROM: test@example.com
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jest-coverage
+          path: coverage/
+          retention-days: 14
+
+  # ── 2. Cypress E2E tests ─────────────────────────────────────────────────────
+  cypress:
+    name: Cypress E2E
+    runs-on: ubuntu-latest
+    # Run after Jest so we only spin up the dev server when unit tests pass.
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+        env:
+          NEXTAUTH_SECRET: ci-test-secret
+          NEXTAUTH_URL: http://localhost:3000
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          SMTP_HOST: localhost
+          SMTP_PORT: "1025"
+          SMTP_USER: test@example.com
+          SMTP_PASS: test
+          SMTP_FROM: test@example.com
+
+      - name: Start production server in background
+        run: npm run start &
+        env:
+          NEXTAUTH_SECRET: ci-test-secret
+          NEXTAUTH_URL: http://localhost:3000
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          SMTP_HOST: localhost
+          SMTP_PORT: "1025"
+          SMTP_USER: test@example.com
+          SMTP_PASS: test
+          SMTP_FROM: test@example.com
+
+      - name: Wait for server to be ready
+        run: npx wait-on http://localhost:3000 --timeout 60000
+
+      - name: Run Cypress E2E (headless)
+        run: npm run cypress:run
+        env:
+          CYPRESS_ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+          CYPRESS_ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+
+      - name: Upload Cypress screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots/
+          retention-days: 7
+
+  # ── 3. Production build ──────────────────────────────────────────────────────
+  build:
+    name: Next.js production build
+    runs-on: ubuntu-latest
+    # Run in parallel with cypress (both depend on test passing).
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXTAUTH_SECRET: ci-test-secret
+          NEXTAUTH_URL: http://localhost:3000
+          ADMIN_EMAIL: ci@example.com
+          ADMIN_PASSWORD: ci-password
+          SMTP_HOST: localhost
+          SMTP_PORT: "1025"
+          SMTP_USER: ci@example.com
+          SMTP_PASS: ci-pass
+          SMTP_FROM: ci@example.com
+
+      - name: Upload .next build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: next-build
+          path: |
+            .next/
+            !.next/cache/
+          retention-days: 3
