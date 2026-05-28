@@ -1,7 +1,7 @@
 # Koundinya Pidaparthy — Portfolio
 
-[![CI](https://github.com/koundinya/koundinya-portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/koundinya/koundinya-portfolio/actions/workflows/ci.yml)
-[![Deploy on Vercel](https://img.shields.io/badge/deploy-vercel-black?logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/koundinya/koundinya-portfolio)
+[![CI](https://github.com/koundinyapidaparthy2/koundinyaportfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/koundinyapidaparthy2/koundinyaportfolio/actions/workflows/ci.yml)
+[![Deploy on Vercel](https://img.shields.io/badge/deploy-vercel-black?logo=vercel)](https://vercel.com/new/clone?repository-url=https://github.com/koundinyapidaparthy2/koundinyaportfolio)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A full-stack, production-ready developer portfolio built with **Next.js 14 App Router**, TypeScript, Tailwind CSS, and Framer Motion. Features a secure admin dashboard, PDF résumé generation, contact form, dark/light mode, CI/CD pipeline, and 99%+ test coverage.
