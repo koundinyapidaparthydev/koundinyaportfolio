@@ -249,120 +249,47 @@ async function fetchAllJobs() {
     // ── Greenhouse (SeatGeek moved from Lever) ───────────────────────
     fetchGreenhouse("seatgeek", "SeatGeek", "travel"),
 
-    // ── Booking.com — uses a public REST API ────────────────────────
+    // ── Booking.com — uses a public REST API (data nested under j.data) ──
     (async () => {
       try {
         const res = await fetch(
-          "https://jobs.booking.com/api/jobs?categories=Engineering&location=United+States&page=1",
+          "https://jobs.booking.com/api/jobs?q=engineer&page=1&limit=50",
           { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
         );
         if (!res.ok) return [];
         const data = await res.json();
         const jobs = data.jobs ?? data.results ?? [];
         const filtered = jobs.filter((j) =>
-          isEngineeringRole(j.title ?? j.name ?? "")
+          isEngineeringRole(j?.data?.title ?? j.title ?? j.name ?? "")
         );
         console.log(`  ✓  Booking.com: ${filtered.length} engineering roles`);
-        return filtered.map((j) => [
-          "Booking.com",
-          j.title ?? j.name ?? "",
-          j.location ?? j.city ?? "",
-          j.url ?? `https://jobs.booking.com/booking/jobs/${j.id}`,
-          "travel",
-          now(),
-        ]);
+        return filtered.map((j) => {
+          const d = j?.data ?? j;
+          return [
+            "Booking.com",
+            d.title ?? d.name ?? "",
+            d.full_location ?? d.location ?? d.city ?? "",
+            d.apply_url ?? d.url ?? `https://jobs.booking.com/booking/jobs/${d.slug ?? d.req_id}`,
+            "travel",
+            now(),
+          ];
+        });
       } catch (e) {
         console.warn("  ⚠  Booking.com:", e.message);
         return [];
       }
     })(),
 
-    // ── Disney — iCIMS-based ATS ─────────────────────────────────────
-    (async () => {
-      try {
-        const res = await fetch(
-          "https://jobs.disneycareers.com/search-jobs/results?ActiveFacetID=17189&RecordsPerReq=25&CurrentPage=0&sortColumn=referencedate&sortDirection=desc&SearchResultsModuleName=Search+Results",
-          { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
-        );
-        if (!res.ok) return [];
-        const data = await res.json();
-        const jobs = data.Jobs ?? data.jobs ?? [];
-        const filtered = jobs.filter((j) =>
-          isEngineeringRole(j.JobTitle ?? j.title ?? "")
-        );
-        console.log(`  ✓  Disney: ${filtered.length} engineering roles`);
-        return filtered.map((j) => [
-          "Disney",
-          j.JobTitle ?? j.title ?? "",
-          j.PostedLocation ?? j.location ?? "",
-          j.DetailUrl
-            ? `https://jobs.disneycareers.com${j.DetailUrl}`
-            : "https://jobs.disneycareers.com",
-          "travel",
-          now(),
-        ]);
-      } catch (e) {
-        console.warn("  ⚠  Disney:", e.message);
-        return [];
-      }
-    })(),
+    // ── Disney — iCIMS API requires JavaScript rendering; returns empty content ──
+    // NOTE: hasJobs=true but hasContent=false — server-side rendered only with JS.
+    // Skipping until an accessible API endpoint is found.
 
-    // ── Universal Studios (NBCUniversal) — Phenom People ATS ────────
-    (async () => {
-      try {
-        const res = await fetch(
-          "https://jobs.nbcunicareers.com/api/apply/v2/jobs?domain=nbcunicareers.com&start=0&num=25&exclude_pid=&f[]=IT%20%26%20Technology",
-          { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
-        );
-        if (!res.ok) return [];
-        const data = await res.json();
-        const jobs = data.positions ?? data.jobs ?? [];
-        const filtered = jobs.filter((j) =>
-          isEngineeringRole(j.name ?? j.title ?? "")
-        );
-        console.log(`  ✓  Universal Studios: ${filtered.length} engineering roles`);
-        return filtered.map((j) => [
-          "Universal Studios",
-          j.name ?? j.title ?? "",
-          j.t_update ?? j.location ?? "",
-          j.canonicalPositionUrl ??
-            `https://jobs.nbcunicareers.com/${j.id}`,
-          "travel",
-          now(),
-        ]);
-      } catch (e) {
-        console.warn("  ⚠  Universal Studios:", e.message);
-        return [];
-      }
-    })(),
+    // ── Universal Studios (NBCUniversal) — Phenom People ATS (Cloudflare-blocked) ──
+    // NOTE: jobs.nbcunicareers.com returns Cloudflare 403; no public ATS accessible.
+    // Skipping until a public API endpoint becomes available.
 
-    // ── Uber — custom jobs API ────────────────────────────────────────
-    (async () => {
-      try {
-        const res = await fetch(
-          "https://api.uber.com/v1/jobs/search?department=Engineering&country=United+States&pageSize=25",
-          { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
-        );
-        if (!res.ok) return [];
-        const data = await res.json();
-        const jobs = data.results ?? data.jobs ?? [];
-        const filtered = jobs.filter((j) =>
-          isEngineeringRole(j.title ?? j.name ?? "")
-        );
-        console.log(`  ✓  Uber: ${filtered.length} engineering roles`);
-        return filtered.map((j) => [
-          "Uber",
-          j.title ?? j.name ?? "",
-          j.location ?? "",
-          j.url ?? `https://www.uber.com/careers/${j.id}`,
-          "travel",
-          now(),
-        ]);
-      } catch (e) {
-        console.warn("  ⚠  Uber:", e.message);
-        return [];
-      }
-    })(),
+    // ── Uber Freight — Greenhouse (api.uber.com is blocked) ──────────
+    fetchGreenhouse("uberfreight", "Uber Freight", "travel"),
   ];
 
   const results = await Promise.allSettled(tasks);
