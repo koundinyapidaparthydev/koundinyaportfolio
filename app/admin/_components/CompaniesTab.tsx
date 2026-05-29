@@ -397,9 +397,6 @@ export default function CompaniesTab() {
         </div>
       </div>
 
-      {/* Sub-tabs */}
-      <div className="mb-4 flex gap-1 rounded-xl bg-white/5 p-1">
-
       {/* ── Auto-Generate Top Matches banner ── */}
       {topMatches.length > 0 && !loading && (
         <div className="mb-4 flex flex-col gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] px-4 py-3">
@@ -440,6 +437,9 @@ export default function CompaniesTab() {
           )}
         </div>
       )}
+
+      {/* Sub-tabs */}
+      <div className="mb-4 flex gap-1 rounded-xl bg-white/5 p-1">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
