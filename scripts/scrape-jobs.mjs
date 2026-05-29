@@ -64,6 +64,50 @@ function delay(ms) {
 }
 
 /**
+ * fetch() with an AbortController timeout so a hanging server
+ * never blocks the entire scraper run.
+ * @param {string} url
+ * @param {RequestInit} options
+ * @param {number} timeoutMs  — default 12 s
+ */
+async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(tid);
+  }
+}
+
+/**
+ * fetchWithTimeout with up to `maxRetries` retries on network errors or
+ * 429 / 5xx responses. Waits 1 s × attempt before retrying.
+ * @param {string} url
+ * @param {RequestInit} options
+ * @param {number} maxRetries
+ * @param {number} timeoutMs
+ */
+async function fetchWithRetry(url, options = {}, maxRetries = 2, timeoutMs = 12000) {
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetchWithTimeout(url, options, timeoutMs);
+      // Retry on rate-limit or transient server errors
+      if ((res.status === 429 || res.status >= 500) && attempt < maxRetries) {
+        await delay(1000 * (attempt + 1));
+        continue;
+      }
+      return res;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < maxRetries) await delay(1000 * (attempt + 1));
+    }
+  }
+  throw lastErr;
+}
+
+/**
  * Strip HTML tags and decode entities to plain text.
  * Greenhouse returns entity-encoded HTML (&lt;p&gt; etc.),
  * so we must decode entities FIRST, then strip tags.
@@ -149,7 +193,7 @@ async function fetchDescription(row) {
     const jobId = url.match(/\/jobs\/(\d+)/)?.[1];
     if (jobId) {
       try {
-        const res = await fetch(
+        const res = await fetchWithRetry(
           `https://boards-api.greenhouse.io/v1/boards/${ghSlug}/jobs/${jobId}`,
           { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
         );
@@ -170,7 +214,7 @@ async function fetchDescription(row) {
     const path = url.startsWith(`https://${host}`) ? url.slice(`https://${host}`.length) : null;
     if (path) {
       try {
-        const res = await fetch(
+        const res = await fetchWithRetry(
           `https://${host}/wday/cxs/${tenant}/${site}/jobs${path}`,
           { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
         );
@@ -218,7 +262,7 @@ async function enrichWithDescriptions(jobs) {
 async function fetchGreenhouse(boardSlug, company, category) {
   const url = `https://boards-api.greenhouse.io/v1/boards/${boardSlug}/jobs`;
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" },
     });
     if (!res.ok) {
@@ -249,7 +293,7 @@ async function fetchGreenhouse(boardSlug, company, category) {
 async function fetchWorkday(host, tenant, site, company, category, searchText = "engineer") {
   const url = `https://${host}/wday/cxs/${tenant}/${site}/jobs`;
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -290,7 +334,7 @@ async function fetchWorkday(host, tenant, site, company, category, searchText = 
 async function fetchLever(companySlug, company, category) {
   const url = `https://api.lever.co/v0/postings/${companySlug}?mode=json`;
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" },
     });
     if (!res.ok) {
@@ -321,7 +365,7 @@ async function fetchLever(companySlug, company, category) {
 async function fetchSmartRecruiters(companyId, company, category) {
   const url = `https://api.smartrecruiters.com/v1/companies/${companyId}/postings?department=IT`;
   try {
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" },
     });
     if (!res.ok) {
@@ -396,7 +440,7 @@ async function fetchAllJobs() {
     // ── Booking.com — uses a public REST API (data nested under j.data) ──
     (async () => {
       try {
-        const res = await fetch(
+        const res = await fetchWithTimeout(
           "https://jobs.booking.com/api/jobs?q=engineer&page=1&limit=50",
           { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
         );
@@ -514,6 +558,9 @@ async function writeNewJobs(sheets, newJobs) {
   console.log(`✅  Added ${enriched.length} new jobs to Google Sheets`);
 }
 
+// Companies whose description APIs are inaccessible — skip during backfill to save time
+const NO_DESCRIPTION_COMPANIES = new Set(["Live Nation", "Sabre", "NCL", "SeaWorld", "Booking.com"]);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
@@ -538,7 +585,7 @@ async function backfillDescriptions(sheets) {
 
   const needsDesc = rows
     .map((row, idx) => ({ row, sheetRow: idx + 2 })) // +2: header is row 1, data is 1-indexed
-    .filter(({ row }) => !row[6] || row[6].trim() === "");
+    .filter(({ row }) => (!row[6] || row[6].trim() === "") && !NO_DESCRIPTION_COMPANIES.has(row[0]));
 
   if (needsDesc.length === 0) {
     console.log("📝  All existing rows already have descriptions");
