@@ -607,7 +607,7 @@ async function backfillDescriptions(sheets) {
     }));
 
   if (updateData.length === 0) {
-    console.log("  ⚠️  No descriptions retrieved during backfill (Workday/Booking.com not supported)");
+    console.log("  ℹ️  No new descriptions to write (remaining rows have empty content in the ATS)");
     return;
   }
 
