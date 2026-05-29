@@ -38,7 +38,7 @@ const TRAVEL_COMPANIES: Company[] = [
   { name: "CLEAR", url: "https://www.clearme.com/careers", color: "from-blue-400/20 to-blue-500/10 border-blue-400/30 hover:border-blue-300/60" },
   { name: "Flywire", url: "https://www.flywire.com/company/careers/dept/5dacb2c3-6677-425c-b164-530d092d8ce9", color: "from-purple-500/20 to-purple-600/10 border-purple-500/30 hover:border-purple-400/60" },
   { name: "Lyft", url: "https://www.lyft.com/careers#openings?category=software%2520engineering", color: "from-pink-500/20 to-pink-600/10 border-pink-500/30 hover:border-pink-400/60" },
-  { name: "Uber", url: "https://www.uber.com/us/en/careers/list/?department=Engineering", color: "from-slate-400/20 to-slate-500/10 border-slate-400/30 hover:border-slate-300/60" },
+  { name: "Uber Freight", url: "https://www.uber.com/us/en/careers/list/?department=Engineering", color: "from-slate-400/20 to-slate-500/10 border-slate-400/30 hover:border-slate-300/60" },
 ];
 
 const TABS: { id: CompanyCategory; label: string }[] = [

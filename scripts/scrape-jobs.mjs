@@ -162,13 +162,14 @@ async function mapConcurrent(items, limit, fn) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GREENHOUSE_SLUGS = {
-  "StubHub": "stubhubinc",
-  "AXS": "axs",
-  "Lyft": "lyft",
-  "Airbnb": "airbnb",
-  "CLEAR": "clear",
-  "SeatGeek": "seatgeek",
-  "Uber Freight": "uberfreight",
+  "StubHub":           "stubhubinc",
+  "AXS":               "axs",
+  "Lyft":              "lyft",
+  "Airbnb":            "airbnb",
+  "CLEAR":             "clear",
+  "SeatGeek (Remote)": "seatgeek",  // both SeatGeek variants share the same board
+  "SeatGeek (NY)":     "seatgeek",
+  "Uber Freight":      "uberfreight",
 };
 
 const WORKDAY_CONFIG = {
@@ -256,10 +257,15 @@ async function enrichWithDescriptions(jobs) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Greenhouse public jobs API
+ * Greenhouse public jobs API.
+ * @param {string} boardSlug
+ * @param {string} company  — used as the company name unless locationMapper is provided
+ * @param {string} category
+ * @param {((location: string) => string | null) | null} locationMapper
+ *   — optional: maps job.location.name to a company name (return null to skip the job)
  * @see https://developers.greenhouse.io/job-board.html
  */
-async function fetchGreenhouse(boardSlug, company, category) {
+async function fetchGreenhouse(boardSlug, company, category, locationMapper = null) {
   const url = `https://boards-api.greenhouse.io/v1/boards/${boardSlug}/jobs`;
   try {
     const res = await fetchWithRetry(url, {
@@ -271,6 +277,19 @@ async function fetchGreenhouse(boardSlug, company, category) {
     }
     const { jobs = [] } = await res.json();
     const filtered = jobs.filter((j) => isEngineeringRole(j.title));
+
+    if (locationMapper) {
+      const rows = [];
+      for (const j of filtered) {
+        const mappedCompany = locationMapper(j.location?.name ?? "");
+        if (!mappedCompany) continue; // skip unmatched locations
+        rows.push([mappedCompany, j.title, j.location?.name ?? "", j.absolute_url ?? "", category, now()]);
+      }
+      const groups = [...new Set(rows.map((r) => r[0]))];
+      groups.forEach((co) => console.log(`  ✓  ${co}: ${rows.filter((r) => r[0] === co).length} engineering roles (Greenhouse)`));
+      return rows;
+    }
+
     console.log(`  ✓  ${company}: ${filtered.length} engineering roles (Greenhouse)`);
     return filtered.map((j) => [
       company,
@@ -434,8 +453,12 @@ async function fetchAllJobs() {
       "travel"
     ),
 
-    // ── Greenhouse (SeatGeek moved from Lever) ───────────────────────
-    fetchGreenhouse("seatgeek", "SeatGeek", "travel"),
+    // ── Greenhouse (SeatGeek — split by location into Remote and NY cards) ──
+    fetchGreenhouse("seatgeek", "SeatGeek", "travel", (loc) => {
+      if (/Remote.*United States/i.test(loc)) return "SeatGeek (Remote)";
+      if (/New York/i.test(loc)) return "SeatGeek (NY)";
+      return null; // skip UK / other international locations
+    }),
 
     // ── Booking.com — uses a public REST API (data nested under j.data) ──
     (async () => {
@@ -559,7 +582,8 @@ async function writeNewJobs(sheets, newJobs) {
 }
 
 // Companies whose description APIs are inaccessible — skip during backfill to save time
-const NO_DESCRIPTION_COMPANIES = new Set(["Live Nation", "Sabre", "NCL", "SeaWorld", "Booking.com"]);
+const NO_DESCRIPTION_COMPANIES = new Set(["Live Nation", "Sabre", "NCL", "SeaWorld", "Booking.com",
+  "Flywire", "Royal Caribbean Group", "Disney", "Universal Studios"]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main
