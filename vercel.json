@@ -6,18 +6,6 @@
   "installCommand": "npm ci",
   "outputDirectory": ".next",
   "regions": ["iad1"],
-  "env": {
-    "NEXTAUTH_URL": "@nextauth_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret",
-    "ADMIN_EMAIL": "@admin_email",
-    "ADMIN_PASSWORD": "@admin_password",
-    "SMTP_HOST": "@smtp_host",
-    "SMTP_PORT": "@smtp_port",
-    "SMTP_USER": "@smtp_user",
-    "SMTP_PASS": "@smtp_pass",
-    "SMTP_FROM": "@smtp_from",
-    "NEXT_PUBLIC_SITE_URL": "@next_public_site_url"
-  },
   "headers": [
     {
       "source": "/(.*)",
