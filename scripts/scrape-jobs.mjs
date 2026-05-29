@@ -707,35 +707,32 @@ async function migrateLegacyCompanyNames(sheets) {
 
   if (updates.length === 0 && rowsToDelete.length === 0) return; // nothing to do
 
-  const requests = [];
-
-  // Rename updates — write new company name into column A
-  for (const { sheetRow, newName } of updates) {
-    requests.push({
-      updateCells: {
-        rows: [{ values: [{ userEnteredValue: { stringValue: newName } }] }],
-        fields: "userEnteredValue",
-        start: { sheetId: 0, rowIndex: sheetRow - 1, columnIndex: 0 },
-      },
-    });
-  }
-
-  if (requests.length > 0) {
-    await sheets.spreadsheets.batchUpdate({
+  if (updates.length > 0) {
+    // Use values.batchUpdate (range-based) so we don't need the numeric sheetId
+    await sheets.spreadsheets.values.batchUpdate({
       spreadsheetId: GOOGLE_SHEET_ID,
-      requestBody: { requests },
+      requestBody: {
+        valueInputOption: "RAW",
+        data: updates.map(({ sheetRow, newName }) => ({
+          range: `${SHEET_NAME}!A${sheetRow}`,
+          values: [[newName]],
+        })),
+      },
     });
     console.log(`🔄  Migrated ${updates.length} legacy "SeatGeek" rows to split company names`);
   }
 
-  // Delete international rows (iterate in reverse so indices stay stable)
+  // Delete international rows — look up the actual sheetId first
   if (rowsToDelete.length > 0) {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: GOOGLE_SHEET_ID });
+    const jobsSheet = meta.data.sheets?.find((s) => s.properties?.title === SHEET_NAME);
+    const jobsSheetId = jobsSheet?.properties?.sheetId ?? 0;
     const deleteRequests = rowsToDelete
       .slice()
-      .sort((a, b) => b - a) // reverse order
+      .sort((a, b) => b - a) // reverse order keeps row indices stable
       .map((r) => ({
         deleteDimension: {
-          range: { sheetId: 0, dimension: "ROWS", startIndex: r - 1, endIndex: r },
+          range: { sheetId: jobsSheetId, dimension: "ROWS", startIndex: r - 1, endIndex: r },
         },
       }));
     await sheets.spreadsheets.batchUpdate({
