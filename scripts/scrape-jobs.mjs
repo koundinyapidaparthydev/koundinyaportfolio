@@ -635,7 +635,7 @@ async function writeNewJobs(sheets, newJobs) {
 
   if (deduped.length === 0) {
     console.log("✅  No new jobs to add (all already in sheet)");
-    return;
+    return [];
   }
 
   // Fetch descriptions only for the genuinely new jobs
@@ -650,11 +650,77 @@ async function writeNewJobs(sheets, newJobs) {
   });
 
   console.log(`✅  Added ${enriched.length} new jobs to Google Sheets`);
+  return enriched;
 }
 
 // Companies whose description APIs are inaccessible — skip during backfill to save time
 const NO_DESCRIPTION_COMPANIES = new Set(["Live Nation", "Sabre", "NCL", "SeaWorld", "Booking.com",
   "Flywire", "Royal Caribbean Group", "Disney", "Universal Studios"]);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WhatsApp notification via Callmebot (https://www.callmebot.com/blog/free-api-whatsapp-messages/)
+// Env vars required: CALLMEBOT_API_KEY, WHATSAPP_PHONE (e.g. 15512298660)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Send a WhatsApp text message via Callmebot.
+ * Silently skips if CALLMEBOT_API_KEY or WHATSAPP_PHONE are not set.
+ */
+async function sendWhatsAppNotification(newJobRows) {
+  const apiKey = process.env.CALLMEBOT_API_KEY;
+  const phone = process.env.WHATSAPP_PHONE;
+  if (!apiKey || !phone) {
+    console.log("ℹ️   CALLMEBOT_API_KEY / WHATSAPP_PHONE not set — skipping WhatsApp notification");
+    return;
+  }
+  if (newJobRows.length === 0) return;
+
+  // Group rows by company (column 0)
+  const byCompany = {};
+  for (const row of newJobRows) {
+    const company = row[0] ?? "Unknown";
+    (byCompany[company] ??= []).push({ title: row[1] ?? "", url: row[3] ?? "" });
+  }
+
+  const ts = new Date().toLocaleString("en-US", {
+    timeZone: "America/Los_Angeles",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const lines = [`🎯 *${newJobRows.length} New Engineering Job${newJobRows.length !== 1 ? "s" : ""}* — ${ts} PDT`];
+
+  for (const [company, jobs] of Object.entries(byCompany)) {
+    lines.push(`\n*${company}* (${jobs.length})`);
+    // Cap at 5 jobs per company to keep message readable
+    for (const { title, url } of jobs.slice(0, 5)) {
+      lines.push(`• ${title}\n  ${url}`);
+    }
+    if (jobs.length > 5) lines.push(`  … +${jobs.length - 5} more`);
+  }
+
+  lines.push(`\n🔗 https://koundinyapidaparhty.vercel.app/admin`);
+
+  const message = lines.join("\n");
+
+  // Callmebot has a 1600 char limit per message — truncate if needed
+  const text = message.length > 1600 ? message.slice(0, 1590) + "…" : message;
+
+  try {
+    const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apiKey)}`;
+    const res = await fetchWithTimeout(url, {}, 15000);
+    if (res.ok) {
+      console.log(`📱  WhatsApp notification sent to ${phone}`);
+    } else {
+      const body = await res.text().catch(() => "");
+      console.warn(`⚠️   WhatsApp send failed (${res.status}): ${body.slice(0, 200)}`);
+    }
+  } catch (err) {
+    console.warn("⚠️   WhatsApp notification error:", err.message);
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main
@@ -664,8 +730,9 @@ async function main() {
   const [jobs, sheets] = await Promise.all([fetchAllJobs(), getSheets()]);
   await ensureSheetAndHeaders(sheets);
   await migrateLegacyCompanyNames(sheets);
-  await writeNewJobs(sheets, jobs);
+  const newJobRows = await writeNewJobs(sheets, jobs);
   await backfillDescriptions(sheets);
+  await sendWhatsAppNotification(newJobRows);
 }
 
 /**
