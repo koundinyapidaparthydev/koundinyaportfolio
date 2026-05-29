@@ -214,8 +214,7 @@ async function fetchAllJobs() {
     fetchGreenhouse("axs", "AXS", "travel"),
     fetchGreenhouse("lyft", "Lyft", "travel"),
     fetchGreenhouse("airbnb", "Airbnb", "travel"),
-    fetchGreenhouse("flywire", "Flywire", "travel"),
-    fetchGreenhouse("clearme", "CLEAR", "travel"),
+    fetchGreenhouse("clear", "CLEAR", "travel"),
 
     // ── Workday ─────────────────────────────────────────────────────
     fetchWorkday(
@@ -247,11 +246,8 @@ async function fetchAllJobs() {
       "travel"
     ),
 
-    // ── Lever ────────────────────────────────────────────────────────
-    fetchLever("seatgeek", "SeatGeek", "travel"),
-
-    // ── SmartRecruiters ──────────────────────────────────────────────
-    fetchSmartRecruiters("RoyalCaribbeanGroup", "Royal Caribbean Group", "travel"),
+    // ── Greenhouse (SeatGeek moved from Lever) ───────────────────────
+    fetchGreenhouse("seatgeek", "SeatGeek", "travel"),
 
     // ── Booking.com — uses a public REST API ────────────────────────
     (async () => {
