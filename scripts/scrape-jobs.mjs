@@ -592,9 +592,89 @@ const NO_DESCRIPTION_COMPANIES = new Set(["Live Nation", "Sabre", "NCL", "SeaWor
 async function main() {
   const [jobs, sheets] = await Promise.all([fetchAllJobs(), getSheets()]);
   await ensureSheetAndHeaders(sheets);
+  await migrateLegacyCompanyNames(sheets);
   await writeNewJobs(sheets, jobs);
   await backfillDescriptions(sheets);
 }
+
+/**
+ * One-time migration: rename legacy company name strings in the sheet to match
+ * the updated card names in the UI.
+ *
+ * "SeatGeek" rows get split by location:
+ *   "Remote - United States"  → "SeatGeek (Remote)"
+ *   "New York, New York"      → "SeatGeek (NY)"
+ *   other locations           → deleted (UK/international, not tracked)
+ *
+ * Safe to run on every scraper cycle — exits immediately once no legacy rows remain.
+ */
+async function migrateLegacyCompanyNames(sheets) {
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    range: `${SHEET_NAME}!A2:G`,
+  });
+  const rows = res.data.values ?? [];
+
+  /** @type {{ sheetRow: number; newName: string | null }[]} */
+  const updates = [];
+  /** Row numbers (1-indexed) to delete (international SeatGeek rows) */
+  const rowsToDelete = [];
+
+  rows.forEach((row, idx) => {
+    const sheetRow = idx + 2; // 1-indexed; row 1 is the header
+    if (row[0] === "SeatGeek") {
+      const loc = row[2] ?? "";
+      if (/Remote.*United States/i.test(loc)) {
+        updates.push({ sheetRow, newName: "SeatGeek (Remote)" });
+      } else if (/New York/i.test(loc)) {
+        updates.push({ sheetRow, newName: "SeatGeek (NY)" });
+      } else {
+        rowsToDelete.push(sheetRow);
+      }
+    }
+  });
+
+  if (updates.length === 0 && rowsToDelete.length === 0) return; // nothing to do
+
+  const requests = [];
+
+  // Rename updates — write new company name into column A
+  for (const { sheetRow, newName } of updates) {
+    requests.push({
+      updateCells: {
+        rows: [{ values: [{ userEnteredValue: { stringValue: newName } }] }],
+        fields: "userEnteredValue",
+        start: { sheetId: 0, rowIndex: sheetRow - 1, columnIndex: 0 },
+      },
+    });
+  }
+
+  if (requests.length > 0) {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: GOOGLE_SHEET_ID,
+      requestBody: { requests },
+    });
+    console.log(`🔄  Migrated ${updates.length} legacy "SeatGeek" rows to split company names`);
+  }
+
+  // Delete international rows (iterate in reverse so indices stay stable)
+  if (rowsToDelete.length > 0) {
+    const deleteRequests = rowsToDelete
+      .slice()
+      .sort((a, b) => b - a) // reverse order
+      .map((r) => ({
+        deleteDimension: {
+          range: { sheetId: 0, dimension: "ROWS", startIndex: r - 1, endIndex: r },
+        },
+      }));
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: GOOGLE_SHEET_ID,
+      requestBody: { requests: deleteRequests },
+    });
+    console.log(`🗑   Removed ${rowsToDelete.length} international SeatGeek rows (not tracked)`);
+  }
+}
+
 
 /**
  * Fill in descriptions for existing rows that are missing one (column G empty).
