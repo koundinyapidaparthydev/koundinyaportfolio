@@ -100,9 +100,15 @@ export async function appendVisitor(
   existing.unshift(entry);
   if (existing.length > MAX_ENTRIES) existing.splice(MAX_ENTRIES);
 
-  const tmp = `${VISITORS_PATH}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(existing, null, 2), "utf-8");
-  await fs.rename(tmp, VISITORS_PATH);
+  try {
+    const tmp = `${VISITORS_PATH}.tmp`;
+    await fs.writeFile(tmp, JSON.stringify(existing, null, 2), "utf-8");
+    await fs.rename(tmp, VISITORS_PATH);
+  } catch (err) {
+    // Vercel and other read-only filesystems cannot write to project files.
+    // Log the entry and continue — the site should never crash due to tracking.
+    console.warn("[visitorStore] write skipped (read-only fs):", (err as Error).message);
+  }
 }
 
 /**

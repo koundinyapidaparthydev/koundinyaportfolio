@@ -29,8 +29,13 @@ export async function getResume(): Promise<Resume> {
  */
 export async function saveResume(data: Resume): Promise<void> {
   const json = JSON.stringify(data, null, 2);
-  // Write to a temp file first, then rename to prevent partial writes
   const tmpPath = `${RESUME_PATH}.tmp`;
-  await fs.writeFile(tmpPath, json, "utf-8");
-  await fs.rename(tmpPath, RESUME_PATH);
+  try {
+    await fs.writeFile(tmpPath, json, "utf-8");
+    await fs.rename(tmpPath, RESUME_PATH);
+  } catch (err) {
+    // Vercel's filesystem is read-only — log and surface the error to the caller.
+    console.warn("[resumeStore] write skipped (read-only fs):", (err as Error).message);
+    throw new Error("Resume cannot be saved: the server filesystem is read-only. Use a database for production persistence.");
+  }
 }
