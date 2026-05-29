@@ -44,7 +44,7 @@ function extractKeywords(text: string): string[] {
     }
   }
 
-  return [...results];
+  return Array.from(results);
 }
 
 /** Build a flat set of resume keywords from all sections */
@@ -101,7 +101,7 @@ export function calculateAtsScore(
 
   // Keep only keywords that look like tech/skill terms (not pure generic words)
   const techPattern = /^[a-z][a-z0-9+#.]{1,}$/;
-  const relevantJobKws = [...new Set(jobKws.filter((k) => techPattern.test(k) && k.length >= 3))].slice(0, 60);
+  const relevantJobKws = Array.from(new Set(jobKws.filter((k) => techPattern.test(k) && k.length >= 3))).slice(0, 60);
 
   const matched: string[] = [];
   const missing: string[] = [];
@@ -110,7 +110,7 @@ export function calculateAtsScore(
     // Direct hit OR partial containment (e.g. resume has "react" → matches "reactjs")
     const hit =
       resumeKws.has(kw) ||
-      [...resumeKws].some(
+      Array.from(resumeKws).some(
         (rk) =>
           (kw.length >= 4 && rk.includes(kw)) ||
           (rk.length >= 4 && kw.includes(rk))
