@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 type CompanyCategory = "travel" | "ai-agentic" | "general";
 
@@ -8,6 +8,15 @@ interface Company {
   name: string;
   url: string;
   color: string; // tailwind bg color class
+}
+
+interface Job {
+  company: string;
+  title: string;
+  location: string;
+  url: string;
+  category: string;
+  fetchedAt: string;
 }
 
 const TRAVEL_COMPANIES: Company[] = [
@@ -36,38 +45,69 @@ const TABS: { id: CompanyCategory; label: string }[] = [
   { id: "general", label: "🌐 General Full Stack" },
 ];
 
-function CompanyCard({ company }: { company: Company }) {
+function CompanyCard({
+  company,
+  jobCount,
+  isSelected,
+  onSelect,
+}: {
+  company: Company;
+  jobCount: number;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
   return (
-    <a
-      href={company.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={`group flex flex-col gap-2 rounded-xl border bg-gradient-to-br p-4 transition-all duration-200 ${company.color}`}
+    <div
+      className={[
+        "group flex flex-col gap-2 rounded-xl border bg-gradient-to-br p-4 transition-all duration-200 cursor-pointer",
+        company.color,
+        isSelected ? "ring-2 ring-indigo-400/60" : "",
+      ].join(" ")}
+      role="button"
+      tabIndex={0}
+      onClick={onSelect}
+      onKeyDown={(e) => e.key === "Enter" && onSelect()}
     >
       <div className="flex items-start justify-between gap-2">
         <span className="font-semibold text-slate-200 text-sm leading-tight group-hover:text-white transition-colors">
           {company.name}
         </span>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-3.5 w-3.5 shrink-0 text-slate-500 group-hover:text-slate-300 transition-colors mt-0.5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden="true"
+        <a
+          href={company.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="shrink-0 text-slate-500 hover:text-slate-300 transition-colors mt-0.5"
+          aria-label={`Open ${company.name} careers`}
         >
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-          <polyline points="15 3 21 3 21 9" />
-          <line x1="10" x2="21" y1="14" y2="3" />
-        </svg>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-3.5 w-3.5"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <polyline points="15 3 21 3 21 9" />
+            <line x1="10" x2="21" y1="14" y2="3" />
+          </svg>
+        </a>
       </div>
-      <span className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors truncate">
-        {new URL(company.url).hostname}
-      </span>
-    </a>
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors truncate">
+          {new URL(company.url).hostname}
+        </span>
+        {jobCount > 0 && (
+          <span className="ml-2 shrink-0 rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-300 border border-indigo-500/30">
+            {jobCount} {jobCount === 1 ? "role" : "roles"}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -95,15 +135,89 @@ function EmptyCategory({ label }: { label: string }) {
 
 export default function CompaniesTab() {
   const [activeCategory, setActiveCategory] = useState<CompanyCategory>("travel");
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [lastFetched, setLastFetched] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchJobs = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/jobs");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to fetch");
+      setJobs(data.jobs ?? []);
+      setLastFetched(new Date().toLocaleTimeString());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
+
+  // Group jobs by company name
+  const jobsByCompany = jobs.reduce<Record<string, Job[]>>((acc, job) => {
+    (acc[job.company] ??= []).push(job);
+    return acc;
+  }, {});
+
+  const selectedJobs = selectedCompany ? (jobsByCompany[selectedCompany] ?? []) : [];
+
+  const totalJobs = jobs.length;
 
   return (
     <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-slate-100">Companies</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          Job portals organised by domain — click any card to open the listings.
-        </p>
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-100">Companies</h2>
+          <p className="mt-1 text-sm text-slate-500">
+            Job portals organised by domain — click a card to see open engineering roles.
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <button
+            type="button"
+            onClick={fetchJobs}
+            disabled={loading}
+            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-colors disabled:opacity-50"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={["h-3 w-3", loading ? "animate-spin" : ""].join(" ")}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            {loading ? "Refreshing…" : "Refresh"}
+          </button>
+          {lastFetched && !loading && (
+            <span className="text-[10px] text-slate-600">
+              {totalJobs} roles · updated {lastFetched}
+            </span>
+          )}
+          {error && (
+            <span className="text-[10px] text-amber-500">
+              ⚠ {error === "Google Sheets not configured"
+                ? "Sheets not configured yet"
+                : error}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Sub-tabs */}
@@ -112,7 +226,7 @@ export default function CompaniesTab() {
           <button
             key={id}
             type="button"
-            onClick={() => setActiveCategory(id)}
+            onClick={() => { setActiveCategory(id); setSelectedCompany(null); }}
             className={[
               "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-150",
               activeCategory === id
@@ -127,11 +241,96 @@ export default function CompaniesTab() {
 
       {/* Content */}
       {activeCategory === "travel" && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {TRAVEL_COMPANIES.map((company) => (
-            <CompanyCard key={company.name} company={company} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {TRAVEL_COMPANIES.map((company) => (
+              <CompanyCard
+                key={company.name}
+                company={company}
+                jobCount={jobsByCompany[company.name]?.length ?? 0}
+                isSelected={selectedCompany === company.name}
+                onSelect={() =>
+                  setSelectedCompany(
+                    selectedCompany === company.name ? null : company.name
+                  )
+                }
+              />
+            ))}
+          </div>
+
+          {/* Jobs panel */}
+          {selectedCompany && (
+            <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] overflow-hidden">
+              {/* Panel header */}
+              <div className="flex items-center justify-between border-b border-white/8 px-5 py-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-200">
+                    {selectedCompany}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {selectedJobs.length === 0
+                      ? "No engineering roles found yet"
+                      : `${selectedJobs.length} engineering ${selectedJobs.length === 1 ? "role" : "roles"}`}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCompany(null)}
+                  className="text-slate-600 hover:text-slate-300 transition-colors p-1"
+                  aria-label="Close"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Job list */}
+              {loading ? (
+                <div className="flex items-center justify-center py-10 text-slate-600 text-sm">
+                  Loading jobs…
+                </div>
+              ) : selectedJobs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <p className="text-sm">
+                    {error
+                      ? "Configure Google Sheets to see live jobs"
+                      : "No roles scraped yet — automation runs every 30 min 4 AM–6 PM PDT"}
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-white/5 max-h-96 overflow-y-auto">
+                  {selectedJobs.map((job, i) => (
+                    <li key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors group/job">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-slate-200 truncate font-medium">{job.title}</p>
+                        {job.location && (
+                          <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
+                        )}
+                      </div>
+                      {job.fetchedAt && (
+                        <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">
+                          {new Date(job.fetchedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                      <a
+                        href={job.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
+                      >
+                        Apply
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {activeCategory === "ai-agentic" && (
