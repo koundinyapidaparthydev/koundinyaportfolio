@@ -7,10 +7,15 @@
  *   GOOGLE_SERVICE_ACCOUNT_JSON  — full service-account JSON as a string
  *
  * Supported ATS adapters:
- *   - Greenhouse public API (StubHub, AXS, Lyft, Airbnb, Flywire, CLEAR)
+ *   - Greenhouse public API (StubHub, AXS, Lyft, Airbnb, CLEAR, SeatGeek, Uber Freight)
  *   - Workday public REST API (Live Nation, Sabre, NCL, SeaWorld)
- *   - Lever public API (SeatGeek)
- *   - Custom fetch adapters (Booking.com, Royal Caribbean, Disney, Universal, Uber)
+ *   - iCIMS RSS feed (Disney — descriptions fetched inline, no auth required)
+ *   - Custom fetch adapter (Booking.com)
+ *
+ * Not scrapeable:
+ *   - Universal Studios — Cloudflare-blocked
+ *   - Royal Caribbean Group — SAP SuccessFactors (no public API)
+ *   - Flywire — no active ATS board found
  */
 
 import { google } from "googleapis";
@@ -238,18 +243,28 @@ async function fetchDescription(row) {
 
 /**
  * Enrich a list of job rows with descriptions (5 concurrent fetches).
+ * Rows that already carry an inline description (col 6 populated, e.g. Disney
+ * RSS) are kept as-is; only rows without one hit the description API.
  * @param {string[][]} jobs
  * @returns {Promise<string[][]>}
  */
 async function enrichWithDescriptions(jobs) {
-  console.log(`\n📝  Fetching descriptions for ${jobs.length} new jobs (5 concurrent)...`);
-  const enriched = await mapConcurrent(jobs, 5, async (row) => {
+  const alreadyHaveDesc = jobs.filter((row) => row[6]?.length > 0);
+  const needsFetch = jobs.filter((row) => !row[6]?.length);
+
+  if (needsFetch.length === 0) {
+    console.log(`\n📝  All ${jobs.length} new jobs already have inline descriptions`);
+    return alreadyHaveDesc;
+  }
+
+  console.log(`\n📝  Fetching descriptions for ${needsFetch.length} new jobs (5 concurrent)...`);
+  const enriched = await mapConcurrent(needsFetch, 5, async (row) => {
     const desc = await fetchDescription(row);
     return [...row, desc];
   });
   const withDesc = enriched.filter((r) => r[6]?.length > 0).length;
-  console.log(`  ✓  Descriptions retrieved: ${withDesc}/${jobs.length}\n`);
-  return enriched;
+  console.log(`  ✓  Descriptions retrieved: ${withDesc}/${needsFetch.length}\n`);
+  return [...alreadyHaveDesc, ...enriched];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -301,6 +316,64 @@ async function fetchGreenhouse(boardSlug, company, category, locationMapper = nu
     ]);
   } catch (e) {
     console.warn(`  ⚠  Greenhouse ${boardSlug}:`, e.message);
+    return [];
+  }
+}
+
+/**
+ * Disney — iCIMS public RSS feed.
+ * The feed at jobs.disneycareers.com/rss/jobs returns all global openings with
+ * full HTML job descriptions embedded in <description>. No auth required.
+ * Filters to US-based software/tech engineering roles only.
+ */
+async function fetchDisney() {
+  const DISNEY_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36";
+  const softwarePat =
+    /software engineer|software developer|frontend|front-end|backend|back-end|full.?stack|platform engineer|devops|site reliability|sre|data engineer|ml engineer|machine learning engineer|cloud engineer|infrastructure engineer|mobile engineer|ios engineer|android engineer|staff engineer|principal engineer|api engineer|tech lead/i;
+
+  try {
+    const res = await fetchWithTimeout(
+      "https://jobs.disneycareers.com/rss/jobs",
+      { headers: { "User-Agent": DISNEY_UA } }
+    );
+    if (!res.ok) {
+      console.warn(`  ⚠  Disney RSS: HTTP ${res.status}`);
+      return [];
+    }
+    const xml = await res.text();
+
+    /** Extract CDATA or plain content from an XML tag */
+    function extractTag(str, tag) {
+      const m = str.match(
+        new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([^<]*)<\\/${tag}>`)
+      );
+      return m ? (m[1] ?? m[2] ?? "").trim() : "";
+    }
+
+    const rows = [];
+    for (const [, item] of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+      const rawTitle = extractTag(item, "title");
+      // iCIMS encodes location as " - (City, State, Country)" suffix in the title
+      if (!rawTitle.includes("United States")) continue; // US roles only
+      if (!softwarePat.test(rawTitle)) continue;         // software/tech roles only
+
+      const title    = rawTitle.replace(/ - \([^)]+\)$/, "").trim();
+      const location = rawTitle.match(/\(([^)]+)\)$/)?.[1] ?? "";
+      const url      = item.match(/<link>([^\s<]+)/)?.[1]
+                    ?? item.match(/<guid[^>]*>([^<]+)/)?.[1]
+                    ?? "";
+      if (!url) continue;
+
+      const descHtml  = extractTag(item, "description");
+      const description = stripHtml(descHtml).slice(0, 2500);
+
+      rows.push(["Disney", title, location, url, "travel", now(), description]);
+    }
+
+    console.log(`  ✓  Disney: ${rows.length} US software engineering roles (iCIMS RSS)`);
+    return rows;
+  } catch (e) {
+    console.warn("  ⚠  Disney:", e.message);
     return [];
   }
 }
@@ -491,13 +564,11 @@ async function fetchAllJobs() {
       }
     })(),
 
-    // ── Disney — iCIMS API requires JavaScript rendering; returns empty content ──
-    // NOTE: hasJobs=true but hasContent=false — server-side rendered only with JS.
-    // Skipping until an accessible API endpoint is found.
+    // ── Disney — iCIMS public RSS feed (descriptions included inline) ──────
+    fetchDisney(),
 
-    // ── Universal Studios (NBCUniversal) — Phenom People ATS (Cloudflare-blocked) ──
-    // NOTE: jobs.nbcunicareers.com returns Cloudflare 403; no public ATS accessible.
-    // Skipping until a public API endpoint becomes available.
+    // ── Universal Studios (NBCUniversal) — Cloudflare-blocked ───────────────
+    // careers.nbcuniversal.com returns Cloudflare 403; no public ATS accessible.
 
     // ── Uber Freight — Greenhouse (api.uber.com is blocked) ──────────
     fetchGreenhouse("uberfreight", "Uber Freight", "travel"),
