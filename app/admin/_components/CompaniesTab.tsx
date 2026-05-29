@@ -18,6 +18,7 @@ interface Job {
   url: string;
   category: string;
   fetchedAt: string;
+  description: string;
 }
 
 const TRAVEL_COMPANIES: Company[] = [
@@ -186,6 +187,7 @@ export default function CompaniesTab() {
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("2h");
+  const [expandedJob, setExpandedJob] = useState<string | null>(null);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -281,7 +283,7 @@ export default function CompaniesTab() {
           <button
             key={id}
             type="button"
-            onClick={() => { setActiveCategory(id); setSelectedCompany(null); }}
+            onClick={() => { setActiveCategory(id); setSelectedCompany(null); setExpandedJob(null); }}
             className={[
               "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-150",
               activeCategory === id
@@ -345,11 +347,12 @@ export default function CompaniesTab() {
                 jobCount={jobsByCompany[company.name]?.length ?? 0}
                 newCount={newByCompany[company.name] ?? 0}
                 isSelected={selectedCompany === company.name}
-                onSelect={() =>
-                  setSelectedCompany(
-                    selectedCompany === company.name ? null : company.name
-                  )
-                }
+                onSelect={() => {
+                    setSelectedCompany(
+                      selectedCompany === company.name ? null : company.name
+                    );
+                    setExpandedJob(null);
+                  }}
               />
             ))}
           </div>
@@ -406,34 +409,52 @@ export default function CompaniesTab() {
                   {selectedJobs.map((job, i) => {
                     const isNew = job.fetchedAt &&
                       Date.now() - new Date(job.fetchedAt).getTime() <= 2 * 3_600_000;
+                    const isExpanded = expandedJob === job.url;
                     return (
-                      <li key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors group/job">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className="text-sm text-slate-200 truncate font-medium">{job.title}</p>
-                            {isNew && (
-                              <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">
-                                NEW
-                              </span>
+                      <li key={i} className={["px-5 py-3 hover:bg-white/[0.03] transition-colors", isExpanded ? "bg-white/[0.02]" : ""].join(" ")}>
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm text-slate-200 truncate font-medium">{job.title}</p>
+                              {isNew && (
+                                <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">
+                                  NEW
+                                </span>
+                              )}
+                            </div>
+                            {job.location && (
+                              <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
                             )}
                           </div>
-                          {job.location && (
-                            <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
+                          {job.fetchedAt && (
+                            <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">
+                              {timeAgo(job.fetchedAt)}
+                            </span>
                           )}
+                          {job.description && (
+                            <button
+                              type="button"
+                              onClick={() => setExpandedJob(isExpanded ? null : job.url)}
+                              className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all"
+                              aria-label={isExpanded ? "Hide description" : "Show description"}
+                            >
+                              {isExpanded ? "▲" : "▼"}
+                            </button>
+                          )}
+                          <a
+                            href={job.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
+                          >
+                            Apply
+                          </a>
                         </div>
-                        {job.fetchedAt && (
-                          <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">
-                            {timeAgo(job.fetchedAt)}
-                          </span>
+                        {isExpanded && job.description && (
+                          <div className="mt-3 pt-3 border-t border-white/5 text-xs text-slate-400 whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto pr-1">
+                            {job.description}
+                          </div>
                         )}
-                        <a
-                          href={job.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
-                        >
-                          Apply
-                        </a>
                       </li>
                     );
                   })}

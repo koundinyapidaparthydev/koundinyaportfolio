@@ -26,7 +26,7 @@ if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_JSON) {
 }
 
 const SHEET_NAME = "Jobs";
-const HEADERS = ["Company", "Title", "Location", "URL", "Category", "Fetched At"];
+const HEADERS = ["Company", "Title", "Location", "URL", "Category", "Fetched At", "Description"];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -61,6 +61,145 @@ function now() {
 /** Pause between company fetches to avoid hammering servers */
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Strip HTML tags and decode entities to plain text.
+ * Preserves list bullets and paragraph breaks.
+ */
+function stripHtml(html = "") {
+  return html
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "\u2022 ")
+    .replace(/<h[1-6][^>]*>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
+ * Run async tasks with bounded concurrency.
+ * @param {any[]} items
+ * @param {number} limit  max concurrent tasks
+ * @param {(item: any, i: number) => Promise<any>} fn
+ */
+async function mapConcurrent(items, limit, fn) {
+  const results = new Array(items.length);
+  let qi = 0;
+  async function worker() {
+    while (qi < items.length) {
+      const i = qi++; // synchronous — safe before await
+      results[i] = await fn(items[i], i);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, worker)
+  );
+  return results;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Description-fetching config
+// ─────────────────────────────────────────────────────────────────────────────
+
+const GREENHOUSE_SLUGS = {
+  "StubHub": "stubhubinc",
+  "AXS": "axs",
+  "Lyft": "lyft",
+  "Airbnb": "airbnb",
+  "CLEAR": "clear",
+  "SeatGeek": "seatgeek",
+  "Uber Freight": "uberfreight",
+};
+
+const WORKDAY_CONFIG = {
+  "Live Nation": { host: "livenation.wd503.myworkdayjobs.com", tenant: "livenation", site: "LNExternalSite" },
+  "Sabre":       { host: "sabre.wd1.myworkdayjobs.com",       tenant: "sabre",       site: "SabreJobs" },
+  "NCL":         { host: "nclh.wd108.myworkdayjobs.com",       tenant: "nclh",        site: "NCL_Shoreside_Careers" },
+  "SeaWorld":    { host: "seaworldentertainment.wd1.myworkdayjobs.com", tenant: "seaworldentertainment", site: "SEA" },
+};
+
+/**
+ * Fetch a plain-text job description for one row.
+ * Returns an empty string if the ATS is not supported or the call fails.
+ * @param {string[]} row — [company, title, location, url, category, fetchedAt]
+ * @returns {Promise<string>}
+ */
+async function fetchDescription(row) {
+  const [company, , , url] = row;
+
+  // ── Greenhouse ──────────────────────────────────────────────────────────
+  const ghSlug = GREENHOUSE_SLUGS[company];
+  if (ghSlug) {
+    const jobId = url.match(/\/jobs\/(\d+)/)?.[1];
+    if (jobId) {
+      try {
+        const res = await fetch(
+          `https://boards-api.greenhouse.io/v1/boards/${ghSlug}/jobs/${jobId}`,
+          { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
+        );
+        if (res.ok) {
+          const { content = "" } = await res.json();
+          return stripHtml(content).slice(0, 2500);
+        }
+      } catch { /* fall through */ }
+    }
+    return "";
+  }
+
+  // ── Workday ─────────────────────────────────────────────────────────────
+  const wdConfig = WORKDAY_CONFIG[company];
+  if (wdConfig) {
+    const { host, tenant, site } = wdConfig;
+    // Stored URL is https://{host}{externalPath}, e.g. /job/Location/Title_JOBID
+    const path = url.startsWith(`https://${host}`) ? url.slice(`https://${host}`.length) : null;
+    if (path) {
+      try {
+        const res = await fetch(
+          `https://${host}/wday/cxs/${tenant}/${site}/jobs${path}`,
+          { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const desc =
+            data.jobPostingInfo?.jobDescription ??
+            data.jobDescription ??
+            (Array.isArray(data.bulletFields) ? data.bulletFields.join("\n") : "");
+          return stripHtml(desc ?? "").slice(0, 2500);
+        }
+      } catch { /* fall through */ }
+    }
+    return "";
+  }
+
+  // Booking.com & others — no reliable public description API
+  return "";
+}
+
+/**
+ * Enrich a list of job rows with descriptions (5 concurrent fetches).
+ * @param {string[][]} jobs
+ * @returns {Promise<string[][]>}
+ */
+async function enrichWithDescriptions(jobs) {
+  console.log(`\n📝  Fetching descriptions for ${jobs.length} new jobs (5 concurrent)...`);
+  const enriched = await mapConcurrent(jobs, 5, async (row) => {
+    const desc = await fetchDescription(row);
+    return [...row, desc];
+  });
+  const withDesc = enriched.filter((r) => r[6]?.length > 0).length;
+  console.log(`  ✓  Descriptions retrieved: ${withDesc}/${jobs.length}\n`);
+  return enriched;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -327,15 +466,16 @@ async function ensureSheetAndHeaders(sheets) {
         requests: [{ addSheet: { properties: { title: SHEET_NAME } } }],
       },
     });
-    // Write header row
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A1`,
-      valueInputOption: "RAW",
-      requestBody: { values: [HEADERS] },
-    });
-    console.log(`📄  Created sheet "${SHEET_NAME}" with headers`);
+    console.log(`📄  Created sheet "${SHEET_NAME}"`);
   }
+
+  // Always sync headers (adds Description column if missing)
+  await sheets.spreadsheets.values.update({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    range: `${SHEET_NAME}!A1:G1`,
+    valueInputOption: "RAW",
+    requestBody: { values: [HEADERS] },
+  });
 }
 
 async function writeNewJobs(sheets, newJobs) {
@@ -355,15 +495,18 @@ async function writeNewJobs(sheets, newJobs) {
     return;
   }
 
+  // Fetch descriptions only for the genuinely new jobs
+  const enriched = await enrichWithDescriptions(deduped);
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A:F`,
+    range: `${SHEET_NAME}!A:G`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
-    requestBody: { values: deduped },
+    requestBody: { values: enriched },
   });
 
-  console.log(`✅  Added ${deduped.length} new jobs to Google Sheets`);
+  console.log(`✅  Added ${enriched.length} new jobs to Google Sheets`);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
