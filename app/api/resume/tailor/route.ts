@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import React from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
+import type { DocumentProps } from "@react-pdf/renderer";
 import { getResume } from "@/lib/resumeStore";
 import { ResumePdfDocument, CoverLetterPdfDocument } from "@/lib/resumePdf";
 import { requireAdminSession } from "@/lib/auth";
@@ -122,9 +123,7 @@ export async function POST(req: NextRequest) {
   // ── Generate PDF ─────────────────────────────────────────────────────────
   try {
     if (type === "cover") {
-      const buffer = await renderToBuffer(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        React.createElement(CoverLetterPdfDocument, {
+      const coverEl = React.createElement(CoverLetterPdfDocument, {
           name: tailoredResume.personalInfo.name,
           title: tailoredResume.personalInfo.title,
           email: tailoredResume.personalInfo.email,
@@ -132,8 +131,8 @@ export async function POST(req: NextRequest) {
           companyName: company,
           jobTitle: title,
           coverLetter,
-        }) as any
-      );
+        }) as React.ReactElement<DocumentProps>;
+      const buffer = await renderToBuffer(coverEl);
 
       return new NextResponse(new Uint8Array(buffer), {
         headers: {
@@ -144,10 +143,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Default: tailored resume PDF
-    const buffer = await renderToBuffer(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      React.createElement(ResumePdfDocument, { resume: tailoredResume }) as any
-    );
+    const resumeEl = React.createElement(ResumePdfDocument, { resume: tailoredResume }) as React.ReactElement<DocumentProps>;
+    const buffer = await renderToBuffer(resumeEl);
 
     return new NextResponse(new Uint8Array(buffer), {
       headers: {
