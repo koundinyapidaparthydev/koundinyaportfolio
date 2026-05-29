@@ -522,6 +522,54 @@ async function main() {
   const [jobs, sheets] = await Promise.all([fetchAllJobs(), getSheets()]);
   await ensureSheetAndHeaders(sheets);
   await writeNewJobs(sheets, jobs);
+  await backfillDescriptions(sheets);
+}
+
+/**
+ * Fill in descriptions for existing rows that are missing one (column G empty).
+ * Does NOT touch fetchedAt or any other column — time filters remain accurate.
+ */
+async function backfillDescriptions(sheets) {
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    range: `${SHEET_NAME}!A2:G`,
+  });
+  const rows = res.data.values ?? [];
+
+  const needsDesc = rows
+    .map((row, idx) => ({ row, sheetRow: idx + 2 })) // +2: header is row 1, data is 1-indexed
+    .filter(({ row }) => !row[6] || row[6].trim() === "");
+
+  if (needsDesc.length === 0) {
+    console.log("📝  All existing rows already have descriptions");
+    return;
+  }
+
+  console.log(`\n📝  Backfilling descriptions for ${needsDesc.length} existing rows (5 concurrent)...`);
+
+  const enriched = await mapConcurrent(needsDesc, 5, async ({ row, sheetRow }) => {
+    const desc = await fetchDescription(row);
+    return { desc, sheetRow };
+  });
+
+  const updateData = enriched
+    .filter(({ desc }) => desc?.length > 0)
+    .map(({ desc, sheetRow }) => ({
+      range: `${SHEET_NAME}!G${sheetRow}`,
+      values: [[desc]],
+    }));
+
+  if (updateData.length === 0) {
+    console.log("  ⚠️  No descriptions retrieved during backfill (Workday/Booking.com not supported)");
+    return;
+  }
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    requestBody: { valueInputOption: "RAW", data: updateData },
+  });
+
+  console.log(`✅  Backfilled descriptions for ${updateData.length} rows`);
 }
 
 main().catch((err) => {
