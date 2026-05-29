@@ -658,19 +658,22 @@ const NO_DESCRIPTION_COMPANIES = new Set(["Live Nation", "Sabre", "NCL", "SeaWor
   "Flywire", "Royal Caribbean Group", "Disney", "Universal Studios"]);
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WhatsApp notification via Callmebot (https://www.callmebot.com/blog/free-api-whatsapp-messages/)
-// Env vars required: CALLMEBOT_API_KEY, WHATSAPP_PHONE (e.g. 15512298660)
+// WhatsApp notification via Meta WhatsApp Cloud API
+// Env vars required: WHATSAPP_PHONE_NUMBER_ID, WHATSAPP_ACCESS_TOKEN
+//                    WHATSAPP_RECIPIENT  (e.g. +15512298660)
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Send a WhatsApp text message via Callmebot.
- * Silently skips if CALLMEBOT_API_KEY or WHATSAPP_PHONE are not set.
+ * Send a WhatsApp text message via the official Meta Cloud API.
+ * Silently skips if credentials are not configured.
  */
 async function sendWhatsAppNotification(newJobRows) {
-  const apiKey = process.env.CALLMEBOT_API_KEY;
-  const phone = process.env.WHATSAPP_PHONE;
-  if (!apiKey || !phone) {
-    console.log("ℹ️   CALLMEBOT_API_KEY / WHATSAPP_PHONE not set — skipping WhatsApp notification");
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const accessToken   = process.env.WHATSAPP_ACCESS_TOKEN;
+  const recipient     = process.env.WHATSAPP_RECIPIENT ?? "+15512298660";
+
+  if (!phoneNumberId || !accessToken) {
+    console.log("ℹ️   WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_ACCESS_TOKEN not set — skipping notification");
     return;
   }
   if (newJobRows.length === 0) return;
@@ -694,7 +697,6 @@ async function sendWhatsAppNotification(newJobRows) {
 
   for (const [company, jobs] of Object.entries(byCompany)) {
     lines.push(`\n*${company}* (${jobs.length})`);
-    // Cap at 5 jobs per company to keep message readable
     for (const { title, url } of jobs.slice(0, 5)) {
       lines.push(`• ${title}\n  ${url}`);
     }
@@ -703,19 +705,31 @@ async function sendWhatsAppNotification(newJobRows) {
 
   lines.push(`\n🔗 https://koundinyapidaparhty.vercel.app/admin`);
 
-  const message = lines.join("\n");
-
-  // Callmebot has a 1600 char limit per message — truncate if needed
-  const text = message.length > 1600 ? message.slice(0, 1590) + "…" : message;
+  const body = lines.join("\n").slice(0, 4000);
 
   try {
-    const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(apiKey)}`;
-    const res = await fetchWithTimeout(url, {}, 15000);
+    const res = await fetchWithTimeout(
+      `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: recipient,
+          type: "text",
+          text: { body },
+        }),
+      },
+      15000
+    );
     if (res.ok) {
-      console.log(`📱  WhatsApp notification sent to ${phone}`);
+      console.log(`📱  WhatsApp notification sent to ${recipient}`);
     } else {
-      const body = await res.text().catch(() => "");
-      console.warn(`⚠️   WhatsApp send failed (${res.status}): ${body.slice(0, 200)}`);
+      const err = await res.text().catch(() => "");
+      console.warn(`⚠️   WhatsApp send failed (${res.status}): ${err.slice(0, 300)}`);
     }
   } catch (err) {
     console.warn("⚠️   WhatsApp notification error:", err.message);

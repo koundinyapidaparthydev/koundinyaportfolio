@@ -9,14 +9,15 @@
  *    • Weekly job-market analysis  (which companies, roles, trends)
  *    • 3 tailored project suggestions to build this week
  *    • 3 resume / skill tips specific to what employers are asking for
- * 4. Delivers the report in 3 WhatsApp messages via Callmebot
+ * 4. Delivers the report in 3 WhatsApp messages via Meta WhatsApp Cloud API
  *
  * Required env vars:
  *   GOOGLE_SHEET_ID              — target sheet
  *   GOOGLE_SERVICE_ACCOUNT_JSON  — service account (full JSON string)
  *   ANTHROPIC_API_KEY            — Claude API key
- *   CALLMEBOT_API_KEY            — from Callmebot activation
- *   WHATSAPP_PHONE               — e.g. 15512298660
+ *   WHATSAPP_PHONE_NUMBER_ID     — from Meta Developer console
+ *   WHATSAPP_ACCESS_TOKEN        — permanent system user token
+ *   WHATSAPP_RECIPIENT           — recipient phone e.g. +15512298660 (optional)
  */
 
 import { readFileSync } from "fs";
@@ -30,8 +31,6 @@ import Anthropic from "@anthropic-ai/sdk";
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const CALLMEBOT_API_KEY = process.env.CALLMEBOT_API_KEY;
-const WHATSAPP_PHONE = process.env.WHATSAPP_PHONE ?? "15512298660";
 const SHEET_NAME = "Jobs";
 const ADMIN_URL = "https://koundinyapidaparhty.vercel.app/admin";
 
@@ -225,23 +224,41 @@ function parseSections(raw) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function sendWhatsApp(text) {
-  if (!CALLMEBOT_API_KEY) {
-    console.log("ℹ️   CALLMEBOT_API_KEY not set — printing message instead:\n");
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const accessToken   = process.env.WHATSAPP_ACCESS_TOKEN;
+  const recipient     = process.env.WHATSAPP_RECIPIENT ?? "+15512298660";
+
+  if (!phoneNumberId || !accessToken) {
+    console.log("ℹ️   WHATSAPP credentials not set — printing message instead:\n");
     console.log(text);
     console.log("---");
     return;
   }
-  const safe = text.length > 1600 ? text.slice(0, 1590) + "…" : text;
-  const url = `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(WHATSAPP_PHONE)}&text=${encodeURIComponent(safe)}&apikey=${encodeURIComponent(CALLMEBOT_API_KEY)}`;
+
+  const body = text.slice(0, 4000);
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    const res = await fetch(
+      `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: recipient,
+          type: "text",
+          text: { body },
+        }),
+        signal: AbortSignal.timeout(15000),
+      }
+    );
     if (res.ok) {
-      console.log("📱  Sent:", safe.slice(0, 60) + "…");
+      console.log("📱  Sent:", body.slice(0, 60) + "…");
     } else {
-      console.warn(`⚠️   Send failed (${res.status}):`, (await res.text()).slice(0, 200));
+      console.warn(`⚠️   Send failed (${res.status}):`, (await res.text()).slice(0, 300));
     }
-    // Callmebot rate limit: 1 msg / 60s
-    await new Promise((r) => setTimeout(r, 65000));
   } catch (err) {
     console.warn("⚠️   WhatsApp error:", err.message);
   }

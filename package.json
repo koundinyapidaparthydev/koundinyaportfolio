@@ -16,10 +16,12 @@
     "cypress:run:all": "cypress run --browser electron && cypress run --browser chrome --headless"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@base-ui/react": "^1.5.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@google-cloud/storage": "^7.19.0",
     "@hookform/resolvers": "^5.4.0",
     "@react-pdf/renderer": "^4.5.1",
     "@tanstack/react-query": "^5.100.11",
