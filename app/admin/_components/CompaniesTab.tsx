@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { calculateAtsScore } from "@/lib/atsScoring";
+import type { Resume } from "@/types/resume";
 
 type CompanyCategory = "travel" | "ai-agentic" | "general";
 type TimeFilter = "2h" | "12h" | "1d" | "2d" | "all";
@@ -179,6 +181,24 @@ function EmptyCategory({ label }: { label: string }) {
   );
 }
 
+// ── ATS badge ────────────────────────────────────────────────────────────────
+function AtsBadge({ score, label }: { score: number; label: "high" | "medium" | "low" }) {
+  const colours =
+    label === "high"
+      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+      : label === "medium"
+      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+      : "bg-slate-500/15 text-slate-500 border-slate-500/30";
+  return (
+    <span
+      title="ATS match score"
+      className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${colours}`}
+    >
+      {score}%
+    </span>
+  );
+}
+
 export default function CompaniesTab() {
   const [activeCategory, setActiveCategory] = useState<CompanyCategory>("travel");
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
@@ -188,6 +208,8 @@ export default function CompaniesTab() {
   const [error, setError] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("2h");
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
+  const [resume, setResume] = useState<Resume | null>(null);
+  const [generating, setGenerating] = useState<Record<string, "resume" | "cover">>({});
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -208,6 +230,54 @@ export default function CompaniesTab() {
   useEffect(() => {
     fetchJobs();
   }, [fetchJobs]);
+
+  useEffect(() => {
+    fetch("/api/resume")
+      .then((r) => r.json())
+      .then((d) => { if (d) setResume(d as Resume); })
+      .catch(() => {/* silent */});
+  }, []);
+
+  const handleGenerate = useCallback(
+    async (job: Job, type: "resume" | "cover") => {
+      const key = `${job.url}:${type}`;
+      setGenerating((prev) => ({ ...prev, [key]: type }));
+      try {
+        const res = await fetch("/api/resume/tailor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: job.title,
+            company: job.company,
+            description: job.description,
+            type,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          alert(err.error ?? "Generation failed");
+          return;
+        }
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download =
+          type === "cover"
+            ? `${job.company.replace(/\s+/g, "_")}_Cover_Letter.pdf`
+            : `${job.company.replace(/\s+/g, "_")}_Resume.pdf`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } finally {
+        setGenerating((prev) => {
+          const next = { ...prev };
+          delete next[key];
+          return next;
+        });
+      }
+    },
+    []
+  );
 
   // Filtered jobs based on selected time window
   const filteredJobs = filterByTime(jobs, timeFilter);
@@ -410,9 +480,16 @@ export default function CompaniesTab() {
                     const isNew = job.fetchedAt &&
                       Date.now() - new Date(job.fetchedAt).getTime() <= 2 * 3_600_000;
                     const isExpanded = expandedJob === job.url;
+                    const ats = resume && job.description
+                      ? calculateAtsScore(job.description, resume)
+                      : null;
+                    const resumeKey = `${job.url}:resume`;
+                    const coverKey = `${job.url}:cover`;
+                    const genResume = !!generating[resumeKey];
+                    const genCover  = !!generating[coverKey];
                     return (
                       <li key={i} className={["px-5 py-3 hover:bg-white/[0.03] transition-colors", isExpanded ? "bg-white/[0.02]" : ""].join(" ")}>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="text-sm text-slate-200 truncate font-medium">{job.title}</p>
@@ -421,6 +498,7 @@ export default function CompaniesTab() {
                                   NEW
                                 </span>
                               )}
+                              {ats && <AtsBadge score={ats.score} label={ats.label} />}
                             </div>
                             {job.location && (
                               <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
@@ -430,6 +508,30 @@ export default function CompaniesTab() {
                             <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">
                               {timeAgo(job.fetchedAt)}
                             </span>
+                          )}
+                          {/* Generate resume PDF */}
+                          {job.description && (
+                            <button
+                              type="button"
+                              title="Generate tailored resume PDF"
+                              disabled={genResume || genCover}
+                              onClick={() => handleGenerate(job, "resume")}
+                              className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all disabled:opacity-40"
+                            >
+                              {genResume ? "…" : "📄 CV"}
+                            </button>
+                          )}
+                          {/* Generate cover letter PDF */}
+                          {job.description && (
+                            <button
+                              type="button"
+                              title="Generate cover letter PDF"
+                              disabled={genResume || genCover}
+                              onClick={() => handleGenerate(job, "cover")}
+                              className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all disabled:opacity-40"
+                            >
+                              {genCover ? "…" : "✉ CL"}
+                            </button>
                           )}
                           {job.description && (
                             <button
@@ -451,8 +553,26 @@ export default function CompaniesTab() {
                           </a>
                         </div>
                         {isExpanded && job.description && (
-                          <div className="mt-3 pt-3 border-t border-white/5 text-xs text-slate-400 whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto pr-1">
-                            {job.description}
+                          <div className="mt-3 pt-3 border-t border-white/5">
+                            {ats && (
+                              <div className="mb-2 flex flex-wrap gap-1 items-center">
+                                <span className="text-[10px] text-slate-600">Matched:</span>
+                                {ats.matched.slice(0, 10).map((kw) => (
+                                  <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{kw}</span>
+                                ))}
+                                {ats.missing.length > 0 && (
+                                  <>
+                                    <span className="text-[10px] text-slate-600 ml-1">Missing:</span>
+                                    {ats.missing.slice(0, 5).map((kw) => (
+                                      <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-slate-500/10 text-slate-500 border border-slate-500/20">{kw}</span>
+                                    ))}
+                                  </>
+                                )}
+                              </div>
+                            )}
+                            <div className="text-xs text-slate-400 whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto pr-1">
+                              {job.description}
+                            </div>
                           </div>
                         )}
                       </li>
