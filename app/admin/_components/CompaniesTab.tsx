@@ -210,6 +210,9 @@ export default function CompaniesTab() {
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [resume, setResume] = useState<Resume | null>(null);
   const [generating, setGenerating] = useState<Record<string, "resume" | "cover">>({});
+  const [bulkState, setBulkState] = useState<{ running: boolean; done: number; total: number; errors: number }>(
+    { running: false, done: 0, total: 0, errors: 0 }
+  );
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -298,6 +301,53 @@ export default function CompaniesTab() {
   const totalFiltered = filteredJobs.length;
   const totalJobs = jobs.length;
 
+  // Jobs with ATS >= 70% that have descriptions (auto-gen candidates)
+  const topMatches = resume
+    ? jobs
+        .filter((j) => j.description)
+        .map((j) => ({ job: j, ats: calculateAtsScore(j.description, resume) }))
+        .filter(({ ats }) => ats.score >= 70)
+        .sort((a, b) => b.ats.score - a.ats.score)
+    : [];
+
+  const handleBulkGenerate = useCallback(async () => {
+    if (topMatches.length === 0 || bulkState.running) return;
+    setBulkState({ running: true, done: 0, total: topMatches.length, errors: 0 });
+    let errors = 0;
+    for (let i = 0; i < topMatches.length; i++) {
+      const { job } = topMatches[i];
+      try {
+        const res = await fetch("/api/resume/tailor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: job.title,
+            company: job.company,
+            description: job.description,
+            type: "resume",
+          }),
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `${job.company.replace(/\s+/g, "_")}_${job.title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40)}_Resume.pdf`;
+          a.click();
+          URL.revokeObjectURL(url);
+          // Small delay between downloads so browser doesn't block
+          await new Promise((r) => setTimeout(r, 800));
+        } else {
+          errors++;
+        }
+      } catch {
+        errors++;
+      }
+      setBulkState((prev) => ({ ...prev, done: i + 1, errors }));
+    }
+    setBulkState({ running: false, done: topMatches.length, total: topMatches.length, errors });
+  }, [topMatches, bulkState.running]);
+
   return (
     <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-6">
       {/* Header */}
@@ -349,6 +399,47 @@ export default function CompaniesTab() {
 
       {/* Sub-tabs */}
       <div className="mb-4 flex gap-1 rounded-xl bg-white/5 p-1">
+
+      {/* ── Auto-Generate Top Matches banner ── */}
+      {topMatches.length > 0 && !loading && (
+        <div className="mb-4 flex flex-col gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/[0.06] px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-emerald-300">
+                🎯 {topMatches.length} high-match job{topMatches.length !== 1 ? "s" : ""} found (≥70% ATS)
+              </p>
+              <p className="mt-0.5 text-[11px] text-slate-500 truncate">
+                {topMatches.slice(0, 3).map(({ job, ats }) => `${job.company} — ${job.title} (${ats.score}%)`).join(" · ")}
+                {topMatches.length > 3 ? ` · +${topMatches.length - 3} more` : ""}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={bulkState.running}
+              onClick={handleBulkGenerate}
+              className="shrink-0 flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-3 py-1.5 text-xs font-medium text-emerald-300 hover:bg-emerald-500/25 transition-all disabled:opacity-60"
+            >
+              {bulkState.running ? (
+                <>
+                  <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="10" strokeOpacity="0.25" /><path d="M12 2a10 10 0 0 1 10 10" /></svg>
+                  {bulkState.done}/{bulkState.total}
+                </>
+              ) : (
+                <>
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                  Auto-Generate All
+                </>
+              )}
+            </button>
+          </div>
+          {bulkState.done > 0 && !bulkState.running && (
+            <p className="text-[11px] text-slate-500">
+              ✓ {bulkState.done - bulkState.errors} PDF{bulkState.done - bulkState.errors !== 1 ? "s" : ""} downloaded
+              {bulkState.errors > 0 ? ` · ${bulkState.errors} failed` : ""}
+            </p>
+          )}
+        </div>
+      )}
         {TABS.map(({ id, label }) => (
           <button
             key={id}
