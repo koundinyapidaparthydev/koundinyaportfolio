@@ -65,26 +65,31 @@ function delay(ms) {
 
 /**
  * Strip HTML tags and decode entities to plain text.
- * Preserves list bullets and paragraph breaks.
+ * Greenhouse returns entity-encoded HTML (&lt;p&gt; etc.),
+ * so we must decode entities FIRST, then strip tags.
  */
 function stripHtml(html = "") {
-  return html
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n\n")
-    .replace(/<\/li>/gi, "\n")
-    .replace(/<li[^>]*>/gi, "\u2022 ")
-    .replace(/<h[1-6][^>]*>/gi, "\n")
-    .replace(/<\/h[1-6]>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
+  // Step 1: decode HTML entities first (Greenhouse double-encodes their HTML)
+  let txt = html
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&nbsp;/g, " ")
     .replace(/&quot;/g, '"')
     .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+
+  // Step 2: convert structural tags to whitespace/bullets, then strip all tags
+  txt = txt
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "\u2022 ")
+    .replace(/<h[1-6][^>]*>/gi, "\n")
+    .replace(/<\/h[1-6]>/gi, "\n")
+    .replace(/<[^>]*>/g, "");
+
+  return txt.replace(/\n{3,}/g, "\n\n").trim();
 }
 
 /**
