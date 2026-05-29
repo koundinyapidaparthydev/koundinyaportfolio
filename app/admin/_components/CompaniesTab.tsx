@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 type CompanyCategory = "travel" | "ai-agentic" | "general";
+type TimeFilter = "2h" | "12h" | "1d" | "2d" | "all";
 
 interface Company {
   name: string;
@@ -45,14 +46,43 @@ const TABS: { id: CompanyCategory; label: string }[] = [
   { id: "general", label: "🌐 General Full Stack" },
 ];
 
+const TIME_FILTERS: { id: TimeFilter; label: string; ms: number }[] = [
+  { id: "2h",  label: "⚡ Last 2 hrs",  ms: 2  * 3_600_000 },
+  { id: "12h", label: "Last 12 hrs", ms: 12 * 3_600_000 },
+  { id: "1d",  label: "Last 24 hrs", ms: 24 * 3_600_000 },
+  { id: "2d",  label: "Last 48 hrs", ms: 48 * 3_600_000 },
+  { id: "all", label: "All time",    ms: Infinity },
+];
+
+function filterByTime(jobs: Job[], filter: TimeFilter): Job[] {
+  if (filter === "all") return jobs;
+  const { ms } = TIME_FILTERS.find((f) => f.id === filter)!;
+  const now = Date.now();
+  return jobs.filter(
+    (j) => j.fetchedAt && now - new Date(j.fetchedAt).getTime() <= ms
+  );
+}
+
+function timeAgo(iso: string): string {
+  const elapsed = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(elapsed / 60_000);
+  if (m < 1) return "just now";
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
 function CompanyCard({
   company,
   jobCount,
+  newCount,
   isSelected,
   onSelect,
 }: {
   company: Company;
   jobCount: number;
+  newCount: number;
   isSelected: boolean;
   onSelect: () => void;
 }) {
@@ -72,40 +102,55 @@ function CompanyCard({
         <span className="font-semibold text-slate-200 text-sm leading-tight group-hover:text-white transition-colors">
           {company.name}
         </span>
-        <a
-          href={company.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="shrink-0 text-slate-500 hover:text-slate-300 transition-colors mt-0.5"
-          aria-label={`Open ${company.name} careers`}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-3.5 w-3.5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
+        <div className="flex items-center gap-1.5 shrink-0">
+          {newCount > 0 && (
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+          )}
+          <a
+            href={company.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-slate-500 hover:text-slate-300 transition-colors mt-0.5"
+            aria-label={`Open ${company.name} careers`}
           >
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-            <polyline points="15 3 21 3 21 9" />
-            <line x1="10" x2="21" y1="14" y2="3" />
-          </svg>
-        </a>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" x2="21" y1="14" y2="3" />
+            </svg>
+          </a>
+        </div>
       </div>
       <div className="flex items-center justify-between">
         <span className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors truncate">
           {new URL(company.url).hostname}
         </span>
-        {jobCount > 0 && (
-          <span className="ml-2 shrink-0 rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-300 border border-indigo-500/30">
-            {jobCount} {jobCount === 1 ? "role" : "roles"}
-          </span>
-        )}
+        <div className="flex items-center gap-1 ml-1 shrink-0">
+          {newCount > 0 && (
+            <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+              +{newCount} new
+            </span>
+          )}
+          {jobCount > 0 && (
+            <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-300 border border-indigo-500/30">
+              {jobCount}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -140,6 +185,7 @@ export default function CompaniesTab() {
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("2h");
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -161,14 +207,23 @@ export default function CompaniesTab() {
     fetchJobs();
   }, [fetchJobs]);
 
-  // Group jobs by company name
-  const jobsByCompany = jobs.reduce<Record<string, Job[]>>((acc, job) => {
+  // Filtered jobs based on selected time window
+  const filteredJobs = filterByTime(jobs, timeFilter);
+  // Always track "last 2h" jobs for the pulsing dot on cards
+  const newJobs = filterByTime(jobs, "2h");
+
+  // Group by company for both filtered and "new" sets
+  const jobsByCompany = filteredJobs.reduce<Record<string, Job[]>>((acc, job) => {
     (acc[job.company] ??= []).push(job);
+    return acc;
+  }, {});
+  const newByCompany = newJobs.reduce<Record<string, number>>((acc, job) => {
+    acc[job.company] = (acc[job.company] ?? 0) + 1;
     return acc;
   }, {});
 
   const selectedJobs = selectedCompany ? (jobsByCompany[selectedCompany] ?? []) : [];
-
+  const totalFiltered = filteredJobs.length;
   const totalJobs = jobs.length;
 
   return (
@@ -207,7 +262,7 @@ export default function CompaniesTab() {
           </button>
           {lastFetched && !loading && (
             <span className="text-[10px] text-slate-600">
-              {totalJobs} roles · updated {lastFetched}
+              {totalJobs} total · updated {lastFetched}
             </span>
           )}
           {error && (
@@ -221,7 +276,7 @@ export default function CompaniesTab() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="mb-6 flex gap-1 rounded-xl bg-white/5 p-1">
+      <div className="mb-4 flex gap-1 rounded-xl bg-white/5 p-1">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
@@ -239,6 +294,46 @@ export default function CompaniesTab() {
         ))}
       </div>
 
+      {/* Time filter pills */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <span className="text-[11px] text-slate-600 mr-1">Show new jobs from:</span>
+        {TIME_FILTERS.map(({ id, label }) => {
+          const count = id === "all" ? jobs.length : filterByTime(jobs, id).length;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setTimeFilter(id)}
+              className={[
+                "flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium border transition-all duration-150",
+                timeFilter === id
+                  ? "bg-indigo-500/25 text-indigo-300 border-indigo-500/50 shadow"
+                  : "bg-white/5 text-slate-500 border-white/10 hover:text-slate-300 hover:border-white/20",
+              ].join(" ")}
+            >
+              {label}
+              {count > 0 && (
+                <span className={[
+                  "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                  timeFilter === id
+                    ? "bg-indigo-500/30 text-indigo-200"
+                    : id === "2h" && count > 0
+                    ? "bg-emerald-500/20 text-emerald-400"
+                    : "bg-white/10 text-slate-400",
+                ].join(" ")}>
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+        {totalFiltered > 0 && (
+          <span className="ml-auto text-[11px] text-slate-600">
+            {totalFiltered} role{totalFiltered !== 1 ? "s" : ""} shown
+          </span>
+        )}
+      </div>
+
       {/* Content */}
       {activeCategory === "travel" && (
         <>
@@ -248,6 +343,7 @@ export default function CompaniesTab() {
                 key={company.name}
                 company={company}
                 jobCount={jobsByCompany[company.name]?.length ?? 0}
+                newCount={newByCompany[company.name] ?? 0}
                 isSelected={selectedCompany === company.name}
                 onSelect={() =>
                   setSelectedCompany(
@@ -269,8 +365,10 @@ export default function CompaniesTab() {
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     {selectedJobs.length === 0
-                      ? "No engineering roles found yet"
-                      : `${selectedJobs.length} engineering ${selectedJobs.length === 1 ? "role" : "roles"}`}
+                      ? timeFilter === "all"
+                        ? "No engineering roles scraped yet"
+                        : `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`
+                      : `${selectedJobs.length} engineering ${selectedJobs.length === 1 ? "role" : "roles"} · ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`}
                   </p>
                 </div>
                 <button
@@ -298,34 +396,47 @@ export default function CompaniesTab() {
                   <p className="text-sm">
                     {error
                       ? "Configure Google Sheets to see live jobs"
-                      : "No roles scraped yet — automation runs every 30 min 4 AM–6 PM PDT"}
+                      : timeFilter === "all"
+                      ? "No roles scraped yet — automation runs every 30 min 4 AM–6 PM PDT"
+                      : `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()} — try a wider window`}
                   </p>
                 </div>
               ) : (
                 <ul className="divide-y divide-white/5 max-h-96 overflow-y-auto">
-                  {selectedJobs.map((job, i) => (
-                    <li key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors group/job">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-slate-200 truncate font-medium">{job.title}</p>
-                        {job.location && (
-                          <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
+                  {selectedJobs.map((job, i) => {
+                    const isNew = job.fetchedAt &&
+                      Date.now() - new Date(job.fetchedAt).getTime() <= 2 * 3_600_000;
+                    return (
+                      <li key={i} className="flex items-center gap-3 px-5 py-3 hover:bg-white/[0.03] transition-colors group/job">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm text-slate-200 truncate font-medium">{job.title}</p>
+                            {isNew && (
+                              <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">
+                                NEW
+                              </span>
+                            )}
+                          </div>
+                          {job.location && (
+                            <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
+                          )}
+                        </div>
+                        {job.fetchedAt && (
+                          <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">
+                            {timeAgo(job.fetchedAt)}
+                          </span>
                         )}
-                      </div>
-                      {job.fetchedAt && (
-                        <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">
-                          {new Date(job.fetchedAt).toLocaleDateString()}
-                        </span>
-                      )}
-                      <a
-                        href={job.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
-                      >
-                        Apply
-                      </a>
-                    </li>
-                  ))}
+                        <a
+                          href={job.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
+                        >
+                          Apply
+                        </a>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
