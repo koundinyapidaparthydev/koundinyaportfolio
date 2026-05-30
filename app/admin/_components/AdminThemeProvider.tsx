@@ -24,12 +24,10 @@ export default function AdminThemeProvider({
   children: React.ReactNode;
 }) {
   const [theme, setTheme] = useState<AdminTheme>("dark");
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("adminTheme") as AdminTheme | null;
     if (saved === "light" || saved === "dark") setTheme(saved);
-    setMounted(true);
   }, []);
 
   const toggle = () => {
@@ -40,15 +38,8 @@ export default function AdminThemeProvider({
     });
   };
 
-  // Avoid flash by not rendering until we know the saved preference
-  if (!mounted) {
-    return (
-      <div className="dark min-h-[calc(100vh-4rem)] bg-[#080808]">
-        {children}
-      </div>
-    );
-  }
-
+  // Always render the same tree structure — no conditional wrapping that would
+  // cause React to unmount/remount children and reset in-flight queries.
   return (
     <AdminThemeContext.Provider value={{ theme, toggle }}>
       <div
