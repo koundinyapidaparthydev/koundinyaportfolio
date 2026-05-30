@@ -31,7 +31,11 @@ if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_JSON) {
 }
 
 const SHEET_NAME = "Jobs";
-const HEADERS = ["Company", "Title", "Location", "URL", "Category", "Fetched At", "Description"];
+// A–G: scraped fields  |  H–M: filled by generate-applications.mjs / auto-apply.mjs
+const HEADERS = [
+  "Company", "Title", "Location", "URL", "Category", "Fetched At", "Description",
+  "Resume URL", "Cover Letter", "ATS Score", "Apply Status", "Applied At", "Notes",
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -612,10 +616,10 @@ async function ensureSheetAndHeaders(sheets) {
     console.log(`📄  Created sheet "${SHEET_NAME}"`);
   }
 
-  // Always sync headers (adds Description column if missing)
+  // Always sync headers (A–M, 13 columns)
   await sheets.spreadsheets.values.update({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A1:G1`,
+    range: `${SHEET_NAME}!A1:M1`,
     valueInputOption: "RAW",
     requestBody: { values: [HEADERS] },
   });

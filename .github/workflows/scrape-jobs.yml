@@ -1,4 +1,4 @@
-name: Scrape Jobs
+name: Scrape Jobs → Generate Resumes → Auto-Apply
 
 # Runs every 30 minutes between 4 AM and 6 PM PDT (UTC-7)
 # 4:00 AM PDT = 11:00 UTC   /   6:00 PM PDT = 01:00 UTC (next day)
@@ -13,7 +13,7 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repo
@@ -28,7 +28,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run job scraper
+      # ── Step 1: Scrape new jobs into Google Sheets ──────────────────────────
+      - name: Scrape jobs
         run: node scripts/scrape-jobs.mjs
         env:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
@@ -36,3 +37,35 @@ jobs:
           WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
           WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
           WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}
+
+      # ── Step 2: Generate tailored resumes for new jobs ──────────────────────
+      - name: Generate tailored resumes
+        run: node scripts/generate-applications.mjs
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
+          PORTFOLIO_BASE_URL: ${{ secrets.PORTFOLIO_BASE_URL }}
+          ATS_THRESHOLD: "40"
+          MAX_CONCURRENT: "2"
+
+      # ── Step 3: Auto-apply to pending jobs ─────────────────────────────────
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Auto-apply to jobs
+        run: node scripts/auto-apply.mjs
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          APPLICANT_EMAIL: ${{ secrets.APPLICANT_EMAIL }}
+          APPLICANT_FIRST_NAME: ${{ secrets.APPLICANT_FIRST_NAME }}
+          APPLICANT_LAST_NAME: ${{ secrets.APPLICANT_LAST_NAME }}
+          APPLICANT_PHONE: ${{ secrets.APPLICANT_PHONE }}
+          APPLICANT_LINKEDIN: ${{ secrets.APPLICANT_LINKEDIN }}
+          APPLICANT_PORTFOLIO: ${{ secrets.APPLICANT_PORTFOLIO }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}
+          APPLY_LIMIT: "10"
+          DRY_RUN: "false"
