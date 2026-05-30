@@ -164,17 +164,21 @@ describe("saveResume", () => {
     expect(JSON.parse(captured)).toEqual(minimalResume);
   });
 
-  it("propagates writeFile errors", async () => {
+  it("propagates writeFile errors (wraps in read-only message)", async () => {
     mockWriteFile.mockRejectedValueOnce(new Error("ENOSP"));
 
-    await expect(saveResume(minimalResume)).rejects.toThrow("ENOSP");
+    await expect(saveResume(minimalResume)).rejects.toThrow(
+      "Resume cannot be saved: the server filesystem is read-only."
+    );
     expect(mockRename).not.toHaveBeenCalled();
   });
 
-  it("propagates rename errors", async () => {
+  it("propagates rename errors (wraps in read-only message)", async () => {
     mockWriteFile.mockResolvedValueOnce(undefined);
     mockRename.mockRejectedValueOnce(new Error("EACCES"));
 
-    await expect(saveResume(minimalResume)).rejects.toThrow("EACCES");
+    await expect(saveResume(minimalResume)).rejects.toThrow(
+      "Resume cannot be saved: the server filesystem is read-only."
+    );
   });
 });
