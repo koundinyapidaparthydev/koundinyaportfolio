@@ -24,6 +24,38 @@
  */
 
 import { google } from "googleapis";
+import { existsSync, readFileSync } from "fs";
+
+// Auto-load .env.local when running locally (not set in GitHub Actions).
+// Uses a hand-rolled parser so JSON values with embedded double-quotes are
+// preserved correctly (Node's --env-file and dotenvx both strip them).
+if (existsSync(".env.local")) {
+  const raw = readFileSync(".env.local", "utf8");
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx < 1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    let val   = trimmed.slice(eqIdx + 1).trim();
+    // Strip surrounding single OR double quotes (but not internal ones)
+    if ((val.startsWith("'") && val.endsWith("'")) ||
+        (val.startsWith('"') && val.endsWith('"'))) {
+      val = val.slice(1, -1);
+    }
+    if (!key) continue;
+    const cur = process.env[key];
+    if (!cur) {
+      // Not set at all — always load from .env.local
+      process.env[key] = val;
+    } else if (val.startsWith('{')) {
+      // JSON value: dotenvx may have mangled it (strips double-quotes).
+      // Override if the current value is not valid JSON.
+      try { JSON.parse(cur); } catch { process.env[key] = val; }
+    }
+    // Non-JSON value already set: respect shell/command-line override.
+  }
+}
 
 const GOOGLE_SHEET_ID             = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
@@ -31,6 +63,7 @@ const INTERNAL_API_KEY            = process.env.INTERNAL_API_KEY;
 const PORTFOLIO_BASE_URL          = process.env.PORTFOLIO_BASE_URL ?? "https://koundinyapidaparhty.vercel.app";
 const ATS_THRESHOLD               = parseInt(process.env.ATS_THRESHOLD ?? "40", 10);
 const MAX_CONCURRENT              = parseInt(process.env.MAX_CONCURRENT ?? "2", 10);
+const MAX_JOBS                    = parseInt(process.env.MAX_JOBS ?? "0", 10); // 0 = unlimited
 
 const SHEET_NAME = "Jobs";
 
@@ -231,14 +264,20 @@ async function main() {
     return;
   }
 
+  // Optional cap for testing / CI runs
+  const toProcess = MAX_JOBS > 0 ? unprocessed.slice(0, MAX_JOBS) : unprocessed;
+  if (MAX_JOBS > 0 && unprocessed.length > MAX_JOBS) {
+    console.log(`⚠️  MAX_JOBS=${MAX_JOBS} — processing ${toProcess.length} of ${unprocessed.length} unprocessed rows\n`);
+  }
+
   // Add a small delay between batches to respect Claude's rate limits
   const results = [];
-  for (let i = 0; i < unprocessed.length; i += MAX_CONCURRENT) {
-    const batch = unprocessed.slice(i, i + MAX_CONCURRENT);
+  for (let i = 0; i < toProcess.length; i += MAX_CONCURRENT) {
+    const batch = toProcess.slice(i, i + MAX_CONCURRENT);
     const batchResults = await mapConcurrent(batch, MAX_CONCURRENT, generateForJob);
     results.push(...batchResults);
 
-    if (i + MAX_CONCURRENT < unprocessed.length) {
+    if (i + MAX_CONCURRENT < toProcess.length) {
       console.log(`  ⏳ Waiting 5s before next batch...`);
       await delay(5000);
     }

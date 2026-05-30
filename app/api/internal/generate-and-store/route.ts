@@ -106,7 +106,18 @@ export async function POST(req: NextRequest) {
     });
 
     const raw = message.content[0].type === "text" ? message.content[0].text : "";
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    // Strip markdown fences if present
+    let cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+    // Claude sometimes appends explanation text after the closing brace.
+    // Extract the outermost JSON object robustly.
+    const firstBrace = cleaned.indexOf("{");
+    if (firstBrace > 0) cleaned = cleaned.slice(firstBrace);
+    let depth = 0, end = -1;
+    for (let i = 0; i < cleaned.length; i++) {
+      if (cleaned[i] === "{") depth++;
+      else if (cleaned[i] === "}") { depth--; if (depth === 0) { end = i; break; } }
+    }
+    if (end !== -1) cleaned = cleaned.slice(0, end + 1);
     const parsed = JSON.parse(cleaned);
 
     coverLetterText = parsed.coverLetter ?? "";

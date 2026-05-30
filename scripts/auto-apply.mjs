@@ -35,8 +35,33 @@
 
 import { chromium } from "playwright";
 import { google } from "googleapis";
-import { createWriteStream } from "fs";
+import { existsSync, readFileSync, createWriteStream } from "fs";
 import { tmpdir } from "os";
+
+// Auto-load .env.local when running locally (not set in GitHub Actions).
+// Hand-rolled parser preserves JSON values with embedded double-quotes.
+if (existsSync(".env.local")) {
+  const raw = readFileSync(".env.local", "utf8");
+  for (const line of raw.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx < 1) continue;
+    const key = trimmed.slice(0, eqIdx).trim();
+    let val   = trimmed.slice(eqIdx + 1).trim();
+    if ((val.startsWith("'") && val.endsWith("'")) ||
+        (val.startsWith('"') && val.endsWith('"'))) {
+      val = val.slice(1, -1);
+    }
+    if (!key) continue;
+    const cur = process.env[key];
+    if (!cur) {
+      process.env[key] = val;
+    } else if (val.startsWith('{')) {
+      try { JSON.parse(cur); } catch { process.env[key] = val; }
+    }
+  }
+}
 import { join } from "path";
 import { unlink } from "fs/promises";
 import { pipeline } from "stream/promises";
