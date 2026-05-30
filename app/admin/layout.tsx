@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import AdminThemeProvider from "./_components/AdminThemeProvider";
 
 export const metadata: Metadata = {
   title: "Admin — Koundinya Pidaparthy Portfolio",
@@ -10,9 +11,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    // Always dark — admin dashboard is dark-only regardless of global theme toggle.
-    // The `dark` class activates all dark: CSS variables for descendant components.
-    <div className="dark min-h-[calc(100vh-4rem)] bg-[#080808]">{children}</div>
-  );
+  return <AdminThemeProvider>{children}</AdminThemeProvider>;
 }

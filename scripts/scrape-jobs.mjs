@@ -737,12 +737,100 @@ async function sendWhatsAppNotification(newJobRows) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Archive old jobs (> 2 days) → "Old Jobs" sheet
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Move rows older than 2 days from the Jobs sheet to an "Old Jobs" archive
+ * sheet. Creates the archive sheet automatically if it does not yet exist.
+ */
+async function archiveOldJobs(sheets) {
+  const ARCHIVE_SHEET = "Old Jobs";
+  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+
+  try {
+    const resp = await sheets.spreadsheets.values.get({
+      spreadsheetId: GOOGLE_SHEET_ID,
+      range: `${SHEET_NAME}!A:G`,
+    });
+    const rows = resp.data.values ?? [];
+    if (rows.length <= 1) return; // headers only
+
+    const headers = rows[0];
+    const dataRows = rows.slice(1);
+    const now = Date.now();
+
+    const oldRows = [];
+    const keepRows = [];
+    for (const row of dataRows) {
+      const fetchedAt = row[5] ?? "";
+      const age = fetchedAt ? now - new Date(fetchedAt).getTime() : Infinity;
+      if (age > TWO_DAYS_MS) {
+        oldRows.push(row);
+      } else {
+        keepRows.push(row);
+      }
+    }
+
+    if (oldRows.length === 0) {
+      console.log("🗂️   No old jobs to archive");
+      return;
+    }
+
+    // Ensure archive sheet exists
+    const meta = await sheets.spreadsheets.get({ spreadsheetId: GOOGLE_SHEET_ID });
+    const existing = (meta.data.sheets ?? []).map((s) => s.properties.title);
+    if (!existing.includes(ARCHIVE_SHEET)) {
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: GOOGLE_SHEET_ID,
+        requestBody: {
+          requests: [{ addSheet: { properties: { title: ARCHIVE_SHEET } } }],
+        },
+      });
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: GOOGLE_SHEET_ID,
+        range: `${ARCHIVE_SHEET}!A1:G1`,
+        valueInputOption: "RAW",
+        requestBody: { values: [headers] },
+      });
+      console.log(`📄  Created archive sheet "${ARCHIVE_SHEET}"`);
+    }
+
+    // Append old rows to archive
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: GOOGLE_SHEET_ID,
+      range: `${ARCHIVE_SHEET}!A:G`,
+      valueInputOption: "RAW",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: { values: oldRows },
+    });
+
+    // Rewrite Jobs sheet with headers + recent rows only
+    await sheets.spreadsheets.values.clear({
+      spreadsheetId: GOOGLE_SHEET_ID,
+      range: `${SHEET_NAME}!A:G`,
+    });
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: GOOGLE_SHEET_ID,
+      range: `${SHEET_NAME}!A1`,
+      valueInputOption: "RAW",
+      requestBody: { values: [headers, ...keepRows] },
+    });
+
+    console.log(`🗂️   Archived ${oldRows.length} jobs → "${ARCHIVE_SHEET}" | ${keepRows.length} remain in Jobs`);
+  } catch (err) {
+    console.warn("⚠️   Archive failed:", err.message);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function main() {
   const [jobs, sheets] = await Promise.all([fetchAllJobs(), getSheets()]);
   await ensureSheetAndHeaders(sheets);
+  await archiveOldJobs(sheets);       // archive 2+ day old jobs first
   await migrateLegacyCompanyNames(sheets);
   const newJobRows = await writeNewJobs(sheets, jobs);
   await backfillDescriptions(sheets);

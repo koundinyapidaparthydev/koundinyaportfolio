@@ -3,9 +3,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { calculateAtsScore } from "@/lib/atsScoring";
 import type { Resume } from "@/types/resume";
+import type { AtsResult } from "@/lib/atsScoring";
 
 type CompanyCategory = "travel" | "ai-agentic" | "general";
-type TimeFilter = "2h" | "12h" | "1d" | "2d" | "all";
+type TimeFilter = "2h" | "12h" | "1d" | "2d";
+type SortMode = "newest" | "ats" | "title";
+type LocationFilter = "all" | "remote" | "onsite";
 
 interface Company {
   name: string;
@@ -50,20 +53,88 @@ const TABS: { id: CompanyCategory; label: string }[] = [
 ];
 
 const TIME_FILTERS: { id: TimeFilter; label: string; ms: number }[] = [
-  { id: "2h",  label: "⚡ Last 2 hrs",  ms: 2  * 3_600_000 },
+  { id: "2h",  label: "⚡ Last 2 hrs",  ms:  2 * 3_600_000 },
   { id: "12h", label: "Last 12 hrs", ms: 12 * 3_600_000 },
   { id: "1d",  label: "Last 24 hrs", ms: 24 * 3_600_000 },
   { id: "2d",  label: "Last 48 hrs", ms: 48 * 3_600_000 },
-  { id: "all", label: "All time",    ms: Infinity },
 ];
 
 function filterByTime(jobs: Job[], filter: TimeFilter): Job[] {
-  if (filter === "all") return jobs;
   const { ms } = TIME_FILTERS.find((f) => f.id === filter)!;
   const now = Date.now();
   return jobs.filter(
     (j) => j.fetchedAt && now - new Date(j.fetchedAt).getTime() <= ms
   );
+}
+
+function filterBySearch(jobs: Job[], q: string): Job[] {
+  if (!q.trim()) return jobs;
+  const lower = q.toLowerCase();
+  return jobs.filter(
+    (j) =>
+      j.title.toLowerCase().includes(lower) ||
+      j.company.toLowerCase().includes(lower)
+  );
+}
+
+function filterByLocation(jobs: Job[], filter: LocationFilter): Job[] {
+  if (filter === "all") return jobs;
+  return jobs.filter((j) => {
+    const combined = (j.location + " " + j.description).toLowerCase();
+    if (filter === "remote") return combined.includes("remote");
+    return !combined.includes("remote") && !combined.includes("hybrid");
+  });
+}
+
+function sortJobs(
+  jobs: Job[],
+  mode: SortMode,
+  scores: Map<string, number>
+): Job[] {
+  const arr = [...jobs];
+  switch (mode) {
+    case "ats":
+      return arr.sort((a, b) => (scores.get(b.url) ?? 0) - (scores.get(a.url) ?? 0));
+    case "title":
+      return arr.sort((a, b) => a.title.localeCompare(b.title));
+    default:
+      return arr.sort(
+        (a, b) => new Date(b.fetchedAt).getTime() - new Date(a.fetchedAt).getTime()
+      );
+  }
+}
+
+function inferSeniority(title: string): "senior" | "mid" | "junior" {
+  const t = title.toLowerCase();
+  if (/staff|principal|distinguished|vp|director/.test(t)) return "senior";
+  if (/senior|sr\.|lead/.test(t)) return "senior";
+  if (/junior|jr\.|entry|associate/.test(t)) return "junior";
+  return "mid";
+}
+
+function inferLocationType(
+  location: string,
+  description: string
+): "remote" | "hybrid" | "onsite" | "unknown" {
+  const combined = (location + " " + description).toLowerCase();
+  if (combined.includes("remote")) return "remote";
+  if (combined.includes("hybrid")) return "hybrid";
+  if (location.trim().length > 0) return "onsite";
+  return "unknown";
+}
+
+function computeWhyApply(job: Job, ats: AtsResult): string[] {
+  const reasons: string[] = [];
+  if (ats.score >= 80) reasons.push("Excellent resume fit — keyword-dense JD match");
+  else if (ats.score >= 70) reasons.push("Strong match — your stack aligns with the core requirements");
+  else if (ats.score >= 60) reasons.push("Good foundation — highlight your transferable skills");
+  const seniority = inferSeniority(job.title);
+  if (seniority === "senior") reasons.push("Senior/Lead role — your cross-team experience is a differentiator");
+  else if (seniority === "mid") reasons.push("Mid-level scope matches your current experience band");
+  const top = ats.matched.slice(0, 4);
+  if (top.length) reasons.push(`Direct skill overlap: ${top.join(", ")}`);
+  if (ats.missing.length > 0) reasons.push(`Cover in your CL: ${ats.missing.slice(0, 2).join(", ")}`);
+  return reasons;
 }
 
 function timeAgo(iso: string): string {
@@ -181,21 +252,100 @@ function EmptyCategory({ label }: { label: string }) {
   );
 }
 
-// ── ATS badge ────────────────────────────────────────────────────────────────
-function AtsBadge({ score, label }: { score: number; label: "high" | "medium" | "low" }) {
-  const colours =
-    label === "high"
-      ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
-      : label === "medium"
-      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-      : "bg-slate-500/15 text-slate-500 border-slate-500/30";
+// ── ATS circular ring ─────────────────────────────────────────────────────────
+function AtsRing({ score, size = 40 }: { score: number; size?: number }) {
+  const r = (size - 5) / 2;
+  const circumference = 2 * Math.PI * r;
+  const dash = (score / 100) * circumference;
+  const color =
+    score >= 70 ? "#10b981" : score >= 50 ? "#f59e0b" : "#94a3b8";
+  const trackColor =
+    score >= 70
+      ? "rgba(16,185,129,0.12)"
+      : score >= 50
+      ? "rgba(245,158,11,0.12)"
+      : "rgba(148,163,184,0.10)";
   return (
-    <span
-      title="ATS match score"
-      className={`shrink-0 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide ${colours}`}
-    >
-      {score}%
-    </span>
+    <div className="relative shrink-0 flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90 absolute inset-0">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={trackColor} strokeWidth="3" />
+        <circle
+          cx={size / 2} cy={size / 2} r={r}
+          fill="none" stroke={color} strokeWidth="3"
+          strokeDasharray={`${dash} ${circumference}`}
+          strokeLinecap="round"
+        />
+      </svg>
+      <span className="relative z-10 text-[9px] font-bold leading-none" style={{ color }}>
+        {score}%
+      </span>
+    </div>
+  );
+}
+
+// ── ATS insight panel ─────────────────────────────────────────────────────────
+function AtsInsightPanel({ ats, job }: { ats: AtsResult; job: Job }) {
+  const reasons = computeWhyApply(job, ats);
+  const seniority = inferSeniority(job.title);
+  const locType = inferLocationType(job.location, job.description);
+  const seniorityColors: Record<string, string> = {
+    senior: "bg-violet-500/15 text-violet-300 border-violet-500/25",
+    mid:    "bg-blue-500/15 text-blue-300 border-blue-500/25",
+    junior: "bg-slate-500/15 text-slate-400 border-slate-500/25",
+  };
+  const locColors: Record<string, string> = {
+    remote:  "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
+    hybrid:  "bg-amber-500/15 text-amber-400 border-amber-500/25",
+    onsite:  "bg-sky-500/15 text-sky-400 border-sky-500/25",
+    unknown: "bg-slate-500/15 text-slate-400 border-slate-500/20",
+  };
+  return (
+    <div className="mt-3 pt-3 border-t dark:border-white/5 border-slate-200 space-y-3">
+      <div className="flex flex-wrap gap-1.5 items-center">
+        <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize ${seniorityColors[seniority]}`}>
+          {seniority === "senior" ? "👑 " : seniority === "junior" ? "🌱 " : "⚡ "}{seniority}
+        </span>
+        {locType !== "unknown" && (
+          <span className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold capitalize ${locColors[locType]}`}>
+            {locType === "remote" ? "🏠 " : locType === "hybrid" ? "🔀 " : "🏢 "}{locType}
+          </span>
+        )}
+        <span className="ml-auto flex items-center gap-1 text-[10px] text-slate-500">
+          ATS score <AtsRing score={ats.score} size={32} />
+        </span>
+      </div>
+      {reasons.length > 0 && (
+        <div className="rounded-lg border dark:border-white/5 border-slate-200 dark:bg-white/[0.02] bg-slate-50 px-3 py-2.5">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500 mb-1.5">Why apply</p>
+          <ul className="space-y-1">
+            {reasons.map((r, i) => (
+              <li key={i} className="flex gap-1.5 text-[11px] dark:text-slate-400 text-slate-600">
+                <span className="shrink-0 text-indigo-400">›</span>{r}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <div className="flex flex-wrap gap-1 items-center">
+        <span className="text-[10px] text-slate-600 mr-0.5">Matched:</span>
+        {ats.matched.slice(0, 8).map((kw) => (
+          <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{kw}</span>
+        ))}
+        {ats.missing.length > 0 && (
+          <>
+            <span className="text-[10px] text-slate-600 ml-1 mr-0.5">Gap:</span>
+            {ats.missing.slice(0, 4).map((kw) => (
+              <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-slate-500/10 text-slate-500 border border-slate-500/20">{kw}</span>
+            ))}
+          </>
+        )}
+      </div>
+      {job.description && (
+        <div className="text-xs dark:text-slate-400 text-slate-500 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto pr-1">
+          {job.description}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -206,12 +356,26 @@ export default function CompaniesTab() {
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("2h");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("12h");
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [resume, setResume] = useState<Resume | null>(null);
   const [generating, setGenerating] = useState<Record<string, "resume" | "cover">>({});
   const [bulkState, setBulkState] = useState<{ running: boolean; done: number; total: number; errors: number }>(
     { running: false, done: 0, total: 0, errors: 0 }
+  );
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<SortMode>("newest");
+  const [locationFilter, setLocationFilter] = useState<LocationFilter>("all");
+  const [archiving, setArchiving] = useState(false);
+  const [archiveResult, setArchiveResult] = useState<{ archived: number; kept: number } | null>(null);
+
+  // Pre-compute ATS scores for all jobs with descriptions (keyed by URL)
+  const atsScores = new Map<string, number>(
+    resume
+      ? jobs
+          .filter((j) => j.description)
+          .map((j) => [j.url, calculateAtsScore(j.description, resume).score])
+      : []
   );
 
   const fetchJobs = useCallback(async () => {
@@ -229,6 +393,24 @@ export default function CompaniesTab() {
       setLoading(false);
     }
   }, []);
+
+  const handleArchive = useCallback(async () => {
+    setArchiving(true);
+    setArchiveResult(null);
+    try {
+      const res = await fetch("/api/jobs/archive", { method: "POST" });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert((err as { error?: string }).error ?? "Archive failed");
+        return;
+      }
+      const data = await res.json() as { archived: number; kept: number };
+      setArchiveResult(data);
+      await fetchJobs();
+    } finally {
+      setArchiving(false);
+    }
+  }, [fetchJobs]);
 
   useEffect(() => {
     fetchJobs();
@@ -282,12 +464,9 @@ export default function CompaniesTab() {
     []
   );
 
-  // Filtered jobs based on selected time window
+  // Apply time filter first
   const filteredJobs = filterByTime(jobs, timeFilter);
-  // Always track "last 2h" jobs for the pulsing dot on cards
   const newJobs = filterByTime(jobs, "2h");
-
-  // Group by company for both filtered and "new" sets
   const jobsByCompany = filteredJobs.reduce<Record<string, Job[]>>((acc, job) => {
     (acc[job.company] ??= []).push(job);
     return acc;
@@ -297,9 +476,13 @@ export default function CompaniesTab() {
     return acc;
   }, {});
 
-  const selectedJobs = selectedCompany ? (jobsByCompany[selectedCompany] ?? []) : [];
+  const rawSelectedJobs = selectedCompany ? (jobsByCompany[selectedCompany] ?? []) : [];
+  const selectedJobs = sortJobs(
+    filterByLocation(filterBySearch(rawSelectedJobs, searchQuery), locationFilter),
+    sortBy,
+    atsScores
+  );
   const totalFiltered = filteredJobs.length;
-  const totalJobs = jobs.length;
 
   // Jobs with ATS >= 70% that have descriptions (auto-gen candidates)
   const topMatches = resume
@@ -349,49 +532,57 @@ export default function CompaniesTab() {
   }, [topMatches, bulkState.running]);
 
   return (
-    <section className="rounded-2xl border border-white/8 bg-white/[0.03] p-6">
+    <section className="rounded-2xl border dark:border-white/8 border-slate-200 dark:bg-white/[0.03] bg-white p-6 shadow-sm">
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold text-slate-100">Companies</h2>
+          <h2 className="text-lg font-semibold dark:text-slate-100 text-slate-900">Companies</h2>
           <p className="mt-1 text-sm text-slate-500">
             Job portals organised by domain — click a card to see open engineering roles.
           </p>
         </div>
-        <div className="flex flex-col items-end gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={fetchJobs}
-            disabled={loading}
-            className="flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-colors disabled:opacity-50"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className={["h-3 w-3", loading ? "animate-spin" : ""].join(" ")}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
+          <div className="flex items-center gap-2">
+            {/* Archive old jobs */}
+            <button
+              type="button"
+              onClick={handleArchive}
+              disabled={archiving || loading}
+              title="Move jobs older than 2 days to 'Old Jobs' sheet"
+              className="flex items-center gap-1.5 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-3 py-1.5 text-xs text-slate-400 hover:text-amber-300 hover:bg-amber-500/10 hover:border-amber-500/30 transition-colors disabled:opacity-40"
             >
-              <polyline points="23 4 23 10 17 10" />
-              <polyline points="1 20 1 14 7 14" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-            {loading ? "Refreshing…" : "Refresh"}
-          </button>
-          {lastFetched && !loading && (
-            <span className="text-[10px] text-slate-600">
-              {totalJobs} total · updated {lastFetched}
-            </span>
+              {archiving ? (
+                <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="10" strokeOpacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <polyline points="21 8 21 21 3 21 3 8"/><rect width="18" height="5" x="3" y="3" rx="1"/><line x1="10" x2="14" y1="12" y2="12"/>
+                </svg>
+              )}
+              Archive
+            </button>
+            {/* Refresh */}
+            <button
+              type="button"
+              onClick={fetchJobs}
+              disabled={loading}
+              className="flex items-center gap-1.5 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 dark:hover:text-slate-200 hover:text-slate-600 dark:hover:bg-white/10 hover:bg-slate-100 transition-colors disabled:opacity-50"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className={["h-3 w-3", loading ? "animate-spin" : ""].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              </svg>
+              {loading ? "Refreshing…" : "Refresh"}
+            </button>
+          </div>
+          {archiveResult && (
+            <span className="text-[10px] text-amber-400">✓ Archived {archiveResult.archived} old jobs</span>
+          )}
+          {lastFetched && !loading && !archiveResult && (
+            <span className="text-[10px] text-slate-600">{jobs.length} total · updated {lastFetched}</span>
           )}
           {error && (
             <span className="text-[10px] text-amber-500">
-              ⚠ {error === "Google Sheets not configured"
-                ? "Sheets not configured yet"
-                : error}
+              ⚠ {error === "Google Sheets not configured" ? "Sheets not configured yet" : error}
             </span>
           )}
         </div>
@@ -405,10 +596,15 @@ export default function CompaniesTab() {
               <p className="text-sm font-semibold text-emerald-300">
                 🎯 {topMatches.length} high-match job{topMatches.length !== 1 ? "s" : ""} found (≥70% ATS)
               </p>
-              <p className="mt-0.5 text-[11px] text-slate-500 truncate">
-                {topMatches.slice(0, 3).map(({ job, ats }) => `${job.company} — ${job.title} (${ats.score}%)`).join(" · ")}
-                {topMatches.length > 3 ? ` · +${topMatches.length - 3} more` : ""}
-              </p>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {topMatches.slice(0, 3).map(({ job, ats }) => (
+                <span key={job.url} className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-300">
+                  <AtsRing score={ats.score} size={18} />
+                  {job.company} — {job.title.slice(0, 30)}
+                </span>
+              ))}
+              {topMatches.length > 3 && <span className="text-[10px] text-slate-500">+{topMatches.length - 3} more</span>}
+              </div>
             </div>
             <button
               type="button"
@@ -439,7 +635,7 @@ export default function CompaniesTab() {
       )}
 
       {/* Sub-tabs */}
-      <div className="mb-4 flex gap-1 rounded-xl bg-white/5 p-1">
+      <div className="mb-4 flex gap-1 rounded-xl dark:bg-white/5 bg-slate-100 p-1">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
@@ -461,7 +657,7 @@ export default function CompaniesTab() {
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <span className="text-[11px] text-slate-600 mr-1">Show new jobs from:</span>
         {TIME_FILTERS.map(({ id, label }) => {
-          const count = id === "all" ? jobs.length : filterByTime(jobs, id).length;
+          const count = filterByTime(jobs, id).length;
           return (
             <button
               key={id}
@@ -471,7 +667,7 @@ export default function CompaniesTab() {
                 "flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium border transition-all duration-150",
                 timeFilter === id
                   ? "bg-indigo-500/25 text-indigo-300 border-indigo-500/50 shadow"
-                  : "bg-white/5 text-slate-500 border-white/10 hover:text-slate-300 hover:border-white/20",
+                  : "dark:bg-white/5 bg-slate-100 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-300 dark:hover:border-white/20 hover:border-slate-300",
               ].join(" ")}
             >
               {label}
@@ -482,7 +678,7 @@ export default function CompaniesTab() {
                     ? "bg-indigo-500/30 text-indigo-200"
                     : id === "2h" && count > 0
                     ? "bg-emerald-500/20 text-emerald-400"
-                    : "bg-white/10 text-slate-400",
+                    : "dark:bg-white/10 bg-slate-200 text-slate-400",
                 ].join(" ")}>
                   {count}
                 </span>
@@ -513,6 +709,9 @@ export default function CompaniesTab() {
                       selectedCompany === company.name ? null : company.name
                     );
                     setExpandedJob(null);
+                    setSearchQuery("");
+                    setSortBy("newest");
+                    setLocationFilter("all");
                   }}
               />
             ))}
@@ -520,19 +719,17 @@ export default function CompaniesTab() {
 
           {/* Jobs panel */}
           {selectedCompany && (
-            <div className="mt-5 rounded-xl border border-white/10 bg-white/[0.03] overflow-hidden">
+            <div className="mt-5 rounded-xl border dark:border-white/10 border-slate-200 dark:bg-white/[0.03] bg-white overflow-hidden shadow-sm">
               {/* Panel header */}
-              <div className="flex items-center justify-between border-b border-white/8 px-5 py-3">
+              <div className="flex items-center justify-between border-b dark:border-white/8 border-slate-200 px-5 py-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-slate-200">
+                  <h3 className="text-sm font-semibold dark:text-slate-200 text-slate-800">
                     {selectedCompany}
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    {selectedJobs.length === 0
-                      ? timeFilter === "all"
-                        ? "No engineering roles scraped yet"
-                        : `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`
-                      : `${selectedJobs.length} engineering ${selectedJobs.length === 1 ? "role" : "roles"} · ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`}
+                    {rawSelectedJobs.length === 0
+                      ? `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`
+                      : `${rawSelectedJobs.length} engineering ${rawSelectedJobs.length === 1 ? "role" : "roles"} · ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`}
                   </p>
                 </div>
                 <button
@@ -547,26 +744,72 @@ export default function CompaniesTab() {
                 </button>
               </div>
 
+              {/* Filter/search bar */}
+              {rawSelectedJobs.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 px-5 py-2.5 border-b dark:border-white/5 border-slate-100">
+                  <div className="relative flex-1 min-w-[160px]">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search roles…"
+                      className="w-full rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 pl-7 pr-3 py-1.5 text-xs dark:text-slate-300 text-slate-700 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
+                    />
+                  </div>
+                  <div className="flex gap-1">
+                    {(["all", "remote", "onsite"] as LocationFilter[]).map((loc) => (
+                      <button
+                        key={loc}
+                        type="button"
+                        onClick={() => setLocationFilter(loc)}
+                        className={[
+                          "rounded-full px-2.5 py-1 text-[10px] font-medium border transition-all",
+                          locationFilter === loc
+                            ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
+                            : "dark:bg-white/5 bg-slate-100 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-300",
+                        ].join(" ")}
+                      >
+                        {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
+                      </button>
+                    ))}
+                  </div>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as SortMode)}
+                    className="rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1.5 text-[10px] dark:text-slate-400 text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
+                  >
+                    <option value="newest">Newest first</option>
+                    <option value="ats">Highest ATS</option>
+                    <option value="title">Title A–Z</option>
+                  </select>
+                  {selectedJobs.length !== rawSelectedJobs.length && (
+                    <span className="text-[10px] text-slate-500">{selectedJobs.length}/{rawSelectedJobs.length} shown</span>
+                  )}
+                </div>
+              )}
+
               {/* Job list */}
               {loading ? (
-                <div className="flex items-center justify-center py-10 text-slate-600 text-sm">
-                  Loading jobs…
-                </div>
-              ) : selectedJobs.length === 0 ? (
+                <div className="flex items-center justify-center py-10 text-slate-600 text-sm">Loading jobs…</div>
+              ) : rawSelectedJobs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-600">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                   </svg>
                   <p className="text-sm">
-                    {error
-                      ? "Configure Google Sheets to see live jobs"
-                      : timeFilter === "all"
-                      ? "No roles scraped yet — automation runs every 30 min 4 AM–6 PM PDT"
-                      : `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()} — try a wider window`}
+                    {error ? "Configure Google Sheets to see live jobs" : `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()} — try a wider window`}
                   </p>
                 </div>
+              ) : selectedJobs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-2 text-slate-600">
+                  <p className="text-sm">No roles match your filters</p>
+                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs text-indigo-400 hover:text-indigo-300">Clear filters</button>
+                </div>
               ) : (
-                <ul className="divide-y divide-white/5 max-h-96 overflow-y-auto">
+                <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
                   {selectedJobs.map((job, i) => {
                     const isNew = job.fetchedAt &&
                       Date.now() - new Date(job.fetchedAt).getTime() <= 2 * 3_600_000;
@@ -575,95 +818,62 @@ export default function CompaniesTab() {
                       ? calculateAtsScore(job.description, resume)
                       : null;
                     const resumeKey = `${job.url}:resume`;
-                    const coverKey = `${job.url}:cover`;
+                    const coverKey  = `${job.url}:cover`;
                     const genResume = !!generating[resumeKey];
                     const genCover  = !!generating[coverKey];
                     return (
-                      <li key={i} className={["px-5 py-3 hover:bg-white/[0.03] transition-colors", isExpanded ? "bg-white/[0.02]" : ""].join(" ")}>
+                      <li key={i} className={["px-5 py-3 dark:hover:bg-white/[0.03] hover:bg-slate-50 transition-colors", isExpanded ? "dark:bg-white/[0.02] bg-slate-50/80" : ""].join(" ")}>
                         <div className="flex items-center gap-2">
+                          {ats && (
+                            <div className="shrink-0" title={`ATS score: ${ats.score}%`}>
+                              <AtsRing score={ats.score} size={36} />
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm text-slate-200 truncate font-medium">{job.title}</p>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm dark:text-slate-200 text-slate-800 font-medium truncate">{job.title}</p>
                               {isNew && (
-                                <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">
-                                  NEW
-                                </span>
+                                <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">NEW</span>
                               )}
-                              {ats && <AtsBadge score={ats.score} label={ats.label} />}
+                              {ats && ats.score >= 70 && (
+                                <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300 border border-emerald-500/25 uppercase tracking-wide">✓ Strong fit</span>
+                              )}
                             </div>
                             {job.location && (
                               <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
                             )}
                           </div>
                           {job.fetchedAt && (
-                            <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">
-                              {timeAgo(job.fetchedAt)}
-                            </span>
+                            <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">{timeAgo(job.fetchedAt)}</span>
                           )}
-                          {/* Generate resume PDF */}
                           {job.description && (
-                            <button
-                              type="button"
-                              title="Generate tailored resume PDF"
-                              disabled={genResume || genCover}
-                              onClick={() => handleGenerate(job, "resume")}
-                              className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all disabled:opacity-40"
-                            >
+                            <button type="button" title="Generate tailored resume PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "resume")}
+                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all disabled:opacity-40">
                               {genResume ? "…" : "📄 CV"}
                             </button>
                           )}
-                          {/* Generate cover letter PDF */}
                           {job.description && (
-                            <button
-                              type="button"
-                              title="Generate cover letter PDF"
-                              disabled={genResume || genCover}
-                              onClick={() => handleGenerate(job, "cover")}
-                              className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all disabled:opacity-40"
-                            >
+                            <button type="button" title="Generate cover letter PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "cover")}
+                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all disabled:opacity-40">
                               {genCover ? "…" : "✉ CL"}
                             </button>
                           )}
                           {job.description && (
-                            <button
-                              type="button"
-                              onClick={() => setExpandedJob(isExpanded ? null : job.url)}
-                              className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-[10px] text-slate-400 hover:text-slate-200 hover:bg-white/10 transition-all"
-                              aria-label={isExpanded ? "Hide description" : "Show description"}
-                            >
+                            <button type="button" onClick={() => setExpandedJob(isExpanded ? null : job.url)}
+                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 dark:hover:text-slate-200 hover:text-slate-600 dark:hover:bg-white/10 hover:bg-slate-100 transition-all"
+                              aria-label={isExpanded ? "Hide details" : "Show details"}>
                               {isExpanded ? "▲" : "▼"}
                             </button>
                           )}
-                          <a
-                            href={job.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all"
-                          >
+                          <a href={job.url} target="_blank" rel="noopener noreferrer"
+                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all">
                             Apply
                           </a>
                         </div>
-                        {isExpanded && job.description && (
-                          <div className="mt-3 pt-3 border-t border-white/5">
-                            {ats && (
-                              <div className="mb-2 flex flex-wrap gap-1 items-center">
-                                <span className="text-[10px] text-slate-600">Matched:</span>
-                                {ats.matched.slice(0, 10).map((kw) => (
-                                  <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{kw}</span>
-                                ))}
-                                {ats.missing.length > 0 && (
-                                  <>
-                                    <span className="text-[10px] text-slate-600 ml-1">Missing:</span>
-                                    {ats.missing.slice(0, 5).map((kw) => (
-                                      <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-slate-500/10 text-slate-500 border border-slate-500/20">{kw}</span>
-                                    ))}
-                                  </>
-                                )}
-                              </div>
-                            )}
-                            <div className="text-xs text-slate-400 whitespace-pre-wrap leading-relaxed max-h-72 overflow-y-auto pr-1">
-                              {job.description}
-                            </div>
+                        {isExpanded && ats && <AtsInsightPanel ats={ats} job={job} />}
+                        {isExpanded && !ats && job.description && (
+                          <div className="mt-3 pt-3 border-t dark:border-white/5 border-slate-200">
+                            <div className="text-xs dark:text-slate-400 text-slate-500 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto pr-1">{job.description}</div>
                           </div>
                         )}
                       </li>
@@ -676,13 +886,8 @@ export default function CompaniesTab() {
         </>
       )}
 
-      {activeCategory === "ai-agentic" && (
-        <EmptyCategory label="AI & Agentic" />
-      )}
-
-      {activeCategory === "general" && (
-        <EmptyCategory label="General Full Stack" />
-      )}
+      {activeCategory === "ai-agentic" && <EmptyCategory label="AI & Agentic" />}
+      {activeCategory === "general"    && <EmptyCategory label="General Full Stack" />}
     </section>
   );
 }

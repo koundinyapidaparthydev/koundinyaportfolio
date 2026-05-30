@@ -140,11 +140,11 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
                 "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
                 active
                   ? "bg-indigo-500/15 text-indigo-300"
-                  : "text-slate-500 hover:bg-white/5 hover:text-slate-300",
+                  : "text-slate-500 dark:hover:bg-white/5 hover:bg-slate-100 dark:hover:text-slate-300 hover:text-slate-700",
               ].join(" ")}
             >
               <span
-                className={active ? "text-indigo-400" : "text-slate-600"}
+                className={active ? "text-indigo-400" : "text-slate-500"}
               >
                 {icon}
               </span>
@@ -159,7 +159,7 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-xl border border-white/8 px-3 py-2.5 text-sm font-medium text-slate-500 transition-all hover:border-indigo-500/30 hover:text-indigo-300"
+            className="flex items-center gap-3 rounded-xl border dark:border-white/8 border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-500 transition-all hover:border-indigo-500/30 hover:text-indigo-300"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -194,10 +194,10 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
                 "flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-all",
                 active
                   ? "bg-indigo-500/15 text-indigo-300"
-                  : "text-slate-500 hover:bg-white/5 hover:text-slate-300",
+                  : "text-slate-500 dark:hover:bg-white/5 hover:bg-slate-100 dark:hover:text-slate-300 hover:text-slate-700",
               ].join(" ")}
             >
-              <span className={active ? "text-indigo-400" : "text-slate-600"}>
+              <span className={active ? "text-indigo-400" : "text-slate-500"}>
                 {icon}
               </span>
               {label}
@@ -208,7 +208,7 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="ml-2 flex shrink-0 items-center gap-2 rounded-xl border border-white/8 px-3 py-2 text-xs font-medium text-slate-500 hover:text-indigo-300"
+          className="ml-2 flex shrink-0 items-center gap-2 rounded-xl border dark:border-white/8 border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 hover:text-indigo-300"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
