@@ -1,0 +1,155 @@
+<!DOCTYPE html><html lang="en" class="scroll-smooth"> <head><!-- Running on Astro v2.3.0 --><meta charset="UTF-8"><title>Page not found</title><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="title" content="Page not found"><meta name="description" content="Adept is an enterprise AI tool that enhances productivity by managing manual, repetitive workflows across the tools your teams use daily."><meta property="og:type" content="website"><meta property="og:url" content="https://www.adept.ai/404/"><meta property="og:title" content="Page not found"><meta property="og:description" content="Adept is an enterprise AI tool that enhances productivity by managing manual, repetitive workflows across the tools your teams use daily."><meta property="og:image" content="https://www.adept.ai/images/adept-logo.png"><meta property="twitter:card" content="summary_large_image"><meta property="twitter:url" content="https://www.adept.ai/404/"><meta property="twitter:title" content="Page not found"><meta property="twitter:description" content="Adept is an enterprise AI tool that enhances productivity by managing manual, repetitive workflows across the tools your teams use daily."><meta property="twitter:image" content="https://www.adept.ai/images/adept-logo.png"><link rel="icon" href="/images/favicon.svg?v=2" type="image/svg"><link rel="preload" href="/fonts/Adept.ttf" as="font" type="font/ttf" crossorigin><script type="module">(function(){var r="analytics",e=window[r]=window[r]||[];if(!e.initialize)if(e.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{e.invoked=!0,e.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","identify","reset","group","track","ready","alias","debug","page","screen","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware","register"],e.factory=function(i){return function(){if(window[r].initialized)return window[r][i].apply(window[r],arguments);var n=Array.prototype.slice.call(arguments);if(["track","screen","alias","group","page","identify"].indexOf(i)>-1){var t=document.querySelector("link[rel='canonical']");n.push({__t:"bpc",c:t&&t.getAttribute("href")||void 0,p:location.pathname,u:location.href,s:location.search,t:document.title,r:document.referrer})}return n.unshift(i),e.push(n),e}};for(var a=0;a<e.methods.length;a++){var o=e.methods[a];e[o]=e.factory(o)}e.load=function(i,n){var t=document.createElement("script");t.type="text/javascript",t.async=!0,t.setAttribute("data-global-segment-analytics-key",r),t.src="https://cdn.segment.com/analytics.js/v1/"+i+"/analytics.min.js";var c=document.getElementsByTagName("script")[0];c.parentNode.insertBefore(t,c),e._loadOptions=n},e._writeKey="SyGUy8BW1uZRt4LJEzKFcG0oiSbutNTD",e.SNIPPET_VERSION="5.2.0",e.load("SyGUy8BW1uZRt4LJEzKFcG0oiSbutNTD"),e.page()}})();</script><link rel="stylesheet" href="/_astro/about-careers.B-vIAEbo.css">
+<link rel="stylesheet" href="/_astro/_slug_.6W1WxnGd.css">
+<style>nav[data-astro-cid-en3innnh] li[data-astro-cid-en3innnh] a[data-astro-cid-en3innnh]{background-image:linear-gradient(180deg,transparent 0%,#ffffff 0);background-size:0 .075em;background-position:100% 100%;background-repeat:no-repeat;transition:background-size .4s ease}nav[data-astro-cid-en3innnh] li[data-astro-cid-en3innnh] a[data-astro-cid-en3innnh]:hover,nav[data-astro-cid-en3innnh] li[data-astro-cid-en3innnh].active a[data-astro-cid-en3innnh]{background-position:0% 100%;background-size:100% .075em}
+</style></head> <body class="bg-white text-off_black selection:bg-off_black selection:text-off_white">  <header x-data="{ scrolled: false }" class="w-full h-30 md:h-36 fixed z-50" x-bind:class="{ 'bg-white transition-colors duration-300 ease-in-out': scrolled, 'bg-transparent transition-colors duration-300 ease-in-out': !scrolled }" x-init="window.addEventListener('scroll', () => { scrolled = window.pageYOffset > 50 })" data-astro-cid-3ef6ksr2> <div class=" 
+  max-w-[1650px] 
+  mx-auto 
+  px-6 
+  md:px-12 
+  lg:px-16 
+  xl:px-16 
+  2xl:px-20 
+">  <div class="flex h-14 md:h-20 items-center justify-between" data-astro-cid-3ef6ksr2> <div data-astro-cid-3ef6ksr2><a href="/" class="block p-4 -translate-x-4" aria-label="Go to the Adept homepage"> <div class="
+    w-[85px] h-[14px] 
+    md:w-[100px] md:h-[16px] 
+    2xl:w-[115px] 2xl:h-[19px]"> <div class="hidden"><h1>Adept</h1></div> <svg width="100%" viewBox="0 0 1000 164" fill="none" xmlns="http://www.w3.org/2000/svg"> <path class="letter-A" d="M0 163.455H37.0961L51.7027 124.388H119.287L134.01 163.455H173.308L109.202 0H64.1067L0 163.455ZM62.02 94.595L85.2051 32.8069H85.4369L108.854 94.595H62.02Z" fill="#121212"></path> <path class="letter-D" d="M239.21 163.455H299.723C308.611 163.455 317.035 162.798 324.995 161.484C333.033 160.17 340.452 158.122 347.253 155.34C354.131 152.48 360.314 148.887 365.801 144.559C371.288 140.231 375.964 135.053 379.828 129.025C383.692 122.997 386.667 116.08 388.754 108.274C390.841 100.469 391.884 91.7356 391.884 82.0751V81.8433C391.884 71.951 390.841 63.0634 388.754 55.1805C386.667 47.2975 383.692 40.342 379.828 34.3139C375.964 28.2085 371.288 22.9918 365.801 18.664C360.314 14.3361 354.131 10.7811 347.253 7.99885C340.452 5.21664 333.033 3.20727 324.995 1.97074C317.035 0.65691 308.611 0 299.723 0H239.21V163.455ZM275.727 133.778V29.6769H299.144C304.94 29.6769 310.311 30.0633 315.257 30.8361C320.204 31.609 324.686 32.8455 328.705 34.5457C332.723 36.246 336.279 38.4872 339.37 41.2694C342.539 43.9743 345.166 47.2589 347.253 51.1231C349.339 54.9872 350.924 59.4697 352.006 64.5704C353.088 69.6711 353.629 75.4287 353.629 81.8433V82.0751C353.629 88.4896 353.088 94.2473 352.006 99.348C350.924 104.371 349.339 108.815 347.253 112.679C345.166 116.466 342.539 119.712 339.37 122.417C336.279 125.122 332.723 127.325 328.705 129.025C324.686 130.648 320.204 131.846 315.257 132.619C310.311 133.391 304.94 133.778 299.144 133.778H275.727Z" fill="#121212"></path> <path class="letter-E" d="M466.261 163.455H586.475V133.198H502.777V96.1021H577.781V65.9615H502.777V30.2565H585.896V0H466.261V163.455Z" fill="#121212"></path> <path class="letter-P" d="M662.293 163.455H698.809V106.999H730.109C741.238 106.999 751.053 105.956 759.554 103.869C768.133 101.782 775.32 98.5752 781.116 94.2473C786.913 89.8421 791.318 84.2777 794.332 77.554C797.346 70.8304 798.853 62.8702 798.853 53.6734V53.4416C798.853 44.2448 797.307 36.2846 794.216 29.5609C791.202 22.8373 786.758 17.3115 780.885 12.9836C775.011 8.57848 767.785 5.33257 759.207 3.24591C750.628 1.08197 740.774 0 729.646 0H662.293V163.455ZM698.809 77.3222V29.6769H729.066C734.476 29.6769 739.152 30.1406 743.093 31.068C747.034 31.9954 750.28 33.4638 752.831 35.4731C755.381 37.4052 757.274 39.8783 758.511 42.8924C759.825 45.8291 760.482 49.3455 760.482 53.4416V53.6734C760.482 57.7694 759.825 61.3245 758.511 64.3385C757.274 67.2753 755.381 69.7098 752.831 71.6418C750.28 73.5739 747.034 75.0037 743.093 75.9311C739.152 76.8585 734.476 77.3222 729.066 77.3222H698.809Z" fill="#121212"></path> <path class="letter-T" d="M908.071 163.455H944.588V30.2565H1000V0H852.659V30.2565H908.071V163.455Z" fill="#121212"></path> </svg> </div> </a></div> <div class="relative" data-astro-cid-3ef6ksr2> <div id="navigation-container" class="navigation-container 
+        fixed top-2/4 -translate-y-2/4 left-6   
+         md:relative md:translate-y-0 md:left-auto" data-astro-cid-3ef6ksr2> <nav data-astro-cid-moqr4nzi> <ul class="font-350 
+  tracking-tighter 
+  leading-none 
+  text-4xl 
+ -ml-0.5
+
+  md:ml-0 
+  md:font-380  
+  md:text-lg 
+  md:tracking-tight 
+  md:leading-snug  
+  lg:text-xl 
+  xl:text-xl  
+   gap-6 md:flex md:items-center" data-astro-cid-moqr4nzi> <li class="mb-2 md:mb-0" data-astro-cid-moqr4nzi> <a href="/" class="py-1" data-astro-cid-moqr4nzi>Home</a> </li> <li class="mb-2 md:mb-0" data-astro-cid-moqr4nzi> <a href="/about-careers" class="py-1" data-astro-cid-moqr4nzi>Careers</a> </li> <li class="mb-2 md:mb-0" data-astro-cid-moqr4nzi> <a href="/blog" class="py-1" data-astro-cid-moqr4nzi>Blog</a> </li> <!-- <li class={(currentPath == "contact-us" || currentPath == "contact-us/") ? "active mb-2 md:mb-0" : "mb-2 md:mb-0"}><a href="/contact-us" class:list={[linkColor,'py-1']}>Contact</a></li> --> <li class="md:hidden mb-2 md:mb-0" data-astro-cid-moqr4nzi> <a href="/press" class="py-1" data-astro-cid-moqr4nzi>Press</a> </li> <li class="mt-12 md:mt-0" data-astro-cid-moqr4nzi> <a href="/enterprise-contact" target="_self" class="lg:text-off_black lg:hover:bg-[#FAF8F8] lg:bg-white lg:border lg:border-off_black 
+  inline-block 
+  lg:px-4 
+  lg:py-1 
+  rounded-full 
+  font-350 
+  tracking-tighter 
+  leading-none 
+  text-4xl 
+ -ml-0.5
+ 
+  md:ml-0 
+  md:font-380  
+  md:text-lg 
+  md:tracking-tight 
+  md:leading-snug  
+  lg:text-xl 
+  xl:text-xl"> 
+Contact us
+ </a> </li> </ul> </nav>  </div> <div id="navigation-overlay-toggle" class="md:hidden navigation-overlay-toggle" data-astro-cid-rzuzd2jc> <span data-astro-cid-rzuzd2jc></span> <span data-astro-cid-rzuzd2jc></span> <span data-astro-cid-rzuzd2jc></span> <span data-astro-cid-rzuzd2jc></span> </div>  </div> </div>  </div> </header>  <div id="navigation-overlay" class="md:hidden fixed z-40 w-screen h-screen left-full text-off_black bg-white/[0.98] duration-500 ease-in-out"></div> <script type="module">const t=document.getElementById("navigation-overlay-toggle"),n="open",e=document.getElementById("navigation-container"),o="show-primary-navigation",a=document.getElementById("navigation-overlay"),l="-translate-x-full";document.getElementById("signature-logo");const i=document.getElementsByTagName("body")[0],s="overflow-y-hidden";t.addEventListener("click",()=>{t.classList.toggle(n),a.classList.toggle(l),e.classList.toggle(o),i.classList.toggle(s)});</script>  <main class="min-h-screen pt-28 md:pt-28 lg:pt-36 xl:pt-44 2xl:pt-52">  <div class=" 
+  max-w-[1650px] 
+  mx-auto 
+  px-6 
+  md:px-12 
+  lg:px-16 
+  xl:px-16 
+  2xl:px-20 
+">  <div class="mb-20"> <h1 class="text-off_black 
+  font-380 
+  text-2xl 
+  leading-tight 
+  -ml-0.5 
+  md:leading-tighter   
+  md:text-3xl 
+  md:-ml-0.5 
+  lg:text-4xl 
+  lg:-ml-1 
+  lg:leading-[1.1em] 
+  xl:text-5xl 
+  xl:-ml-1 
+  xl:leading-[1.1em] 
+  2xl:text-6xl 
+  2xl:-ml-1 
+  2xl:leading-[1.1em] 
+  tracking-[-0.0375em]
+ mb-8"> The page you're looking for doesn't exist. </h1> <p class="text-off_black 
+  font-380 
+  text-base 
+  leading-snug 
+  md:text-lg 
+  lg:text-xl 
+  xl:text-xl 
+  2xl:text-2xl 
+  2xl:-ml-0.5 
+  tracking-tight 
+  text-pretty 
+"> Return to the <a href="/">homepage</a>. </p> </div>  </div>  </main>  <footer class="w-full bg-off_black 
+  py-6 
+  md:py-12 
+  lg:py-16 
+  xl:py-16 
+  2xl:py-20"> <div class=" 
+  max-w-[1650px] 
+  mx-auto 
+  px-6 
+  md:px-12 
+  lg:px-16 
+  xl:px-16 
+  2xl:px-20 
+"> <div class="mb-20"> <p class="paragraph-lead text-white 
+  font-360 
+  text-xl 
+  -ml-0.5 
+  leading-tight 
+  md:text-xl 
+  md:-ml-0.5 
+  lg:text-2xl 
+  lg:-ml-0.5 
+  xl:text-2xl 
+  xl:-ml-0.5 
+  2xl:text-3xl 
+  2xl:-ml-0.5  
+  tracking-tight leading-none
+ mb-4"> Enterprise inquiries </p> <p style="text-wrap:pretty;" class="text-white 
+  font-380 
+  text-base 
+  leading-snug 
+  lg:text-base 
+  xl:text-lg 
+  2xl:text-lg 
+  2xl:-ml-0.5 
+  tracking-tight 
+  leading-none 
+  text-pretty 
+ mb-4 max-w-sm"> Learn more about deploying Adept at work. </p> <a href="/enterprise-contact" target="_self" class="text-off_black hover:bg-[#EBE6E3] bg-white border border-off_black 
+  inline-block 
+  px-8 
+  py-2 
+  rounded-full 
+  font-380 
+  text-base 
+  leading-snug 
+  lg:text-base 
+  xl:text-base 
+  2xl:text-lg 
+  2xl:-ml-0.5 
+  tracking-tight leading-none 
+  transition duration-150 ease-out hover:ease-in 
+"> Contact sales </a> </div><div class="flex items-center justify-between"> <div class="flex items-center"> <div class="hidden md:inline-block md:mr-8 lg:mr-10 xl:mr-12"> <nav data-astro-cid-en3innnh> <ul class="text-white
+  font-350 
+  tracking-tighter 
+  leading-none 
+  text-4xl 
+ -ml-0.5
+
+  md:ml-0 
+  md:font-380  
+  md:text-lg 
+  md:tracking-tight 
+  md:leading-snug  
+  lg:text-xl 
+  xl:text-xl  
+   gap-6 md:flex" data-astro-cid-en3innnh> <li class="mb-2 md:mb-0" data-astro-cid-en3innnh> <a href="/" class="text-white py-1" data-astro-cid-en3innnh>Home</a> </li> <li class="mb-2 md:mb-0" data-astro-cid-en3innnh> <a href="/careers" class="text-white py-1" data-astro-cid-en3innnh>Careers</a> </li> <li class="mb-2 md:mb-0" data-astro-cid-en3innnh> <a href="/blog" class="text-white py-1" data-astro-cid-en3innnh>Blog</a> </li> <li class="mb-2 md:mb-0" data-astro-cid-en3innnh> <a href="/contact-us" class="text-white py-1" data-astro-cid-en3innnh>Contact</a> </li> <li class="mb-2 md:mb-0" data-astro-cid-en3innnh> <a href="/press" class="text-white py-1" data-astro-cid-en3innnh>Press</a> </li> <li class="mb-2 md:mb-0" data-astro-cid-en3innnh> <a href="/policies/terms-of-use" class="text-white py-1" data-astro-cid-en3innnh>Terms</a> </li> <li class="mb-2 md:mb-0" data-astro-cid-en3innnh> <a href="/policies/privacy-policy" class="text-white py-1" data-astro-cid-en3innnh>Privacy Policy</a> </li> </ul> </nav>  </div> <div class=""> <ul class="flex -ml-[11px]"> <li class="-indent-[10000px]"> <a class="block w-[44px] h-[44px] bg-[length:50%] p-4 bg-[url('/images/social/twitter-icon.svg')] bg-center bg-no-repeat" href="https://twitter.com/adeptailabs" target="_blank" rel="noopener">Twitter</a> </li> <li class="-indent-[10000px]"> <a class="block w-[44px] h-[44px] bg-[length:50%] p-4 bg-[url('/images/social/linkedin-icon.svg')] bg-center bg-no-repeat" href="https://linkedin.com/company/adeptailabs" target="_blank" rel="noopener">LinkedIn</a> </li> </ul> </div> </div> <div class=""><a href="/" class="block p-4 -translate-x-4" aria-label="Go to the Adept homepage"> <div class="
+    w-[85px] h-[14px] 
+    md:w-[100px] md:h-[16px] 
+    2xl:w-[115px] 2xl:h-[19px]"> <div class="hidden"><h1>Adept</h1></div> <svg width="100%" viewBox="0 0 1000 164" fill="none" xmlns="http://www.w3.org/2000/svg"> <path class="letter-A" d="M0 163.455H37.0961L51.7027 124.388H119.287L134.01 163.455H173.308L109.202 0H64.1067L0 163.455ZM62.02 94.595L85.2051 32.8069H85.4369L108.854 94.595H62.02Z" fill="#FFFFFF"></path> <path class="letter-D" d="M239.21 163.455H299.723C308.611 163.455 317.035 162.798 324.995 161.484C333.033 160.17 340.452 158.122 347.253 155.34C354.131 152.48 360.314 148.887 365.801 144.559C371.288 140.231 375.964 135.053 379.828 129.025C383.692 122.997 386.667 116.08 388.754 108.274C390.841 100.469 391.884 91.7356 391.884 82.0751V81.8433C391.884 71.951 390.841 63.0634 388.754 55.1805C386.667 47.2975 383.692 40.342 379.828 34.3139C375.964 28.2085 371.288 22.9918 365.801 18.664C360.314 14.3361 354.131 10.7811 347.253 7.99885C340.452 5.21664 333.033 3.20727 324.995 1.97074C317.035 0.65691 308.611 0 299.723 0H239.21V163.455ZM275.727 133.778V29.6769H299.144C304.94 29.6769 310.311 30.0633 315.257 30.8361C320.204 31.609 324.686 32.8455 328.705 34.5457C332.723 36.246 336.279 38.4872 339.37 41.2694C342.539 43.9743 345.166 47.2589 347.253 51.1231C349.339 54.9872 350.924 59.4697 352.006 64.5704C353.088 69.6711 353.629 75.4287 353.629 81.8433V82.0751C353.629 88.4896 353.088 94.2473 352.006 99.348C350.924 104.371 349.339 108.815 347.253 112.679C345.166 116.466 342.539 119.712 339.37 122.417C336.279 125.122 332.723 127.325 328.705 129.025C324.686 130.648 320.204 131.846 315.257 132.619C310.311 133.391 304.94 133.778 299.144 133.778H275.727Z" fill="#FFFFFF"></path> <path class="letter-E" d="M466.261 163.455H586.475V133.198H502.777V96.1021H577.781V65.9615H502.777V30.2565H585.896V0H466.261V163.455Z" fill="#FFFFFF"></path> <path class="letter-P" d="M662.293 163.455H698.809V106.999H730.109C741.238 106.999 751.053 105.956 759.554 103.869C768.133 101.782 775.32 98.5752 781.116 94.2473C786.913 89.8421 791.318 84.2777 794.332 77.554C797.346 70.8304 798.853 62.8702 798.853 53.6734V53.4416C798.853 44.2448 797.307 36.2846 794.216 29.5609C791.202 22.8373 786.758 17.3115 780.885 12.9836C775.011 8.57848 767.785 5.33257 759.207 3.24591C750.628 1.08197 740.774 0 729.646 0H662.293V163.455ZM698.809 77.3222V29.6769H729.066C734.476 29.6769 739.152 30.1406 743.093 31.068C747.034 31.9954 750.28 33.4638 752.831 35.4731C755.381 37.4052 757.274 39.8783 758.511 42.8924C759.825 45.8291 760.482 49.3455 760.482 53.4416V53.6734C760.482 57.7694 759.825 61.3245 758.511 64.3385C757.274 67.2753 755.381 69.7098 752.831 71.6418C750.28 73.5739 747.034 75.0037 743.093 75.9311C739.152 76.8585 734.476 77.3222 729.066 77.3222H698.809Z" fill="#FFFFFF"></path> <path class="letter-T" d="M908.071 163.455H944.588V30.2565H1000V0H852.659V30.2565H908.071V163.455Z" fill="#FFFFFF"></path> </svg> </div> </a></div> </div>  </div> </footer>  <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/intersect@3.x.x/dist/cdn.min.js"></script> <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js"></script> <script async defer src="https://scripts.withcabin.com/hello.js"></script> </body> </html>

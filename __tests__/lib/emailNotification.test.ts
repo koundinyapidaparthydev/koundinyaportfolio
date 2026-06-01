@@ -255,4 +255,19 @@ describe("sendVisitorNotification", () => {
       })
     );
   });
+
+  // ── formatTimestamp robustness ──────────────────────────────────────────────
+
+  it("still sends email when timestamp is an invalid date string (formats as 'Invalid Date')", async () => {
+    mockFetch.mockResolvedValue(makeGeoResponse(geoSuccess));
+
+    // Pass a non-ISO timestamp — toLocaleString returns "Invalid Date" (no throw)
+    await sendVisitorNotification({ ...baseInfo, timestamp: "NOT_A_DATE" });
+
+    // Email is still sent — the function must never throw
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    const args = mockSendMail.mock.calls[0][0] as Record<string, unknown>;
+    expect(typeof args.html).toBe("string");
+    expect((args.html as string).length).toBeGreaterThan(0);
+  });
 });

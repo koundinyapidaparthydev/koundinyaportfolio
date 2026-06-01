@@ -120,13 +120,18 @@ async function fetchWithRetry(
 /** Identifies the ATS platform from a job URL. */
 function detectPlatform(
   url: string
-): "greenhouse" | "lever" | "workday" | "icims" | "smartrecruiters" | "unknown" {
+): "greenhouse" | "lever" | "workday" | "icims" | "smartrecruiters" | "ashby" | "breezy" | "workable" | "recruitee" | "unknown" {
   if (!url) return "unknown";
-  if (url.includes("greenhouse.io")) return "greenhouse";
-  if (url.includes("lever.co")) return "lever";
-  if (url.includes("myworkdayjobs.com")) return "workday";
-  if (url.includes("disneycareers.com")) return "icims";
+  if (url.includes("greenhouse.io"))       return "greenhouse";
+  if (url.includes("lever.co"))            return "lever";
+  if (url.includes("myworkdayjobs.com"))   return "workday";
+  if (url.includes("disneycareers.com"))   return "icims";
+  if (url.includes("icims.com"))           return "icims";
+  if (url.includes("ashbyhq.com"))         return "ashby";
   if (url.includes("smartrecruiters.com")) return "smartrecruiters";
+  if (url.includes("breezy.hr"))           return "breezy";
+  if (url.includes("workable.com"))        return "workable";
+  if (url.includes("recruitee.com"))       return "recruitee";
   return "unknown";
 }
 
@@ -798,6 +803,43 @@ describe("detectPlatform", () => {
     expect(detectPlatform(url)).toBe("smartrecruiters");
   });
 
+  // ── Ashby ─────────────────────────────────────────────────────────────────
+  it.each([
+    "https://jobs.ashbyhq.com/linear/abc-def-123",
+    "https://jobs.ashbyhq.com/replit/posting-id-456",
+    "https://jobs.ashbyhq.com/retool/a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "https://ashbyhq.com/company/jobs/123",
+  ])("identifies Ashby URL: '%s'", (url) => {
+    expect(detectPlatform(url)).toBe("ashby");
+  });
+
+  // ── BreezyHR ──────────────────────────────────────────────────────────────
+  it.each([
+    "https://company.breezy.hr/p/job-id-123",
+    "https://acme.breezy.hr/p/senior-software-engineer",
+    "https://startup.breezy.hr/p/abc123",
+  ])("identifies BreezyHR URL: '%s'", (url) => {
+    expect(detectPlatform(url)).toBe("breezy");
+  });
+
+  // ── Workable ──────────────────────────────────────────────────────────────
+  it.each([
+    "https://apply.workable.com/company/j/ABCD1234",
+    "https://company.workable.com/jobs/123456",
+    "https://workable.com/jobs/abc123",
+  ])("identifies Workable URL: '%s'", (url) => {
+    expect(detectPlatform(url)).toBe("workable");
+  });
+
+  // ── Recruitee ─────────────────────────────────────────────────────────────
+  it.each([
+    "https://company.recruitee.com/o/software-engineer",
+    "https://acme.recruitee.com/o/senior-frontend-developer",
+    "https://startup.recruitee.com/o/job-id-123",
+  ])("identifies Recruitee URL: '%s'", (url) => {
+    expect(detectPlatform(url)).toBe("recruitee");
+  });
+
   // ── Unknown / other ───────────────────────────────────────────────────────
   it.each([
     ["https://linkedin.com/jobs/view/123456", "unknown"],
@@ -805,8 +847,6 @@ describe("detectPlatform", () => {
     ["https://company.com/careers/software-engineer", "unknown"],
     ["https://angel.co/company/acme/jobs/123", "unknown"],
     ["https://jobvite.com/careers/company/job/123", "unknown"],
-    ["https://workable.com/jobs/123", "unknown"],
-    ["https://ashbyhq.com/company/123", "unknown"],
     ["https://rippling.com/jobs/123", "unknown"],
     ["", "unknown"],
   ])("identifies '%s' as unknown", (url, expected) => {

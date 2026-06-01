@@ -130,6 +130,19 @@ describe("Hero component", () => {
     ).toBeInTheDocument();
   });
 
+  it("truncates a long first sentence to 117 chars and appends '…'", () => {
+    const longSentence =
+      "This is an extremely long first sentence that exceeds one hundred and twenty characters in total length so it must be truncated by the bio calculation logic";
+    const altInfo: PersonalInfo = {
+      ...mockPersonalInfo,
+      summary: longSentence + ". Second sentence.",
+    };
+    renderHero(altInfo);
+    // The rendered bio should end with the ellipsis character
+    const bioEl = screen.getByText(/…$/);
+    expect(bioEl.textContent).toHaveLength(118); // 117 chars + "…"
+  });
+
   // ── CTA buttons ───────────────────────────────────────────────────────────────
 
   it("renders the 'View my work' button", () => {
@@ -188,5 +201,17 @@ describe("Hero component", () => {
     const altInfo: PersonalInfo = { ...mockPersonalInfo, name: "Alice Wonder" };
     renderHero(altInfo);
     expect(screen.getByRole("heading", { name: "Alice Wonder" })).toBeInTheDocument();
+  });
+
+  it("does not throw when 'View my work' is clicked and the projects section is absent", () => {
+    // getElementById returns null → optional chain ?.scrollIntoView must not throw
+    jest.spyOn(document, "getElementById").mockReturnValue(null);
+
+    renderHero();
+    expect(() =>
+      fireEvent.click(screen.getByRole("button", { name: /view my work/i }))
+    ).not.toThrow();
+
+    jest.restoreAllMocks();
   });
 });

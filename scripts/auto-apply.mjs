@@ -7,11 +7,16 @@
  *   - Resume URL is set
  *
  * Then auto-applies using the appropriate method per platform:
- *   - Greenhouse (boards.greenhouse.io):  Playwright form fill
- *   - Lever      (jobs.lever.co):         Direct POST to apply endpoint
- *   - Workday    (myworkdayjobs.com):      Playwright form fill
- *   - iCIMS      (disneycareers.com):      Playwright form fill
- *   - Generic:                             Opens URL + downloads resume (manual fallback)
+ *   - Greenhouse     (boards.greenhouse.io / greenhouse.io): Playwright form fill
+ *   - Lever          (jobs.lever.co):                        Direct POST to apply endpoint
+ *   - Workday        (myworkdayjobs.com):                    Playwright form fill
+ *   - iCIMS          (disneycareers.com / icims.com):        Playwright form fill
+ *   - Ashby          (jobs.ashbyhq.com):                     Playwright form fill
+ *   - SmartRecruiters(smartrecruiters.com):                  Playwright form fill
+ *   - BreezyHR       (breezy.hr):                            Playwright form fill
+ *   - Workable       (workable.com):                         Playwright form fill
+ *   - Recruitee      (recruitee.com):                        Playwright form fill
+ *   - Generic:                                               Opens URL (manual fallback)
  *
  * After applying, updates the sheet:
  *   - Apply Status → "applied" or "failed"
@@ -160,11 +165,17 @@ async function downloadPdf(url) {
 
 function detectPlatform(url) {
   if (!url) return "unknown";
-  if (url.includes("greenhouse.io"))      return "greenhouse";
-  if (url.includes("lever.co"))           return "lever";
-  if (url.includes("myworkdayjobs.com"))  return "workday";
-  if (url.includes("disneycareers.com"))  return "icims";
-  if (url.includes("smartrecruiters.com")) return "smartrecruiters";
+  if (url.includes("greenhouse.io"))        return "greenhouse";
+  if (url.includes("lever.co"))             return "lever";
+  if (url.includes("myworkdayjobs.com"))    return "workday";
+  if (url.includes("disneycareers.com"))    return "icims";
+  if (url.includes("icims.com"))            return "icims";
+  if (url.includes("ashbyhq.com"))          return "ashby";
+  if (url.includes("smartrecruiters.com"))  return "smartrecruiters";
+  if (url.includes("breezy.hr"))            return "breezy";
+  if (url.includes("workable.com"))         return "workable";
+  if (url.includes("recruitee.com"))        return "recruitee";
+  if (url.includes("hiring.cafe"))          return "hiring-cafe";
   return "unknown";
 }
 
@@ -360,6 +371,317 @@ async function applyWorkday(browser, job) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Ashby apply — Playwright (standard web form, similar structure to Greenhouse)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function applyAshby(browser, job) {
+  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const page = await browser.newPage();
+  try {
+    await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+
+    const applyBtn = page.locator('a[href*="apply"], button:has-text("Apply")').first();
+    if (await applyBtn.count() > 0) {
+      await applyBtn.click();
+      await page.waitForLoadState("domcontentloaded");
+    }
+
+    await page.waitForSelector('input[name="firstName"], input[placeholder*="First"]', { timeout: 15_000 });
+
+    await fillIfExists(page, 'input[name="firstName"], input[placeholder*="First"]', APPLICANT.firstName);
+    await fillIfExists(page, 'input[name="lastName"],  input[placeholder*="Last"]',  APPLICANT.lastName);
+    await fillIfExists(page, 'input[name="email"],     input[type="email"]',          APPLICANT.email);
+    await fillIfExists(page, 'input[name="phone"],     input[type="tel"]',            APPLICANT.phone);
+    await fillIfExists(page, 'input[name*="linkedin"], input[placeholder*="LinkedIn"]', APPLICANT.linkedin);
+
+    const resumeInput = page.locator('input[type="file"]').first();
+    if (await resumeInput.count() > 0) await resumeInput.setInputFiles(resumePath);
+
+    await fillIfExists(page, 'textarea[name*="cover"], textarea[placeholder*="cover"]', coverLetter);
+    await answerCommonQuestions(page);
+
+    if (DRY_RUN) {
+      console.log(`  🧪 DRY_RUN: would submit Ashby for ${company} — ${title}`);
+      return { success: true, notes: "dry-run" };
+    }
+
+    await page.locator('button[type="submit"]').last().click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    const body = await page.content();
+    const success = /thank you|submitted|confirmation/i.test(body);
+    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+  } catch (err) {
+    return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
+  } finally {
+    await page.close();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SmartRecruiters apply — Playwright
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function applySmartRecruiters(browser, job) {
+  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const page = await browser.newPage();
+  try {
+    await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+
+    const applyBtn = page.locator('button:has-text("Apply"), a:has-text("Apply Now")').first();
+    if (await applyBtn.count() > 0) {
+      await applyBtn.click();
+      await page.waitForLoadState("domcontentloaded");
+    }
+
+    await page.waitForSelector('input[name="firstName"], input[id*="firstName"]', { timeout: 15_000 });
+
+    await fillIfExists(page, 'input[name="firstName"]', APPLICANT.firstName);
+    await fillIfExists(page, 'input[name="lastName"]',  APPLICANT.lastName);
+    await fillIfExists(page, 'input[name="email"]',     APPLICANT.email);
+    await fillIfExists(page, 'input[name="phone"]',     APPLICANT.phone);
+
+    const resumeInput = page.locator('input[type="file"]').first();
+    if (await resumeInput.count() > 0) await resumeInput.setInputFiles(resumePath);
+
+    await fillIfExists(page, 'textarea[name*="message"], textarea[name*="cover"]', coverLetter);
+    await answerCommonQuestions(page);
+
+    if (DRY_RUN) {
+      console.log(`  🧪 DRY_RUN: would submit SmartRecruiters for ${company} — ${title}`);
+      return { success: true, notes: "dry-run" };
+    }
+
+    await page.locator('button[type="submit"]').last().click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    const body = await page.content();
+    const success = /thank you|submitted|confirmation|application received/i.test(body);
+    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+  } catch (err) {
+    return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
+  } finally {
+    await page.close();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BreezyHR apply — Playwright
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function applyBreezy(browser, job) {
+  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const page = await browser.newPage();
+  try {
+    await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+
+    const applyBtn = page.locator('a:has-text("Apply"), button:has-text("Apply")').first();
+    if (await applyBtn.count() > 0) {
+      await applyBtn.click();
+      await page.waitForLoadState("domcontentloaded");
+    }
+
+    await page.waitForSelector('input[name="name"], input[id*="name"]', { timeout: 15_000 });
+
+    await fillIfExists(page, 'input[name="name"]',  `${APPLICANT.firstName} ${APPLICANT.lastName}`);
+    await fillIfExists(page, 'input[name="email"]', APPLICANT.email);
+    await fillIfExists(page, 'input[name="phone"]', APPLICANT.phone);
+
+    const resumeInput = page.locator('input[type="file"]').first();
+    if (await resumeInput.count() > 0) await resumeInput.setInputFiles(resumePath);
+
+    await fillIfExists(page, 'textarea[name*="cover"], textarea[placeholder*="cover"]', coverLetter);
+
+    if (DRY_RUN) {
+      console.log(`  🧪 DRY_RUN: would submit BreezyHR for ${company} — ${title}`);
+      return { success: true, notes: "dry-run" };
+    }
+
+    await page.locator('button[type="submit"]').last().click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    const body = await page.content();
+    const success = /thank you|submitted|application received/i.test(body);
+    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+  } catch (err) {
+    return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
+  } finally {
+    await page.close();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Workable apply — Playwright
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function applyWorkable(browser, job) {
+  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const page = await browser.newPage();
+  try {
+    await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+
+    const applyBtn = page.locator('a:has-text("Apply"), button:has-text("Apply Now")').first();
+    if (await applyBtn.count() > 0) {
+      await applyBtn.click();
+      await page.waitForLoadState("domcontentloaded");
+    }
+
+    await page.waitForSelector('input[name="firstname"], input[id*="firstname"]', { timeout: 15_000 });
+
+    await fillIfExists(page, 'input[name="firstname"]', APPLICANT.firstName);
+    await fillIfExists(page, 'input[name="lastname"]',  APPLICANT.lastName);
+    await fillIfExists(page, 'input[name="email"]',     APPLICANT.email);
+    await fillIfExists(page, 'input[name="phone"]',     APPLICANT.phone);
+
+    const resumeInput = page.locator('input[type="file"]').first();
+    if (await resumeInput.count() > 0) await resumeInput.setInputFiles(resumePath);
+
+    await fillIfExists(page, 'textarea[name*="summary"], textarea[placeholder*="brief"]', coverLetter);
+
+    if (DRY_RUN) {
+      console.log(`  🧪 DRY_RUN: would submit Workable for ${company} — ${title}`);
+      return { success: true, notes: "dry-run" };
+    }
+
+    await page.locator('button[type="submit"]').last().click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    const body = await page.content();
+    const success = /thank you|application submitted|confirmation/i.test(body);
+    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+  } catch (err) {
+    return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
+  } finally {
+    await page.close();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Recruitee apply — Playwright
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function applyRecruitee(browser, job) {
+  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const page = await browser.newPage();
+  try {
+    await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+
+    const applyBtn = page.locator('a:has-text("Apply"), button:has-text("Apply")').first();
+    if (await applyBtn.count() > 0) {
+      await applyBtn.click();
+      await page.waitForLoadState("domcontentloaded");
+    }
+
+    await page.waitForSelector('input[name="first_name"], input[id*="first_name"]', { timeout: 15_000 });
+
+    await fillIfExists(page, 'input[name="first_name"]', APPLICANT.firstName);
+    await fillIfExists(page, 'input[name="last_name"]',  APPLICANT.lastName);
+    await fillIfExists(page, 'input[name="email"]',      APPLICANT.email);
+    await fillIfExists(page, 'input[name="phone"]',      APPLICANT.phone);
+
+    const resumeInput = page.locator('input[type="file"]').first();
+    if (await resumeInput.count() > 0) await resumeInput.setInputFiles(resumePath);
+
+    await fillIfExists(page, 'textarea[name*="cover"], textarea[name*="message"]', coverLetter);
+
+    if (DRY_RUN) {
+      console.log(`  🧪 DRY_RUN: would submit Recruitee for ${company} — ${title}`);
+      return { success: true, notes: "dry-run" };
+    }
+
+    await page.locator('button[type="submit"]').last().click();
+    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    const body = await page.content();
+    const success = /thank you|submitted|application received/i.test(body);
+    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+  } catch (err) {
+    return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
+  } finally {
+    await page.close();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Hiring Cafe apply — resolves the actual external ATS URL then delegates
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function applyHiringCafe(browser, job) {
+  const { jobUrl, resumePath, resumeUrl, coverLetter, company, title } = job;
+  const page = await browser.newPage();
+
+  try {
+    // Navigate to the hiring.cafe job detail page
+    await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
+
+    // Locate the primary Apply button / link
+    const applySelector = [
+      'a:has-text("Apply Now")',
+      'a:has-text("Easy Apply")',
+      'a:has-text("Apply")',
+      'button:has-text("Apply Now")',
+      'button:has-text("Apply")',
+    ].join(", ");
+
+    const applyEl = page.locator(applySelector).first();
+    if (await applyEl.count() === 0) {
+      return { success: false, notes: "No Apply button on hiring.cafe job page" };
+    }
+
+    // Try to get the href directly (avoids opening a new tab)
+    let externalUrl = await applyEl.getAttribute("href").catch(() => null);
+    if (externalUrl && !externalUrl.startsWith("http")) {
+      externalUrl = new URL(externalUrl, "https://hiring.cafe").href;
+    }
+
+    // If the link goes back to hiring.cafe (e.g. a redirect wrapper), click and follow
+    if (!externalUrl || externalUrl.includes("hiring.cafe")) {
+      const context = browser.contexts()[0] ?? page.context();
+      const [newTab] = await Promise.all([
+        context.waitForEvent("page", { timeout: 10_000 }).catch(() => null),
+        applyEl.click(),
+      ]);
+
+      if (newTab) {
+        await newTab.waitForLoadState("domcontentloaded", { timeout: 15_000 }).catch(() => {});
+        externalUrl = newTab.url();
+        await newTab.close().catch(() => {});
+      } else {
+        await page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 15_000 }).catch(() => {});
+        externalUrl = page.url();
+      }
+    }
+
+    if (!externalUrl || externalUrl.includes("hiring.cafe")) {
+      return { success: false, notes: "manual-required: could not resolve external apply URL" };
+    }
+
+    console.log(`    ↳ Resolved to: ${externalUrl.slice(0, 100)}`);
+
+    // Detect platform and delegate to the right apply function
+    const platform  = detectPlatform(externalUrl);
+    const outerJob  = { jobUrl: externalUrl, resumePath, resumeUrl, coverLetter, company, title };
+    const pwPlatforms = ["greenhouse", "icims", "workday", "ashby", "smartrecruiters", "breezy", "workable", "recruitee"];
+
+    if (pwPlatforms.includes(platform)) {
+      if (platform === "greenhouse" || platform === "icims") return await applyGreenhouse(browser, outerJob);
+      if (platform === "workday")        return await applyWorkday(browser, outerJob);
+      if (platform === "ashby")          return await applyAshby(browser, outerJob);
+      if (platform === "smartrecruiters") return await applySmartRecruiters(browser, outerJob);
+      if (platform === "breezy")         return await applyBreezy(browser, outerJob);
+      if (platform === "workable")       return await applyWorkable(browser, outerJob);
+      if (platform === "recruitee")      return await applyRecruitee(browser, outerJob);
+    }
+
+    if (platform === "lever") {
+      return await applyLever({ jobUrl: externalUrl, resumeUrl, coverLetter, company, title });
+    }
+
+    return { success: false, notes: `manual-required: ${platform} at ${externalUrl.slice(0, 80)}` };
+
+  } catch (err) {
+    return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Shared helper: fill a field if the selector exists on the page
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -509,7 +831,10 @@ async function main() {
 
       let result = { success: false, notes: "unsupported platform" };
 
-      if (platform === "greenhouse" || platform === "icims" || platform === "workday") {
+      // Platforms that need a local PDF file for upload
+      const playwrightPlatforms = ["greenhouse", "icims", "workday", "ashby", "smartrecruiters", "breezy", "workable", "recruitee", "hiring-cafe"];
+
+      if (playwrightPlatforms.includes(platform)) {
         // Need to download PDF locally for file upload
         let resumePath = null;
         try {
@@ -532,6 +857,18 @@ async function main() {
           result = await applyGreenhouse(browser, job);
         } else if (platform === "workday") {
           result = await applyWorkday(browser, job);
+        } else if (platform === "ashby") {
+          result = await applyAshby(browser, job);
+        } else if (platform === "smartrecruiters") {
+          result = await applySmartRecruiters(browser, job);
+        } else if (platform === "breezy") {
+          result = await applyBreezy(browser, job);
+        } else if (platform === "workable") {
+          result = await applyWorkable(browser, job);
+        } else if (platform === "recruitee") {
+          result = await applyRecruitee(browser, job);
+        } else if (platform === "hiring-cafe") {
+          result = await applyHiringCafe(browser, job);
         }
       } else if (platform === "lever") {
         const job = { jobUrl, resumeUrl, coverLetter, company, title };

@@ -173,4 +173,61 @@ describe("POST /api/track", () => {
       expect.objectContaining({ language: "es-ES" })
     );
   });
+
+  // ── Error / rejection paths ────────────────────────────────────────────────
+
+  it("logs error but still returns ok:true when appendVisitor rejects", async () => {
+    const err = new Error("disk full");
+    mockAppendVisitor.mockRejectedValueOnce(err);
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(makeRequest());
+    // Flush all micro-tasks so the fire-and-forget .catch() runs
+    await Promise.resolve();
+
+    const body = await res.json() as { ok: boolean };
+    expect(body.ok).toBe(true);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Failed to write visitor"),
+      err
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("logs error but still returns ok:true when sendVisitorNotification rejects", async () => {
+    const err = new Error("smtp timeout");
+    mockSendVisitorNotification.mockRejectedValueOnce(err);
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+
+    const res = await POST(makeRequest());
+    await Promise.resolve();
+
+    const body = await res.json() as { ok: boolean };
+    expect(body.ok).toBe(true);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Email notification failed"),
+      err
+    );
+    consoleSpy.mockRestore();
+  });
+
+  it("returns ok:false when an unexpected synchronous error is thrown", async () => {
+    // Create a request whose headers.get throws synchronously
+    const badReq = {
+      headers: {
+        get: () => { throw new Error("unexpected"); },
+      },
+    } as unknown as import("next/server").NextRequest;
+
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const res = await POST(badReq);
+    const body = await res.json() as { ok: boolean };
+
+    expect(body.ok).toBe(false);
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Unexpected error"),
+      expect.any(Error)
+    );
+    consoleSpy.mockRestore();
+  });
 });

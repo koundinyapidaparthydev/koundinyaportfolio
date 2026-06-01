@@ -6,15 +6,19 @@
  *   GOOGLE_SHEET_ID              — ID of the target Google Sheet
  *   GOOGLE_SERVICE_ACCOUNT_JSON  — full service-account JSON as a string
  *
- * Supported ATS adapters:
- *   - Greenhouse public API (StubHub, AXS, Lyft, Airbnb, CLEAR, SeatGeek, Uber Freight)
- *   - Workday public REST API (Live Nation, Sabre, NCL, SeaWorld)
- *   - iCIMS RSS feed (Disney — descriptions fetched inline, no auth required)
- *   - Custom fetch adapter (Booking.com)
+ * Supported ATS adapters (30+ companies, 7 platforms):
+ *   - Greenhouse  (StubHub, AXS, Lyft, Airbnb, CLEAR, SeatGeek, Uber Freight,
+ *                  Coinbase, DoorDash, Reddit, Figma, Discord, Dropbox, Duolingo,
+ *                  Brex, Plaid, Roblox)
+ *   - Workday     (Live Nation, Sabre, NCL, SeaWorld, Expedia Group, Hilton)
+ *   - Lever       (Yelp, Postman, Thumbtack)
+ *   - Ashby       (Linear, Replit, Retool)
+ *   - SmartRecruiters (Royal Caribbean Group)
+ *   - iCIMS RSS   (Disney — descriptions fetched inline)
+ *   - Custom      (Booking.com)
  *
  * Not scrapeable:
  *   - Universal Studios — Cloudflare-blocked
- *   - Royal Caribbean Group — SAP SuccessFactors (no public API)
  *   - Flywire — no active ATS board found
  */
 
@@ -171,21 +175,108 @@ async function mapConcurrent(items, limit, fn) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const GREENHOUSE_SLUGS = {
+  // Original companies
   "StubHub":           "stubhubinc",
   "AXS":               "axs",
   "Lyft":              "lyft",
   "Airbnb":            "airbnb",
   "CLEAR":             "clear",
-  "SeatGeek (Remote)": "seatgeek",  // both SeatGeek variants share the same board
+  "SeatGeek (Remote)": "seatgeek",
   "SeatGeek (NY)":     "seatgeek",
   "Uber Freight":      "uberfreight",
+  // New companies
+  "Coinbase":          "coinbase",
+  "DoorDash":          "doordashglobal",  // migrated from 'doordash' (404)
+  "Reddit":            "reddit",
+  "Figma":             "figma",
+  "Discord":           "discord",
+  "Dropbox":           "dropbox",
+  "Duolingo":          "duolingo",
+  "Brex":              "brex",
+  // Plaid moved to ASHBY_IDENTIFIERS — 'plaid' Greenhouse slug returns 404
+  "Roblox":            "roblox",
+  // General Full Stack companies
+  "Snap Inc.":         "snapinc",
+  "Stripe":            "stripe",
+  "Databricks":        "databricks",
+  "Twilio":            "twilio",
+  "Cloudflare":        "cloudflare",
+  "Datadog":           "datadog",
+  "MongoDB":           "mongodb",
+  "Riot Games":        "riotgames",
+  "Vercel":            "vercel",
+  "Instacart":         "instacart",
+  "Pinterest":         "pinterest",
+  // AI Agentics companies
+  "Anthropic":         "anthropic",
+  "Workato":           "workato",
+  "Make (Celonis US)": "celonis",
+  "Glean":             "gleanwork",      // 'glean' returns 404; correct slug is 'gleanwork'
+  "Moveworks":         "moveworks",
+  "Weights & Biases":  "weights_and_biases", // 'wandb' returns 404; correct slug is 'weights_and_biases'
+  "Codeium / Windsurf":"codeium",
 };
 
 const WORKDAY_CONFIG = {
-  "Live Nation": { host: "livenation.wd503.myworkdayjobs.com", tenant: "livenation", site: "LNExternalSite" },
-  "Sabre":       { host: "sabre.wd1.myworkdayjobs.com",       tenant: "sabre",       site: "SabreJobs" },
-  "NCL":         { host: "nclh.wd108.myworkdayjobs.com",       tenant: "nclh",        site: "NCL_Shoreside_Careers" },
-  "SeaWorld":    { host: "seaworldentertainment.wd1.myworkdayjobs.com", tenant: "seaworldentertainment", site: "SEA" },
+  // Original companies
+  "Live Nation":   { host: "livenation.wd503.myworkdayjobs.com",            tenant: "livenation",            site: "LNExternalSite" },
+  "Sabre":         { host: "sabre.wd1.myworkdayjobs.com",                   tenant: "sabre",                 site: "SabreJobs" },
+  "NCL":           { host: "nclh.wd108.myworkdayjobs.com",                  tenant: "nclh",                  site: "NCL_Shoreside_Careers" },
+  "SeaWorld":      { host: "seaworldentertainment.wd1.myworkdayjobs.com",   tenant: "seaworldentertainment", site: "SEA" },
+  // New companies
+  "Expedia Group": { host: "expedia.wd5.myworkdayjobs.com",                 tenant: "expedia",               site: "Expedia_Group_External" },
+  "Hilton":        { host: "hilton.wd5.myworkdayjobs.com",                  tenant: "hilton",                site: "HJobs" },
+  // General Full Stack companies
+  "Adobe":          { host: "adobe.wd5.myworkdayjobs.com",                  tenant: "adobe",                 site: "external_experienced" },
+  "Intuit":         { host: "intuit.wd1.myworkdayjobs.com",                 tenant: "intuit",                site: "Intuit_Careers" },
+  "Qualcomm":       { host: "qualcomm.wd5.myworkdayjobs.com",               tenant: "qualcomm",              site: "External" },
+  "PayPal":         { host: "paypal.wd1.myworkdayjobs.com",                 tenant: "paypal",                site: "jobs" },
+  "Capital One":    { host: "capitalone.wd12.myworkdayjobs.com",            tenant: "capitalone",            site: "Capital_One" },
+  "JPMorgan Chase": { host: "jpmc.wd5.myworkdayjobs.com",                   tenant: "jpmc",                  site: "technology" },
+  "Shopify":        { host: "shopify.wd5.myworkdayjobs.com",                tenant: "shopify",               site: "Shopify" },
+  "Zendesk":        { host: "zendesk.wd1.myworkdayjobs.com",                tenant: "zendesk",               site: "zendesk" },
+  // AI Agentics companies
+  "Salesforce":     { host: "salesforce.wd12.myworkdayjobs.com",            tenant: "salesforce",            site: "External_Career_Site" },
+  "Microsoft":      { host: "microsoft.wd3.myworkdayjobs.com",              tenant: "microsoft",             site: "External" },
+  "ServiceNow":     { host: "servicenow.wd5.myworkdayjobs.com",             tenant: "servicenow",            site: "External" },
+};
+
+/** Lever board slugs for description fetching */
+const LEVER_SLUGS = {
+  "Yelp":       "yelp",
+  "Postman":    "postman",
+  "Thumbtack":  "thumbtack",
+};
+
+/** Ashby company identifiers for description fetching */
+const ASHBY_IDENTIFIERS = {
+  "Linear":             "linear",
+  "Replit":             "replit",
+  "Retool":             "retool",
+  "Ramp":               "ramp",
+  "Confluent":          "confluent",
+  "Snowflake":          "snowflake",
+  // Fintech — Plaid migrated from Greenhouse (404) to Ashby (91 jobs)
+  "Plaid":              "plaid",
+  // AI Agentics companies
+  "OpenAI":             "openai",
+  "Cursor":             "cursor",
+  "Zapier":             "zapier",
+  "LangChain":          "langchain",
+  "Cohere":             "cohere",
+  "Harvey AI":          "harvey",
+  "Sierra AI":          "sierra",
+  "Cognition AI":       "cognition",
+  "Dust.tt":            "dust",
+  "Writer":             "writer",
+  "Runway ML":          "runwayml",
+  "Notion":             "notion",
+  "Ema":                "ema",
+  "Hebbia":             "hebbia-ai",
+  "Mistral AI":         "mistral",
+  "Adept AI":           "adept",
+  "Pathos AI":          "pathosai",
+  "Slack":              "slack",
 };
 
 /**
@@ -241,7 +332,52 @@ async function fetchDescription(row) {
     return "";
   }
 
-  // Booking.com & others — no reliable public description API
+  // ── Lever ────────────────────────────────────────────────────────────────
+  const leverSlug = LEVER_SLUGS[company];
+  if (leverSlug || url.includes("lever.co")) {
+    // URL format: https://jobs.lever.co/{slug}/{postingId}
+    const postingId = url.match(/jobs\.lever\.co\/[^/]+\/([a-f0-9-]{36})/i)?.[1];
+    const slug = leverSlug ?? url.match(/jobs\.lever\.co\/([^/]+)\//)?.[1];
+    if (slug && postingId) {
+      try {
+        const res = await fetchWithRetry(
+          `https://api.lever.co/v0/postings/${slug}/${postingId}`,
+          { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const lists = (data.lists ?? []).map((l) => `${l.text}:\n${(l.content ?? "").replace(/<li>/g, "\n• ").replace(/<\/li>/g, "")}`);
+          const desc = [data.descriptionPlain ?? data.description ?? "", ...lists].join("\n\n");
+          return stripHtml(desc).slice(0, 2500);
+        }
+      } catch { /* fall through */ }
+    }
+    return "";
+  }
+
+  // ── Ashby ─────────────────────────────────────────────────────────────────
+  const ashbyId = ASHBY_IDENTIFIERS[company];
+  if (ashbyId || url.includes("ashbyhq.com")) {
+    // URL format: https://jobs.ashbyhq.com/{identifier}/{postingId}
+    const postingId = url.match(/jobs\.ashbyhq\.com\/[^/]+\/([a-f0-9-]{36})/i)?.[1];
+    const identifier = ashbyId ?? url.match(/jobs\.ashbyhq\.com\/([^/]+)\//)?.[1];
+    if (identifier && postingId) {
+      try {
+        const res = await fetchWithRetry(
+          `https://api.ashbyhq.com/posting-api/job-board/${identifier}/posting/${postingId}`,
+          { headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          const desc = data.descriptionHtml ?? data.description ?? "";
+          return stripHtml(desc).slice(0, 2500);
+        }
+      } catch { /* fall through */ }
+    }
+    return "";
+  }
+
+  // Booking.com, SmartRecruiters & others — no reliable public description API
   return "";
 }
 
@@ -485,6 +621,484 @@ async function fetchSmartRecruiters(companyId, company, category) {
   }
 }
 
+/**
+ * Ashby public job board API.
+ * @see https://api.ashbyhq.com/posting-api/job-board/{identifier}
+ */
+async function fetchAshby(identifier, company, category) {
+  const url = `https://api.ashbyhq.com/posting-api/job-board/${identifier}`;
+  try {
+    const res = await fetchWithRetry(url, {
+      headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" },
+    });
+    if (!res.ok) {
+      console.warn(`  ⚠  Ashby ${identifier}: HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    const jobs = data.jobPostings ?? data.jobs ?? [];
+    const filtered = jobs.filter((j) => isEngineeringRole(j.title));
+    console.log(`  ✓  ${company}: ${filtered.length} engineering roles (Ashby)`);
+    return filtered.map((j) => [
+      company,
+      j.title ?? "",
+      j.locationName ?? j.location ?? "",
+      j.jobUrl ?? `https://jobs.ashbyhq.com/${identifier}/${j.id}`,
+      category,
+      now(),
+    ]);
+  } catch (e) {
+    console.warn(`  ⚠  Ashby ${identifier}:`, e.message);
+    return [];
+  }
+}
+
+/**
+ * BreezyHR public JSON feed.
+ * Pattern: GET https://{slug}.breezy.hr/json
+ */
+async function fetchBreezyHR(slug, company, category) {
+  const url = `https://${slug}.breezy.hr/json`;
+  try {
+    const res = await fetchWithRetry(url, {
+      headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" },
+    });
+    if (!res.ok) {
+      console.warn(`  ⚠  BreezyHR ${slug}: HTTP ${res.status}`);
+      return [];
+    }
+    const jobs = await res.json();
+    const list = Array.isArray(jobs) ? jobs : [];
+    const filtered = list.filter((j) => isEngineeringRole(j.name ?? j.title ?? ""));
+    console.log(`  ✓  ${company}: ${filtered.length} engineering roles (BreezyHR)`);
+    return filtered.map((j) => [
+      company,
+      j.name ?? j.title ?? "",
+      j.location?.name ?? j.city ?? "",
+      j.url ?? `https://${slug}.breezy.hr/p/${j.friendly_id ?? j.id}`,
+      category,
+      now(),
+    ]);
+  } catch (e) {
+    console.warn(`  ⚠  BreezyHR ${slug}:`, e.message);
+    return [];
+  }
+}
+
+/**
+ * Workable public API.
+ * Pattern: GET https://apply.workable.com/api/v1/widget/listing/{slug}
+ */
+async function fetchWorkable(slug, company, category) {
+  const url = `https://apply.workable.com/api/v1/widget/listing/${slug}`;
+  try {
+    const res = await fetchWithRetry(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "User-Agent": "JobScraper/1.0 (portfolio automation)",
+      },
+      body: JSON.stringify({ query: "engineer", location: [], department: [], worktype: [] }),
+    });
+    if (!res.ok) {
+      console.warn(`  ⚠  Workable ${slug}: HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    const jobs = data.results ?? [];
+    const filtered = jobs.filter((j) => isEngineeringRole(j.title ?? j.name ?? ""));
+    console.log(`  ✓  ${company}: ${filtered.length} engineering roles (Workable)`);
+    return filtered.map((j) => [
+      company,
+      j.title ?? j.name ?? "",
+      j.location?.location_str ?? j.city ?? "",
+      j.url ?? `https://apply.workable.com/${slug}/j/${j.shortcode}`,
+      category,
+      now(),
+    ]);
+  } catch (e) {
+    console.warn(`  ⚠  Workable ${slug}:`, e.message);
+    return [];
+  }
+}
+
+/**
+ * Hiring Cafe — scrapes easy-apply software-engineer roles using Playwright.
+ *
+ * hiring.cafe is a client-side React/Next.js SPA, so we launch a real browser
+ * and intercept the JSON API responses the frontend makes. If interception
+ * yields no results (e.g. the API shape changed) we fall back to DOM parsing.
+ *
+ * Only jobs tagged with `applicationFormEase: "Simple"` are fetched.
+ */
+async function fetchHiringCafe(category = "hiring-cafe") {
+  let browser;
+  try {
+    const { chromium } = await import("playwright");
+    browser = await chromium.launch({ headless: true });
+
+    const context = await browser.newContext({
+      userAgent:
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      viewport: { width: 1280, height: 900 },
+    });
+    const page = await context.newPage();
+
+    // ── 1. Intercept API responses ────────────────────────────────────────
+    const capturedItems = [];
+    page.on("response", async (response) => {
+      const url   = response.url();
+      const ctype = response.headers()["content-type"] ?? "";
+      if (!ctype.includes("application/json")) return;
+      if (!/jobs|search|listings|postings|algolia/i.test(url)) return;
+      try {
+        const data = await response.json();
+        const arr  = data?.hits ?? data?.jobs ?? data?.results ?? data?.postings
+                  ?? (Array.isArray(data) ? data : null);
+        if (Array.isArray(arr) && arr.length > 0) capturedItems.push(...arr);
+      } catch { /* ignore */ }
+    });
+
+    const searchState = encodeURIComponent(JSON.stringify({
+      searchQuery: "software engineer",
+      sortBy: "date",
+      dateFetchedPastNDays: 2,
+      applicationFormEase: ["Simple"],
+    }));
+    const searchUrl = `https://hiring.cafe/?searchState=${searchState}`;
+
+    await page.goto(searchUrl, { waitUntil: "networkidle", timeout: 60_000 });
+    // Give lazy-loaded content a moment
+    await page.waitForTimeout(3_000);
+
+    // ── 2. Try structured data from window.__NEXT_DATA__ ─────────────────
+    const nextData = await page.evaluate(() => {
+      try {
+        const el = document.getElementById("__NEXT_DATA__");
+        return el ? JSON.parse(el.textContent ?? "{}") : null;
+      } catch { return null; }
+    });
+
+    /** Normalise any item shape → row */
+    function toRow(item) {
+      const title     = item.jobTitle    ?? item.title    ?? item.name    ?? "";
+      const company   = item.companyName ?? item.company  ?? item.employer ?? "Hiring Cafe";
+      const location  = item.location    ?? item.city     ?? item.locationName ?? "";
+      const salary    = item.salary      ?? item.compensation ?? "";
+      const skills    = Array.isArray(item.skills) ? item.skills.join(", ") : (item.skills ?? "");
+      const id        = item.id ?? item.jobId ?? item._id ?? item.listingId ?? "";
+      const url       = item.jobUrl ?? item.applyUrl
+                     ?? (id ? `https://hiring.cafe/job/${id}` : "");
+      if (!title || !url) return null;
+
+      const salaryLine  = salary ? `Salary: ${salary}` : "";
+      const skillsLine  = skills ? `Skills: ${skills}` : "";
+      const description = [salaryLine, skillsLine, item.description ?? item.summary ?? ""]
+        .filter(Boolean).join("\n").slice(0, 2500);
+
+      return [company, title, location, url, "hiring-cafe", now(), description];
+    }
+
+    // Try captured API items first
+    if (capturedItems.length > 0) {
+      const rows = capturedItems.map(toRow).filter(Boolean);
+      if (rows.length > 0) {
+        const engRows = rows.filter((r) => isEngineeringRole(r[1]));
+        console.log(`  ✓  Hiring Cafe: ${engRows.length} easy-apply engineering roles (API)`);
+        return engRows;
+      }
+    }
+
+    // Try __NEXT_DATA__
+    if (nextData) {
+      const pageProps = nextData?.props?.pageProps ?? {};
+      const items =
+        pageProps.jobs    ?? pageProps.listings ?? pageProps.postings ??
+        pageProps.results ?? pageProps.hits      ?? [];
+      if (Array.isArray(items) && items.length > 0) {
+        const rows = items.map(toRow).filter(Boolean)
+          .filter((r) => isEngineeringRole(r[1]));
+        if (rows.length > 0) {
+          console.log(`  ✓  Hiring Cafe: ${rows.length} easy-apply engineering roles (__NEXT_DATA__)`);
+          return rows;
+        }
+      }
+    }
+
+    // ── 3. DOM fallback ───────────────────────────────────────────────────
+    const domRows = await page.evaluate(() => {
+      const results = [];
+
+      // Every job card on hiring.cafe has exactly one link to /job/{id}
+      const jobLinks = Array.from(document.querySelectorAll("a"))
+        .filter((a) => /\/job\/[a-z0-9]{8,}/.test(a.getAttribute("href") ?? a.href ?? ""));
+
+      for (const link of jobLinks) {
+        const jobUrl = link.href.startsWith("http")
+          ? link.href
+          : `https://hiring.cafe${link.getAttribute("href")}`;
+
+        // Walk UP to find the bounding card element
+        let card = link.parentElement;
+        for (let i = 0; i < 12 && card; i++) {
+          const orgLinks = card.querySelectorAll('a[href*="/org/"]');
+          const height   = card.getBoundingClientRect?.()?.height ?? 0;
+          if (orgLinks.length >= 1 && height > 60) break;
+          card = card.parentElement;
+        }
+        if (!card) continue;
+
+        const cardText = (card.innerText ?? card.textContent ?? "").replace(/\s+/g, " ").trim();
+        if (cardText.length < 20) continue;
+
+        // Company (via /org/ link)
+        const orgEl   = card.querySelector('a[href*="/org/"]');
+        const company = orgEl?.innerText?.trim() ?? "";
+
+        // Title: look for headings first, then longest plausible line
+        let title = "";
+        for (const sel of ["h1", "h2", "h3", "h4", "strong"]) {
+          const el = card.querySelector(sel);
+          const t  = el?.innerText?.trim() ?? "";
+          if (t.length > 5 && t.length < 120) { title = t; break; }
+        }
+        if (!title) {
+          title = cardText.split(/\s{2,}|\n/)
+            .map((s) => s.trim())
+            .find((s) => s.length > 6 && s.length < 100 && !/\$|,\s*United|Full Time|Part Time|Remote|Onsite|Hybrid|\bYOE\b/i.test(s)) ?? "";
+        }
+
+        // Salary
+        const salary = (cardText.match(/\$[\d,]+[kKmM]?\s*[-–—]\s*\$[\d,]+[kKmM]?(?:\s*\/\s*(?:yr|year|hr))?/)?.[0] ?? "").trim();
+
+        // Location
+        const locMatch = cardText.match(
+          /([A-Z][a-zA-Z ]+,\s*[A-Z][a-zA-Z ]+,\s*United States|United States|Remote|[A-Z][a-z]+ [A-Z][a-z]+,\s*[A-Z]{2})/
+        );
+        const location = locMatch?.[0]?.trim() ?? "";
+
+        // Work type
+        const workType = (cardText.match(/\b(Remote|Hybrid|Onsite|On-Site)\b/i)?.[0] ?? "").trim();
+
+        if (!title || !jobUrl.includes("/job/")) continue;
+        if (results.some((r) => r[3] === jobUrl)) continue; // deduplicate
+
+        const fullLoc = [location, workType].filter(Boolean).join(" · ");
+        const desc    = [salary ? `Salary: ${salary}` : "", cardText.slice(0, 1800)]
+          .filter(Boolean).join("\n").slice(0, 2000);
+
+        results.push([company || "Hiring Cafe", title.slice(0, 100), fullLoc.slice(0, 150), jobUrl, "hiring-cafe", new Date().toISOString(), desc]);
+      }
+
+      return results;
+    });
+
+    const engDomRows = domRows.filter((r) => isEngineeringRole(r[1]));
+    console.log(`  ✓  Hiring Cafe: ${engDomRows.length} easy-apply engineering roles (DOM)`);
+    return engDomRows;
+
+  } catch (e) {
+    console.warn("  ⚠  Hiring Cafe:", e.message);
+    return [];
+  } finally {
+    if (browser) await browser.close().catch(() => {});
+  }
+}
+
+/**
+ * Recruitee public API.
+ * Pattern: GET https://{slug}.recruitee.com/api/offers/
+ */
+async function fetchRecruitee(slug, company, category) {
+  const url = `https://${slug}.recruitee.com/api/offers/`;
+  try {
+    const res = await fetchWithRetry(url, {
+      headers: { "User-Agent": "JobScraper/1.0 (portfolio automation)" },
+    });
+    if (!res.ok) {
+      console.warn(`  ⚠  Recruitee ${slug}: HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    const jobs = data.offers ?? [];
+    const filtered = jobs.filter((j) => isEngineeringRole(j.title ?? j.position ?? ""));
+    console.log(`  ✓  ${company}: ${filtered.length} engineering roles (Recruitee)`);
+    return filtered.map((j) => [
+      company,
+      j.title ?? j.position ?? "",
+      j.city ?? j.location ?? "",
+      j.careers_url ?? `https://${slug}.recruitee.com/o/${j.slug}`,
+      category,
+      now(),
+    ]);
+  } catch (e) {
+    console.warn(`  ⚠  Recruitee ${slug}:`, e.message);
+    return [];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// General Full Stack — custom FAANG adapters
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Amazon Jobs — public search JSON API.
+ */
+async function fetchAmazon(category = "general") {
+  const params = new URLSearchParams({
+    offset:       "0",
+    result_limit: "20",
+    sort:         "recent",
+    base_query:   "software engineer",
+  });
+  const url = `https://www.amazon.jobs/en/search.json?${params}`;
+  try {
+    const res = await fetchWithRetry(url, {
+      headers: { "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36" },
+    });
+    if (!res.ok) {
+      console.warn(`  ⚠  Amazon: HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    const jobs  = data.jobs ?? data.results ?? [];
+    const filtered = jobs.filter((j) => isEngineeringRole(j.title ?? ""));
+    console.log(`  ✓  Amazon: ${filtered.length} engineering roles`);
+    return filtered.map((j) => [
+      "Amazon",
+      j.title ?? "",
+      j.normalized_location ?? j.city ?? "",
+      j.job_path ? `https://www.amazon.jobs${j.job_path}` : "",
+      category,
+      now(),
+    ]).filter((r) => r[3]);
+  } catch (e) {
+    console.warn("  ⚠  Amazon:", e.message);
+    return [];
+  }
+}
+
+/**
+ * Google Careers — unofficial public JSON search API.
+ */
+async function fetchGoogle(category = "general") {
+  const params = new URLSearchParams({
+    q:               "software engineer",
+    num:             "20",
+    start:           "0",
+    jlo:             "en_US",
+    employment_type: "FULL_TIME",
+  });
+  const url = `https://careers.google.com/api/v3/search/?${params}`;
+  try {
+    const res = await fetchWithRetry(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+        "Accept":     "application/json",
+      },
+    });
+    if (!res.ok) {
+      console.warn(`  ⚠  Google: HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    const jobs  = data.jobs ?? [];
+    const filtered = jobs.filter((j) => isEngineeringRole(j.title ?? ""));
+    console.log(`  ✓  Google: ${filtered.length} engineering roles`);
+    return filtered.map((j) => [
+      "Google",
+      j.title ?? "",
+      j.locations?.[0]?.display ?? j.locations?.[0]?.city ?? "",
+      j.id ? `https://careers.google.com/jobs/results/${j.id}` : "",
+      category,
+      now(),
+    ]).filter((r) => r[3]);
+  } catch (e) {
+    console.warn("  ⚠  Google:", e.message);
+    return [];
+  }
+}
+
+/**
+ * Meta Careers — best-effort scrape of their public search page.
+ * Meta's career site is a React SPA; we attempt their internal JSON endpoint.
+ */
+async function fetchMeta(category = "general") {
+  try {
+    const res = await fetchWithRetry(
+      "https://www.metacareers.com/jobs?q=software+engineer&is_leadership=0&is_remote_only=0",
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+          "Accept":     "text/html,application/xhtml+xml,application/json",
+        },
+      }
+    );
+    if (!res.ok) {
+      console.warn(`  ⚠  Meta: HTTP ${res.status}`);
+      return [];
+    }
+    const text = await res.text();
+    // Try to find embedded JSON jobs data in a script tag or JSON-LD
+    const match = text.match(/"jobs"\s*:\s*(\[[\s\S]*?\](?=\s*[,}]))/);
+    if (!match) {
+      console.warn("  ⚠  Meta: no parseable jobs found (JS-rendered page)");
+      return [];
+    }
+    const jobs = JSON.parse(match[1]);
+    const filtered = jobs.filter((j) => isEngineeringRole(j.title ?? j.name ?? ""));
+    console.log(`  ✓  Meta: ${filtered.length} engineering roles`);
+    return filtered.map((j) => [
+      "Meta",
+      j.title ?? j.name ?? "",
+      j.location ?? j.locations?.[0] ?? "",
+      j.url ?? (j.id ? `https://www.metacareers.com/jobs/${j.id}` : ""),
+      category,
+      now(),
+    ]).filter((r) => r[3]);
+  } catch (e) {
+    console.warn("  ⚠  Meta:", e.message);
+    return [];
+  }
+}
+
+/**
+ * Apple Jobs — public role search API.
+ */
+async function fetchApple(category = "general") {
+  try {
+    const res = await fetchWithRetry(
+      "https://jobs.apple.com/api/role/search?q=software+engineer&page=0&locale=en-us",
+      {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+          "Accept":     "application/json",
+        },
+      }
+    );
+    if (!res.ok) {
+      console.warn(`  ⚠  Apple: HTTP ${res.status}`);
+      return [];
+    }
+    const data = await res.json();
+    const jobs  = data.searchResults ?? data.results ?? data.jobs ?? [];
+    const filtered = jobs.filter((j) => isEngineeringRole(j.postingTitle ?? j.title ?? ""));
+    console.log(`  ✓  Apple: ${filtered.length} engineering roles`);
+    return filtered.map((j) => [
+      "Apple",
+      j.postingTitle ?? j.title ?? "",
+      Array.isArray(j.locations) ? j.locations.map((l) => l.name ?? l).join(", ") : (j.location ?? ""),
+      j.id ? `https://jobs.apple.com/en-us/details/${j.id}` : "",
+      category,
+      now(),
+    ]).filter((r) => r[3]);
+  } catch (e) {
+    console.warn("  ⚠  Apple:", e.message);
+    return [];
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Company definitions
 // ─────────────────────────────────────────────────────────────────────────────
@@ -493,14 +1107,34 @@ async function fetchAllJobs() {
   console.log("🔍  Fetching jobs from all companies...\n");
 
   const tasks = [
-    // ── Greenhouse ──────────────────────────────────────────────────
+    // ── Greenhouse — Original ────────────────────────────────────────────
     fetchGreenhouse("stubhubinc", "StubHub", "travel"),
     fetchGreenhouse("axs", "AXS", "travel"),
     fetchGreenhouse("lyft", "Lyft", "travel"),
     fetchGreenhouse("airbnb", "Airbnb", "travel"),
     fetchGreenhouse("clear", "CLEAR", "travel"),
+    fetchGreenhouse("uberfreight", "Uber Freight", "travel"),
 
-    // ── Workday ─────────────────────────────────────────────────────
+    // ── Greenhouse — SeatGeek (split by location) ────────────────────────
+    fetchGreenhouse("seatgeek", "SeatGeek", "travel", (loc) => {
+      if (/Remote.*United States/i.test(loc)) return "SeatGeek (Remote)";
+      if (/New York/i.test(loc)) return "SeatGeek (NY)";
+      return null;
+    }),
+
+    // ── Greenhouse — New tech companies ──────────────────────────────────
+    fetchGreenhouse("coinbase", "Coinbase", "fintech"),
+    fetchGreenhouse("doordashglobal", "DoorDash", "general"),
+    fetchGreenhouse("reddit", "Reddit", "social"),
+    fetchGreenhouse("figma", "Figma", "general"),
+    fetchGreenhouse("discord", "Discord", "social"),
+    fetchGreenhouse("dropbox", "Dropbox", "saas"),
+    fetchGreenhouse("duolingo", "Duolingo", "edtech"),
+    fetchGreenhouse("brex", "Brex", "general"),
+    fetchAshby("plaid", "Plaid", "fintech"),     // migrated from GH 'plaid' (404) → Ashby (91 jobs)
+    fetchGreenhouse("roblox", "Roblox", "gaming"),
+
+    // ── Workday — Original ───────────────────────────────────────────────
     fetchWorkday(
       "livenation.wd503.myworkdayjobs.com",
       "livenation",
@@ -530,14 +1164,39 @@ async function fetchAllJobs() {
       "travel"
     ),
 
-    // ── Greenhouse (SeatGeek — split by location into Remote and NY cards) ──
-    fetchGreenhouse("seatgeek", "SeatGeek", "travel", (loc) => {
-      if (/Remote.*United States/i.test(loc)) return "SeatGeek (Remote)";
-      if (/New York/i.test(loc)) return "SeatGeek (NY)";
-      return null; // skip UK / other international locations
-    }),
+    // ── Workday — New companies ───────────────────────────────────────────
+    fetchWorkday(
+      "expedia.wd5.myworkdayjobs.com",
+      "expedia",
+      "Expedia_Group_External",
+      "Expedia Group",
+      "travel"
+    ),
+    fetchWorkday(
+      "hilton.wd5.myworkdayjobs.com",
+      "hilton",
+      "HJobs",
+      "Hilton",
+      "travel"
+    ),
 
-    // ── Booking.com — uses a public REST API (data nested under j.data) ──
+    // ── Lever ────────────────────────────────────────────────────────────
+    fetchLever("yelp", "Yelp", "local"),
+    fetchLever("postman", "Postman", "saas"),
+    fetchLever("thumbtack", "Thumbtack", "marketplace"),
+
+    // ── Ashby ────────────────────────────────────────────────────────────
+    fetchAshby("linear", "Linear", "saas"),
+    fetchAshby("replit", "Replit", "devtools"),
+    fetchAshby("retool", "Retool", "saas"),
+
+    // ── SmartRecruiters ───────────────────────────────────────────────────
+    fetchSmartRecruiters("RoyalCaribbeanGroup", "Royal Caribbean Group", "travel"),
+
+    // ── iCIMS RSS ────────────────────────────────────────────────────────
+    fetchDisney(),
+
+    // ── Booking.com — Custom REST API ─────────────────────────────────────
     (async () => {
       try {
         const res = await fetchWithTimeout(
@@ -568,14 +1227,144 @@ async function fetchAllJobs() {
       }
     })(),
 
-    // ── Disney — iCIMS public RSS feed (descriptions included inline) ──────
-    fetchDisney(),
+    // ── General Full Stack — Greenhouse ───────────────────────────────────
+    fetchGreenhouse("snapinc",    "Snap Inc.",  "general"),
+    fetchGreenhouse("stripe",     "Stripe",     "general"),
+    fetchGreenhouse("databricks", "Databricks", "general"),
+    fetchGreenhouse("twilio",     "Twilio",     "general"),
+    fetchGreenhouse("cloudflare", "Cloudflare", "general"),
+    fetchGreenhouse("datadog",    "Datadog",    "general"),
+    fetchGreenhouse("mongodb",    "MongoDB",    "general"),
+    fetchGreenhouse("riotgames",  "Riot Games", "general"),
+    fetchGreenhouse("vercel",     "Vercel",     "general"),
+    fetchGreenhouse("instacart",  "Instacart",  "general"),
+    fetchGreenhouse("pinterest",  "Pinterest",  "general"),
 
-    // ── Universal Studios (NBCUniversal) — Cloudflare-blocked ───────────────
-    // careers.nbcuniversal.com returns Cloudflare 403; no public ATS accessible.
+    // ── General Full Stack — Ashby ────────────────────────────────────────
+    fetchAshby("ramp",      "Ramp",      "general"),
+    fetchAshby("confluent", "Confluent", "general"),
+    fetchAshby("snowflake", "Snowflake", "general"),
 
-    // ── Uber Freight — Greenhouse (api.uber.com is blocked) ──────────
-    fetchGreenhouse("uberfreight", "Uber Freight", "travel"),
+    // ── General Full Stack — Workday ──────────────────────────────────────
+    fetchWorkday(
+      "adobe.wd5.myworkdayjobs.com",
+      "adobe",
+      "external_experienced",
+      "Adobe",
+      "general"
+    ),
+    fetchWorkday(
+      "intuit.wd1.myworkdayjobs.com",
+      "intuit",
+      "Intuit_Careers",
+      "Intuit",
+      "general"
+    ),
+    fetchWorkday(
+      "qualcomm.wd5.myworkdayjobs.com",
+      "qualcomm",
+      "External",
+      "Qualcomm",
+      "general"
+    ),
+    fetchWorkday(
+      "paypal.wd1.myworkdayjobs.com",
+      "paypal",
+      "jobs",
+      "PayPal",
+      "general"
+    ),
+    fetchWorkday(
+      "capitalone.wd12.myworkdayjobs.com",
+      "capitalone",
+      "Capital_One",
+      "Capital One",
+      "general"
+    ),
+    fetchWorkday(
+      "jpmc.wd5.myworkdayjobs.com",
+      "jpmc",
+      "technology",
+      "JPMorgan Chase",
+      "general"
+    ),
+    fetchWorkday(
+      "shopify.wd5.myworkdayjobs.com",
+      "shopify",
+      "Shopify",
+      "Shopify",
+      "general"
+    ),
+    fetchWorkday(
+      "zendesk.wd1.myworkdayjobs.com",
+      "zendesk",
+      "zendesk",
+      "Zendesk",
+      "general"
+    ),
+
+    // ── General Full Stack — FAANG (custom adapters) ──────────────────────
+    fetchAmazon("general"),
+    fetchGoogle("general"),
+    fetchMeta("general"),
+    fetchApple("general"),
+
+    // ── AI Agentics — Greenhouse ─────────────────────────────────────────
+    fetchGreenhouse("anthropic",  "Anthropic",          "ai-agentics"),
+    fetchGreenhouse("workato",    "Workato",             "ai-agentics"),
+    fetchGreenhouse("celonis",    "Make (Celonis US)",   "ai-agentics"),
+    fetchGreenhouse("gleanwork",          "Glean",               "ai-agentics"),
+    fetchGreenhouse("moveworks",          "Moveworks",           "ai-agentics"),
+    fetchGreenhouse("weights_and_biases", "Weights & Biases",    "ai-agentics"), // 'wandb' returns 404
+    fetchGreenhouse("codeium",            "Codeium / Windsurf",  "ai-agentics"),
+
+    // ── AI Agentics — Ashby ──────────────────────────────────────────────
+    fetchAshby("openai",     "OpenAI",          "ai-agentics"),
+    fetchAshby("cursor",     "Cursor",           "ai-agentics"),
+    fetchAshby("notion",     "Notion",           "ai-agentics"),
+    fetchAshby("zapier",     "Zapier",           "ai-agentics"),
+    fetchAshby("langchain",  "LangChain",        "ai-agentics"),
+    fetchAshby("cohere",     "Cohere",           "ai-agentics"),
+    fetchAshby("mistral",    "Mistral AI",       "ai-agentics"),
+    fetchAshby("hebbia-ai",  "Hebbia",           "ai-agentics"),
+    fetchAshby("harvey",     "Harvey AI",        "ai-agentics"),
+    fetchAshby("sierra",     "Sierra AI",        "ai-agentics"),
+    fetchAshby("ema",        "Ema",              "ai-agentics"),
+    fetchAshby("adept",      "Adept AI",         "ai-agentics"),
+    fetchAshby("cognition",  "Cognition AI",     "ai-agentics"),
+    fetchAshby("dust",       "Dust.tt",          "ai-agentics"),
+    fetchAshby("linear",     "Linear",           "ai-agentics"),
+    fetchAshby("retool",     "Retool",           "ai-agentics"),
+    fetchAshby("writer",     "Writer",           "ai-agentics"),
+    fetchAshby("runwayml",   "Runway ML",        "ai-agentics"),
+    fetchAshby("pathosai",   "Pathos AI",        "ai-agentics"),
+    fetchAshby("slack",      "Slack",            "ai-agentics"),
+
+    // ── AI Agentics — Workday ─────────────────────────────────────────────
+    fetchWorkday(
+      "salesforce.wd12.myworkdayjobs.com",
+      "salesforce",
+      "External_Career_Site",
+      "Salesforce",
+      "ai-agentics"
+    ),
+    fetchWorkday(
+      "microsoft.wd3.myworkdayjobs.com",
+      "microsoft",
+      "External",
+      "Microsoft",
+      "ai-agentics"
+    ),
+    fetchWorkday(
+      "servicenow.wd5.myworkdayjobs.com",
+      "servicenow",
+      "External",
+      "ServiceNow",
+      "ai-agentics"
+    ),
+
+    // ── Hiring Cafe — easy-apply aggregator (Playwright) ─────────────────
+    fetchHiringCafe("hiring-cafe"),
   ];
 
   const results = await Promise.allSettled(tasks);

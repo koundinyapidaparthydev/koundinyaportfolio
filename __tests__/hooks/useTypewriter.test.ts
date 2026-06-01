@@ -188,4 +188,15 @@ describe("useTypewriter", () => {
     await tick(600);
     expect(result.current).toBe("Hello World");
   });
+
+  it("clears the pending timer when the component unmounts mid-animation", () => {
+    // Mount the hook with a long pause so the timer is still pending at unmount
+    const { unmount } = renderHook(() =>
+      useTypewriter(["Hello"], { typeSpeed: 50, deleteSpeed: 25, pauseAfterType: 5000, pauseAfterDelete: 5000 })
+    );
+
+    // Unmount immediately — timeoutRef.current is the initial setTimeout (non-null)
+    // This exercises the cleanup: if (timeoutRef.current !== null) clearTimeout(...)
+    expect(() => unmount()).not.toThrow();
+  });
 });

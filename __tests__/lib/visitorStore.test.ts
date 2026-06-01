@@ -238,4 +238,63 @@ describe("detectOS", () => {
     const ua = "Mozilla/5.0 (X11; Linux x86_64) Gecko/20100101 Firefox/115.0";
     expect(detectOS(ua)).toEqual("Linux");
   });
+
+  it("detects Windows 8.1 (NT 6.3)", () => {
+    const ua = "Mozilla/5.0 (Windows NT 6.3; Win64; x64) Chrome/120.0";
+    expect(detectOS(ua)).toEqual("Windows 8.1");
+  });
+
+  it("detects Windows 7 (NT 6.1)", () => {
+    const ua = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) Chrome/120.0";
+    expect(detectOS(ua)).toEqual("Windows 7");
+  });
+
+  it("detects generic Windows (NT 6.0)", () => {
+    const ua = "Mozilla/5.0 (Windows NT 6.0) Chrome/120.0";
+    expect(detectOS(ua)).toEqual("Windows");
+  });
+
+  it("detects ChromeOS (CrOS UA)", () => {
+    const ua = "Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 Chrome/120.0";
+    expect(detectOS(ua)).toEqual("ChromeOS");
+  });
+
+  it("returns Other for unknown UA string", () => {
+    expect(detectOS("UnknownBot/1.0")).toEqual("Other");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// appendVisitor — write failure (read-only filesystem)
+// ---------------------------------------------------------------------------
+
+describe("appendVisitor write failure", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockReadFile.mockResolvedValue("[]");
+  });
+
+  it("logs a warning and does not throw when writeFile rejects", async () => {
+    mockWriteFile.mockRejectedValueOnce(new Error("EROFS: read-only file system"));
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(appendVisitor(baseEntry)).resolves.toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("write skipped"),
+      expect.stringContaining("EROFS")
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("logs a warning and does not throw when rename rejects", async () => {
+    mockRename.mockRejectedValueOnce(new Error("EXDEV: cross-device link"));
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+    await expect(appendVisitor(baseEntry)).resolves.toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("write skipped"),
+      expect.stringContaining("EXDEV")
+    );
+    warnSpy.mockRestore();
+  });
 });

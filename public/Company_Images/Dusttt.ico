@@ -1,0 +1,88 @@
+<!DOCTYPE html><html><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width"/><meta name="next-head-count" content="2"/><base href="https://dust.tt"/><script id="datadog-rum" data-nscript="beforeInteractive">
+             (function(h,o,u,n,d) {
+               h=h[d]=h[d]||{q:[],onReady:function(c){h.q.push(c)}}
+               d=o.createElement(u);d.async=1;d.src=n
+               n=o.getElementsByTagName(u)[0];n.parentNode.insertBefore(d,n)
+             })(window,document,'script','https://www.datadoghq-browser-agent.com/eu1/v6/datadog-rum.js','DD_RUM')
+             'pub1bcc9eedaf9bccd93b1671187e31c63d' && window.DD_RUM.onReady(function() {
+               window.DD_RUM.init({
+                 clientToken: 'pub1bcc9eedaf9bccd93b1671187e31c63d',
+                 applicationId: '5e9735e7-87c8-4093-b09f-49d708816bfd',
+                 site: 'datadoghq.eu',
+                 service: 'front-browser',
+                 env: 'prod',
+                 version: '84c0386',
+                 allowedTracingUrls: [
+                   "https://dust.tt",
+                   "https://eu.dust.tt",
+                   "https://front-edge.dust.tt",
+                   "https://eu.front-edge.dust.tt",
+                 ],
+                 traceSampleRate: 5,
+                 traceContextInjection: 'sampled',
+                 sessionSampleRate: 20,
+                 sessionReplaySampleRate: 5,
+                 defaultPrivacyLevel: 'mask-user-input',
+                 beforeSend: function (event) {
+                    // This error is benign, happens often in the wild but has 0 effect on the user.
+                    // See: https://github.com/DataDog/browser-sdk/issues/1616.
+                    if (
+                    event.type === "error" &&
+                      event.error.message &&
+                      event.error.message.includes(
+                        "ResizeObserver loop completed with undelivered notifications"
+                      )
+                    ) {
+                      return false;
+                    }
+                   if (event.type === "action" && event.action && event.action.target && event.action.type === "click") {
+                     if (event._dd && event._dd.action && event._dd.action.name_source === "text_content") {
+                       var elSelector = event._dd.action.target && event._dd.action.target.selector;
+                       if (elSelector && typeof elSelector === "string") {
+                         try {
+                           var el = document.querySelector(elSelector);
+                           if (el) {
+                             var parentWithPrivacyMask = el.closest(".dd-privacy-mask");
+                             if (parentWithPrivacyMask) {
+                               // Initially redact with a generic string
+                               event.action.target.name = "[text element within dd-privacy-mask]";
+                               // Now attempt to provide a better, less generic name, still respecting privacy
+                               var buttonParent = el.closest("button");
+                               if (buttonParent) {
+                                 var ariaLabel = buttonParent.getAttribute("aria-label");
+                                 if (ariaLabel) {
+                                   event.action.target.name = ariaLabel;  // More specific, but still protecting privacy
+                                 }
+                               }
+                             }
+                           }
+                         } catch (error) {
+                           // Invalid selector - silently ignore
+                         }
+                       }
+                     }
+                   }
+                   return true;
+                 }
+               });
+             })
+           </script><script id="privacy-mask-init" data-nscript="beforeInteractive">
+              (function() {
+                // Initialize privacy mask state from localStorage on page load.
+                function initPrivacyMask() {
+                  const stored = localStorage.getItem('privacy-mask');
+                  const isEnabled = stored === 'true';
+
+                  if (isEnabled) {
+                    document.body.classList.add('privacy-mask-enabled');
+                  }
+                }
+
+                // Run on DOM ready.
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', initPrivacyMask);
+                } else {
+                  initPrivacyMask();
+                }
+              })();
+            </script><link rel="preload" href="/_next/static/css/ee0f8e63270dd65b.css" as="style"/><link rel="stylesheet" href="/_next/static/css/ee0f8e63270dd65b.css" data-n-g=""/><noscript data-n-css=""></noscript><script defer="" nomodule="" src="/_next/static/chunks/polyfills-42372ed130431b0a.js"></script><script src="/_next/static/chunks/webpack-c3e30bbe6a925717.js" defer=""></script><script src="/_next/static/chunks/framework-fa52f350e8bc9cc4.js" defer=""></script><script src="/_next/static/chunks/main-d804b9984d63d3ef.js" defer=""></script><script src="/_next/static/chunks/pages/_app-3601d5c14e50696c.js" defer=""></script><script src="/_next/static/chunks/9cb7a7c1-ac12afe6907e16b0.js" defer=""></script><script src="/_next/static/chunks/1080-244b3ffc6e2aef6c.js" defer=""></script><script src="/_next/static/chunks/2295-3a9299a2a3ec6579.js" defer=""></script><script src="/_next/static/chunks/pages/404-81bd93932f429423.js" defer=""></script><script src="/_next/static/pL6blK_ojM_HKIva9uEUB/_buildManifest.js" defer=""></script><script src="/_next/static/pL6blK_ojM_HKIva9uEUB/_ssgManifest.js" defer=""></script></head><body><noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-MDWPND4G" height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript><div id="__next"><div class="flex h-dvh items-center justify-center"><div class="flex flex-col gap-3 text-center"><div class="flex flex-col items-center"><div><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 24 24" class="dark:text-golder-400-night text-golden-400 s-shrink-0 s-h-8 s-w-8"><path fill="currentColor" d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10m-1-7v2h2v-2zm0-8v6h2V7z"></path></svg></div><p class="heading-xl leading-7 text-foreground dark:text-foreground-night">404: Page not found</p><p class="copy-sm leading-tight text-muted-foreground dark:text-muted-foreground-night">Looks like this page took an unscheduled coffee break.</p></div><a target="_self" href="/"><button class="s-inline-flex s-items-center s-justify-center s-whitespace-nowrap s-ring-offset-background s-transition-colors s-ring-inset s-select-none focus-visible:s-outline-none focus-visible:s-ring-2 focus-visible:s-ring-ring focus-visible:s-ring-offset-0 dark:focus-visible:s-ring-0 dark:focus-visible:s-ring-offset-1 s-border s-border-border dark:s-border-border-night s-text-primary dark:s-text-primary-night s-bg-background dark:s-bg-background-night hover:s-text-primary dark:hover:s-text-primary-night hover:s-bg-primary-100 dark:hover:s-bg-primary-900 hover:s-border-primary-150 dark:hover:s-border-border-night active:s-bg-primary-300 dark:active:s-bg-primary-900 disabled:s-text-primary-muted dark:disabled:s-text-primary-muted-night disabled:s-border-primary-100 dark:disabled:s-border-primary-100-night disabled:hover:s-bg-background dark:disabled:hover:s-bg-background-night disabled:hover:s-border-primary-100 dark:disabled:hover:s-border-primary-100-night disabled:hover:s-text-primary-muted dark:disabled:hover:s-text-primary-muted-night s-h-9 s-px-3 s-gap-2 s-shrink-0 s-rounded-xl" aria-label="Back to homepage"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="none" viewBox="0 0 24 24" class="-s-mx-0.5 s-shrink-0 s-h-5 s-w-5"><path fill="currentColor" d="M10 11H2.048c.502-5.053 4.765-9 9.95-9 5.523 0 10 4.477 10 10s-4.477 10-10 10c-5.185 0-9.448-3.947-9.95-9h7.95v3l5-4-5-4z"></path></svg><div class="s-flex s-items-center s-gap-2 s-label-sm">Back to homepage</div></button></a></div></div></div><script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{}},"page":"/404","query":{},"buildId":"pL6blK_ojM_HKIva9uEUB","nextExport":true,"autoExport":true,"isFallback":false,"scriptLoader":[]}</script></body></html>
