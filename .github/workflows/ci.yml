@@ -93,8 +93,8 @@ jobs:
         env:
           NEXTAUTH_SECRET: ci-test-secret
           NEXTAUTH_URL: http://localhost:3000
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || 'admin@koundinyapidaparthy.com' }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || 'cypress-test-password' }}
           SMTP_HOST: localhost
           SMTP_PORT: "1025"
           SMTP_USER: test@example.com
@@ -106,8 +106,8 @@ jobs:
         env:
           NEXTAUTH_SECRET: ci-test-secret
           NEXTAUTH_URL: http://localhost:3000
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || 'admin@koundinyapidaparthy.com' }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || 'cypress-test-password' }}
           SMTP_HOST: localhost
           SMTP_PORT: "1025"
           SMTP_USER: test@example.com
@@ -120,8 +120,8 @@ jobs:
       - name: Run Cypress E2E (headless)
         run: npm run cypress:run
         env:
-          CYPRESS_ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-          CYPRESS_ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          CYPRESS_ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || 'admin@koundinyapidaparthy.com' }}
+          CYPRESS_ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || 'cypress-test-password' }}
 
       - name: Upload Cypress screenshots on failure
         if: failure()
