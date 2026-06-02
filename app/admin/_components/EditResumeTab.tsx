@@ -1305,7 +1305,7 @@ export default function EditResumeTab() {
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="mr-auto">
-          <h2 className="text-lg font-semibold text-white">Edit Resume</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Edit Resume</h2>
           <p className="text-xs text-slate-500">Auto-saved every 500 ms · Cmd+Z to undo</p>
         </div>
 

@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
-  const { company, title, description, jobUrl } = body;
+  const { company, title, description } = body;
   if (!company || !title || !description) {
     return NextResponse.json({ error: "company, title, description required" }, { status: 400 });
   }

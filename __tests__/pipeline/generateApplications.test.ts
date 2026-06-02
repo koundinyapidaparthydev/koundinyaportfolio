@@ -61,7 +61,7 @@ function shouldProcess(row: JobRow): boolean {
 
 /** Determines the apply_status value to write based on ATS score. */
 function getApplyStatus(atsScore: number): string {
-  return atsScore >= ATS_THRESHOLD ? "pending" : "low-ats";
+  return "pending";
 }
 
 /** Builds the range string for updating a row. */
@@ -216,10 +216,10 @@ describe("getApplyStatus – ATS threshold", () => {
     [80, "pending"],
     [90, "pending"],
     [100, "pending"],
-    [69, "low-ats"],
-    [50, "low-ats"],
-    [0, "low-ats"],
-    [1, "low-ats"],
+    [69, "pending"],
+    [50, "pending"],
+    [0, "pending"],
+    [1, "pending"],
   ])("score %d → '%s'", (score, expected) => {
     expect(getApplyStatus(score)).toBe(expected);
   });
@@ -228,12 +228,12 @@ describe("getApplyStatus – ATS threshold", () => {
     expect(getApplyStatus(70)).toBe("pending");
   });
 
-  it("score one below threshold (69) is 'low-ats'", () => {
-    expect(getApplyStatus(69)).toBe("low-ats");
+  it("score one below threshold (69) is 'pending'", () => {
+    expect(getApplyStatus(69)).toBe("pending");
   });
 
-  it("score 0 is 'low-ats'", () => {
-    expect(getApplyStatus(0)).toBe("low-ats");
+  it("score 0 is 'pending'", () => {
+    expect(getApplyStatus(0)).toBe("pending");
   });
 
   it("score 100 is 'pending'", () => {
@@ -329,9 +329,9 @@ describe("buildUpdateValues – value mapping to sheet columns", () => {
     expect(buildUpdateValues(baseResult)[5]).toBe("pending");
   });
 
-  it("col M (index 5): apply_status = 'low-ats' when score < 70", () => {
+  it("col M (index 5): apply_status = 'pending' even when score < 70", () => {
     const lowScore = { ...baseResult, atsScore: 65 };
-    expect(buildUpdateValues(lowScore)[5]).toBe("low-ats");
+    expect(buildUpdateValues(lowScore)[5]).toBe("pending");
   });
 
   it("handles empty matched array", () => {
@@ -354,9 +354,9 @@ describe("buildUpdateValues – value mapping to sheet columns", () => {
     expect(buildUpdateValues(r)[5]).toBe("pending");
   });
 
-  it("handles score of 0 → low-ats", () => {
+  it("handles score of 0 → pending", () => {
     const r = { ...baseResult, atsScore: 0 };
-    expect(buildUpdateValues(r)[5]).toBe("low-ats");
+    expect(buildUpdateValues(r)[5]).toBe("pending");
   });
 
   it("handles score of 100 → pending", () => {

@@ -36,7 +36,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   // Admin/login sections are always dark — keep navbar dark there too
-  const isAdminPath = pathname.startsWith("/admin") || pathname === "/login";
 
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -90,7 +89,6 @@ export default function Navbar() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className={[
           "fixed left-0 right-0 top-0 z-50 transition-[background,border,backdrop-filter] duration-300",
-          isAdminPath ? "dark" : "",
           scrolled
             ? "border-b border-black/10 bg-white/90 shadow-lg shadow-black/5 backdrop-blur-xl dark:border-white/10 dark:bg-black/75 dark:shadow-black/20"
             : "bg-transparent",
@@ -167,12 +165,10 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Theme toggle (desktop) — hidden in admin where it has no effect */}
-          {!isAdminPath && (
-            <div className="ml-1 hidden md:flex">
-              <ThemeToggle />
-            </div>
-          )}
+          {/* Theme toggle (desktop) */}
+          <div className="ml-1 hidden md:flex">
+            <ThemeToggle />
+          </div>
 
           {/* Mobile hamburger */}
           <button
@@ -257,13 +253,11 @@ export default function Navbar() {
                       Admin
                     </Link>
                   )}
-                  {/* Theme toggle in mobile drawer — hidden in admin */}
-                  {!isAdminPath && (
-                    <div className="flex items-center gap-2 px-3 py-2.5">
-                      <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Theme</span>
-                      <ThemeToggle />
-                    </div>
-                  )}
+                  {/* Theme toggle in mobile drawer */}
+                  <div className="flex items-center gap-2 px-3 py-2.5">
+                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Theme</span>
+                    <ThemeToggle />
+                  </div>
                 </div>
               </div>
             </motion.div>

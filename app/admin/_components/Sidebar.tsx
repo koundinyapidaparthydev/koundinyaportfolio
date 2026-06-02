@@ -126,7 +126,7 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
     <>
       {/* ── Desktop sidebar ── */}
       <aside className="hidden w-56 shrink-0 flex-col gap-1 lg:flex">
-        <p className="mb-3 px-3 text-[10px] font-semibold uppercase tracking-widest text-slate-600">
+        <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
           Dashboard
         </p>
         {NAV_ITEMS.map(({ id, label, icon }) => {
@@ -137,14 +137,14 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
               type="button"
               onClick={() => onSelect(id)}
               className={[
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 border",
                 active
-                  ? "bg-indigo-500/15 text-indigo-300"
-                  : "text-slate-500 dark:hover:bg-white/5 hover:bg-slate-100 dark:hover:text-slate-300 hover:text-slate-700",
+                  ? "bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-100 dark:border-indigo-500/20 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 border-transparent hover:border-slate-100 dark:hover:border-transparent",
               ].join(" ")}
             >
               <span
-                className={active ? "text-indigo-400" : "text-slate-500"}
+                className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500 transition-colors"}
               >
                 {icon}
               </span>
@@ -159,7 +159,7 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-xl border dark:border-white/8 border-slate-200 px-3 py-2.5 text-sm font-medium text-slate-500 transition-all hover:border-indigo-500/30 hover:text-indigo-300"
+            className="flex items-center gap-3 rounded-xl border dark:border-white/8 border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500 transition-all dark:hover:border-indigo-500/30 hover:border-indigo-200 dark:hover:text-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 dark:hover:bg-transparent"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -191,13 +191,13 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
               type="button"
               onClick={() => onSelect(id)}
               className={[
-                "flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-medium transition-all",
+                "flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all border",
                 active
-                  ? "bg-indigo-500/15 text-indigo-300"
-                  : "text-slate-500 dark:hover:bg-white/5 hover:bg-slate-100 dark:hover:text-slate-300 hover:text-slate-700",
+                  ? "bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-100 dark:border-indigo-500/20 shadow-sm"
+                  : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 border-transparent",
               ].join(" ")}
             >
-              <span className={active ? "text-indigo-400" : "text-slate-500"}>
+              <span className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}>
                 {icon}
               </span>
               {label}
@@ -208,7 +208,7 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="ml-2 flex shrink-0 items-center gap-2 rounded-xl border dark:border-white/8 border-slate-200 px-3 py-2 text-xs font-medium text-slate-500 hover:text-indigo-300"
+          className="ml-2 flex shrink-0 items-center gap-2 rounded-xl border dark:border-white/8 border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50/30 dark:hover:bg-transparent"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

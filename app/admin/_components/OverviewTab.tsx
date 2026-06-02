@@ -248,7 +248,7 @@ export default function OverviewTab() {
     <div className="space-y-8">
       {/* ── Header ── */}
       <div>
-        <h2 className="text-lg font-semibold text-white">Overview</h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Overview</h2>
         <p className="mt-0.5 text-sm text-slate-500">
           Live analytics from your portfolio&apos;s visitor tracker.
         </p>

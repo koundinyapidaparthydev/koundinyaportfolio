@@ -75,7 +75,7 @@ import { createWriteStream as createWS } from "fs";
 const GOOGLE_SHEET_ID             = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const DRY_RUN                     = process.env.DRY_RUN === "true";
-const APPLY_LIMIT                 = parseInt(process.env.APPLY_LIMIT ?? "10", 10);
+const APPLY_LIMIT                 = parseInt(process.env.APPLY_LIMIT ?? "200", 10);
 
 // Applicant personal info (for form filling)
 const APPLICANT = {
@@ -191,11 +191,16 @@ async function applyGreenhouse(browser, job) {
     // Navigate to the job application page
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
-    // Find and click the Apply button (if on the job details page)
-    const applyBtn = page.locator('a[href*="apply"], button:has-text("Apply")').first();
-    if (await applyBtn.count() > 0) {
-      await applyBtn.click();
-      await page.waitForLoadState("domcontentloaded");
+    // Guard: if the form is already visible on the landing page, bypass the "Apply" click
+    const formInput = page.locator('input[name="first_name"], input[id*="first_name"]').first();
+    const hasForm = await formInput.count() > 0 && await formInput.isVisible();
+    if (!hasForm) {
+      // Find and click the Apply button (if on the job details page)
+      const applyBtn = page.locator('a[href*="apply"], button:has-text("Apply")').first();
+      if (await applyBtn.count() > 0) {
+        await applyBtn.click();
+        await page.waitForLoadState("domcontentloaded").catch(() => {});
+      }
     }
 
     // Wait for the form to appear
@@ -380,10 +385,15 @@ async function applyAshby(browser, job) {
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
-    const applyBtn = page.locator('a[href*="apply"], button:has-text("Apply")').first();
-    if (await applyBtn.count() > 0) {
-      await applyBtn.click();
-      await page.waitForLoadState("domcontentloaded");
+    // Guard: if the form is already visible, bypass the "Apply" click
+    const formInput = page.locator('input[name="firstName"], input[placeholder*="First"]').first();
+    const hasForm = await formInput.count() > 0 && await formInput.isVisible();
+    if (!hasForm) {
+      const applyBtn = page.locator('a[href*="apply"], button:has-text("Apply")').first();
+      if (await applyBtn.count() > 0) {
+        await applyBtn.click();
+        await page.waitForLoadState("domcontentloaded").catch(() => {});
+      }
     }
 
     await page.waitForSelector('input[name="firstName"], input[placeholder*="First"]', { timeout: 15_000 });
@@ -427,10 +437,15 @@ async function applySmartRecruiters(browser, job) {
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
-    const applyBtn = page.locator('button:has-text("Apply"), a:has-text("Apply Now")').first();
-    if (await applyBtn.count() > 0) {
-      await applyBtn.click();
-      await page.waitForLoadState("domcontentloaded");
+    // Guard: if the form is already visible, bypass the "Apply" click
+    const formInput = page.locator('input[name="firstName"], input[id*="firstName"]').first();
+    const hasForm = await formInput.count() > 0 && await formInput.isVisible();
+    if (!hasForm) {
+      const applyBtn = page.locator('button:has-text("Apply"), a:has-text("Apply Now")').first();
+      if (await applyBtn.count() > 0) {
+        await applyBtn.click();
+        await page.waitForLoadState("domcontentloaded").catch(() => {});
+      }
     }
 
     await page.waitForSelector('input[name="firstName"], input[id*="firstName"]', { timeout: 15_000 });
@@ -473,10 +488,15 @@ async function applyBreezy(browser, job) {
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
-    const applyBtn = page.locator('a:has-text("Apply"), button:has-text("Apply")').first();
-    if (await applyBtn.count() > 0) {
-      await applyBtn.click();
-      await page.waitForLoadState("domcontentloaded");
+    // Guard: if the form is already visible, bypass the "Apply" click
+    const formInput = page.locator('input[name="name"], input[id*="name"]').first();
+    const hasForm = await formInput.count() > 0 && await formInput.isVisible();
+    if (!hasForm) {
+      const applyBtn = page.locator('a:has-text("Apply"), button:has-text("Apply")').first();
+      if (await applyBtn.count() > 0) {
+        await applyBtn.click();
+        await page.waitForLoadState("domcontentloaded").catch(() => {});
+      }
     }
 
     await page.waitForSelector('input[name="name"], input[id*="name"]', { timeout: 15_000 });
@@ -517,10 +537,15 @@ async function applyWorkable(browser, job) {
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
-    const applyBtn = page.locator('a:has-text("Apply"), button:has-text("Apply Now")').first();
-    if (await applyBtn.count() > 0) {
-      await applyBtn.click();
-      await page.waitForLoadState("domcontentloaded");
+    // Guard: if the form is already visible, bypass the "Apply" click
+    const formInput = page.locator('input[name="firstname"], input[id*="firstname"]').first();
+    const hasForm = await formInput.count() > 0 && await formInput.isVisible();
+    if (!hasForm) {
+      const applyBtn = page.locator('a:has-text("Apply"), button:has-text("Apply Now")').first();
+      if (await applyBtn.count() > 0) {
+        await applyBtn.click();
+        await page.waitForLoadState("domcontentloaded").catch(() => {});
+      }
     }
 
     await page.waitForSelector('input[name="firstname"], input[id*="firstname"]', { timeout: 15_000 });
@@ -562,10 +587,15 @@ async function applyRecruitee(browser, job) {
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
-    const applyBtn = page.locator('a:has-text("Apply"), button:has-text("Apply")').first();
-    if (await applyBtn.count() > 0) {
-      await applyBtn.click();
-      await page.waitForLoadState("domcontentloaded");
+    // Guard: if the form is already visible, bypass the "Apply" click
+    const formInput = page.locator('input[name="first_name"], input[id*="first_name"]').first();
+    const hasForm = await formInput.count() > 0 && await formInput.isVisible();
+    if (!hasForm) {
+      const applyBtn = page.locator('a:has-text("Apply"), button:has-text("Apply")').first();
+      if (await applyBtn.count() > 0) {
+        await applyBtn.click();
+        await page.waitForLoadState("domcontentloaded").catch(() => {});
+      }
     }
 
     await page.waitForSelector('input[name="first_name"], input[id*="first_name"]', { timeout: 15_000 });

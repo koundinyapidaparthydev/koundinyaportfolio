@@ -81,7 +81,7 @@ export default function SettingsTab() {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-lg font-semibold text-white">Settings</h2>
+        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Settings</h2>
         <p className="mt-0.5 text-sm text-slate-500">
           Manage your admin account.
         </p>

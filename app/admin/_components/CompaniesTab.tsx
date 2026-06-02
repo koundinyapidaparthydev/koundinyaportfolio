@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { calculateAtsScore } from "@/lib/atsScoring";
 import type { Resume } from "@/types/resume";
 import type { AtsResult } from "@/lib/atsScoring";
@@ -243,9 +243,9 @@ function CompanyCard({
   return (
     <div
       className={[
-        "group flex flex-col gap-2 rounded-xl border bg-gradient-to-br p-4 transition-all duration-200 cursor-pointer",
+        "group flex flex-col gap-2 rounded-xl border bg-gradient-to-br p-4 transition-all duration-200 cursor-pointer shadow-sm hover:shadow dark:shadow-none",
         company.color,
-        isSelected ? "ring-2 ring-indigo-400/60" : "",
+        isSelected ? "ring-2 ring-indigo-400/60 dark:ring-indigo-400/60" : "",
       ].join(" ")}
       role="button"
       tabIndex={0}
@@ -260,10 +260,10 @@ function CompanyCard({
             alt=""
             width={24}
             height={24}
-            className="rounded-sm shrink-0 object-contain bg-white/10"
+            className="rounded-sm shrink-0 object-contain bg-white/10 dark:bg-white/10"
             onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
           />
-          <span className="font-semibold text-slate-200 text-sm leading-tight group-hover:text-white transition-colors truncate">
+          <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm leading-tight group-hover:text-slate-900 dark:group-hover:text-white transition-colors truncate">
             {company.name}
           </span>
         </div>
@@ -279,7 +279,7 @@ function CompanyCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-slate-500 hover:text-slate-300 transition-colors mt-0.5"
+            className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 transition-colors mt-0.5"
             aria-label={`Open ${company.name} careers`}
           >
             <svg
@@ -301,44 +301,22 @@ function CompanyCard({
         </div>
       </div>
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-slate-500 group-hover:text-slate-400 transition-colors truncate">
+        <span className="text-[10px] text-slate-400 dark:text-slate-500 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors truncate">
           {new URL(company.url).hostname}
         </span>
         <div className="flex items-center gap-1 ml-1 shrink-0">
           {newCount > 0 && (
-            <span className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
+            <span className="rounded-full bg-emerald-50 dark:bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/30">
               +{newCount} new
             </span>
           )}
           {jobCount > 0 && (
-            <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-300 border border-indigo-500/30">
+            <span className="rounded-full bg-indigo-50 dark:bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/30">
               {jobCount}
             </span>
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-function EmptyCategory({ label }: { label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-600">
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="h-10 w-10 opacity-30"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden="true"
-      >
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
-      </svg>
-      <p className="text-sm">No companies added yet for <span className="text-slate-400">{label}</span></p>
     </div>
   );
 }
@@ -380,15 +358,15 @@ function AtsInsightPanel({ ats, job }: { ats: AtsResult; job: Job }) {
   const seniority = inferSeniority(job.title);
   const locType = inferLocationType(job.location, job.description);
   const seniorityColors: Record<string, string> = {
-    senior: "bg-violet-500/15 text-violet-300 border-violet-500/25",
-    mid:    "bg-blue-500/15 text-blue-300 border-blue-500/25",
-    junior: "bg-slate-500/15 text-slate-400 border-slate-500/25",
+    senior: "dark:bg-violet-500/15 bg-violet-50 dark:text-violet-300 text-violet-700 dark:border-violet-500/25 border-violet-100",
+    mid:    "dark:bg-blue-500/15 bg-blue-50 dark:text-blue-300 text-blue-700 dark:border-blue-500/25 border-blue-100",
+    junior: "dark:bg-slate-500/15 bg-slate-50 dark:text-slate-400 text-slate-700 dark:border-slate-500/25 border-slate-100",
   };
   const locColors: Record<string, string> = {
-    remote:  "bg-emerald-500/15 text-emerald-400 border-emerald-500/25",
-    hybrid:  "bg-amber-500/15 text-amber-400 border-amber-500/25",
-    onsite:  "bg-sky-500/15 text-sky-400 border-sky-500/25",
-    unknown: "bg-slate-500/15 text-slate-400 border-slate-500/20",
+    remote:  "dark:bg-emerald-500/15 bg-emerald-50 dark:text-emerald-400 text-emerald-700 dark:border-emerald-500/25 border-emerald-100",
+    hybrid:  "dark:bg-amber-500/15 bg-amber-50 dark:text-amber-400 text-amber-700 dark:border-amber-500/25 border-amber-100",
+    onsite:  "dark:bg-sky-500/15 bg-sky-50 dark:text-sky-400 text-sky-700 dark:border-sky-500/25 border-sky-100",
+    unknown: "dark:bg-slate-500/15 bg-slate-50 dark:text-slate-400 text-slate-700 dark:border-slate-500/20 border-slate-100",
   };
   return (
     <div className="mt-3 pt-3 border-t dark:border-white/5 border-slate-200 space-y-3">
@@ -418,15 +396,15 @@ function AtsInsightPanel({ ats, job }: { ats: AtsResult; job: Job }) {
         </div>
       )}
       <div className="flex flex-wrap gap-1 items-center">
-        <span className="text-[10px] text-slate-600 mr-0.5">Matched:</span>
+        <span className="text-[10px] text-slate-500 dark:text-slate-400 mr-0.5">Matched:</span>
         {ats.matched.slice(0, 8).map((kw) => (
-          <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{kw}</span>
+          <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20">{kw}</span>
         ))}
         {ats.missing.length > 0 && (
           <>
-            <span className="text-[10px] text-slate-600 ml-1 mr-0.5">Gap:</span>
+            <span className="text-[10px] text-slate-500 dark:text-slate-400 ml-1 mr-0.5">Gap:</span>
             {ats.missing.slice(0, 4).map((kw) => (
-              <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-slate-500/10 text-slate-500 border border-slate-500/20">{kw}</span>
+              <span key={kw} className="rounded px-1.5 py-0.5 text-[9px] bg-slate-50 dark:bg-slate-500/10 text-slate-600 dark:text-slate-500 border border-slate-150 dark:border-slate-500/20">{kw}</span>
             ))}
           </>
         )}
@@ -576,13 +554,17 @@ export default function CompaniesTab() {
   const totalFiltered = filteredJobs.length;
 
   // Jobs with ATS >= 70% that have descriptions (auto-gen candidates)
-  const topMatches = resume
-    ? jobs
-        .filter((j) => j.description)
-        .map((j) => ({ job: j, ats: calculateAtsScore(j.description, resume) }))
-        .filter(({ ats }) => ats.score >= 70)
-        .sort((a, b) => b.ats.score - a.ats.score)
-    : [];
+  const topMatches = useMemo(
+    () =>
+      resume
+        ? jobs
+            .filter((j) => j.description)
+            .map((j) => ({ job: j, ats: calculateAtsScore(j.description, resume) }))
+            .filter(({ ats }) => ats.score >= 70)
+            .sort((a, b) => b.ats.score - a.ats.score)
+        : [],
+    [jobs, resume]
+  );
 
   const handleBulkGenerate = useCallback(async () => {
     if (topMatches.length === 0 || bulkState.running) return;
@@ -726,17 +708,17 @@ export default function CompaniesTab() {
       )}
 
       {/* Sub-tabs */}
-      <div className="mb-4 flex gap-1 rounded-xl dark:bg-white/5 bg-slate-100 p-1">
+      <div className="mb-4 flex gap-1 rounded-xl dark:bg-white/5 bg-slate-100 p-1 border dark:border-transparent border-slate-200/50 shadow-sm">
         {TABS.map(({ id, label }) => (
           <button
             key={id}
             type="button"
             onClick={() => { setActiveCategory(id); setSelectedCompany(null); setExpandedJob(null); }}
             className={[
-              "flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-150",
+              "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-200",
               activeCategory === id
-                ? "bg-indigo-500/20 text-indigo-300 shadow"
-                : "text-slate-500 hover:text-slate-300",
+                ? "bg-white dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-slate-200/60 dark:border-transparent shadow-sm"
+                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200",
             ].join(" ")}
           >
             {label}
@@ -746,7 +728,7 @@ export default function CompaniesTab() {
 
       {/* Time filter pills */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
-        <span className="text-[11px] text-slate-600 mr-1">Show new jobs from:</span>
+        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mr-1">Show new jobs from:</span>
         {TIME_FILTERS.map(({ id, label }) => {
           const count = filterByTime(jobs, id).length;
           return (
@@ -755,10 +737,10 @@ export default function CompaniesTab() {
               type="button"
               onClick={() => setTimeFilter(id)}
               className={[
-                "flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium border transition-all duration-150",
+                "flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold border transition-all duration-200 shadow-sm",
                 timeFilter === id
-                  ? "bg-indigo-500/25 text-indigo-300 border-indigo-500/50 shadow"
-                  : "dark:bg-white/5 bg-slate-100 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-300 dark:hover:border-white/20 hover:border-slate-300",
+                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
+                  : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
               ].join(" ")}
             >
               {label}
@@ -766,10 +748,10 @@ export default function CompaniesTab() {
                 <span className={[
                   "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
                   timeFilter === id
-                    ? "bg-indigo-500/30 text-indigo-200"
+                    ? "bg-indigo-100 dark:bg-indigo-500/30 text-indigo-700 dark:text-indigo-200"
                     : id === "2h" && count > 0
-                    ? "bg-emerald-500/20 text-emerald-400"
-                    : "dark:bg-white/10 bg-slate-200 text-slate-400",
+                    ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-transparent"
+                    : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400",
                 ].join(" ")}>
                   {count}
                 </span>
@@ -857,10 +839,10 @@ export default function CompaniesTab() {
                         type="button"
                         onClick={() => setLocationFilter(loc)}
                         className={[
-                          "rounded-full px-2.5 py-1 text-[10px] font-medium border transition-all",
+                          "rounded-full px-2.5 py-1 text-[10px] font-semibold border transition-all duration-200 shadow-sm",
                           locationFilter === loc
-                            ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
-                            : "dark:bg-white/5 bg-slate-100 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-300",
+                            ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
+                            : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
                         ].join(" ")}
                       >
                         {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
@@ -897,7 +879,7 @@ export default function CompaniesTab() {
               ) : selectedJobs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 gap-2 text-slate-600">
                   <p className="text-sm">No roles match your filters</p>
-                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs text-indigo-400 hover:text-indigo-300">Clear filters</button>
+                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Clear filters</button>
                 </div>
               ) : (
                 <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
@@ -957,7 +939,7 @@ export default function CompaniesTab() {
                             </button>
                           )}
                           <a href={job.url} target="_blank" rel="noopener noreferrer"
-                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all">
+                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-white px-3 py-1 text-xs text-slate-600 dark:text-slate-400 dark:hover:text-slate-100 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all font-medium">
                             Apply
                           </a>
                         </div>
@@ -1049,10 +1031,10 @@ export default function CompaniesTab() {
                         type="button"
                         onClick={() => setLocationFilter(loc)}
                         className={[
-                          "rounded-full px-2.5 py-1 text-[10px] font-medium border transition-all",
+                          "rounded-full px-2.5 py-1 text-[10px] font-semibold border transition-all duration-200 shadow-sm",
                           locationFilter === loc
-                            ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
-                            : "dark:bg-white/5 bg-slate-100 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-300",
+                            ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
+                            : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
                         ].join(" ")}
                       >
                         {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
@@ -1089,7 +1071,7 @@ export default function CompaniesTab() {
               ) : selectedJobs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 gap-2 text-slate-600">
                   <p className="text-sm">No roles match your filters</p>
-                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs text-indigo-400 hover:text-indigo-300">Clear filters</button>
+                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Clear filters</button>
                 </div>
               ) : (
                 <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
@@ -1149,7 +1131,7 @@ export default function CompaniesTab() {
                             </button>
                           )}
                           <a href={job.url} target="_blank" rel="noopener noreferrer"
-                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all">
+                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-white px-3 py-1 text-xs text-slate-600 dark:text-slate-400 dark:hover:text-slate-100 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all font-medium">
                             Apply
                           </a>
                         </div>
@@ -1240,10 +1222,10 @@ export default function CompaniesTab() {
                         type="button"
                         onClick={() => setLocationFilter(loc)}
                         className={[
-                          "rounded-full px-2.5 py-1 text-[10px] font-medium border transition-all",
+                          "rounded-full px-2.5 py-1 text-[10px] font-semibold border transition-all duration-200 shadow-sm",
                           locationFilter === loc
-                            ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
-                            : "dark:bg-white/5 bg-slate-100 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-300",
+                            ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
+                            : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
                         ].join(" ")}
                       >
                         {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
@@ -1280,7 +1262,7 @@ export default function CompaniesTab() {
               ) : selectedJobs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 gap-2 text-slate-600">
                   <p className="text-sm">No roles match your filters</p>
-                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs text-indigo-400 hover:text-indigo-300">Clear filters</button>
+                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Clear filters</button>
                 </div>
               ) : (
                 <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
@@ -1340,7 +1322,7 @@ export default function CompaniesTab() {
                             </button>
                           )}
                           <a href={job.url} target="_blank" rel="noopener noreferrer"
-                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-3 py-1 text-xs text-slate-400 hover:text-slate-100 hover:bg-indigo-500/20 hover:border-indigo-500/40 transition-all">
+                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-white px-3 py-1 text-xs text-slate-600 dark:text-slate-400 dark:hover:text-slate-100 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all font-medium">
                             Apply
                           </a>
                         </div>
@@ -1378,17 +1360,17 @@ export default function CompaniesTab() {
         return (
           <div>
             {/* Source banner */}
-            <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3">
+            <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-500/20 dark:border-amber-500/20 bg-amber-50/40 dark:bg-amber-500/[0.06] px-4 py-3 shadow-sm dark:shadow-none">
               <span className="text-xl">☕</span>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-amber-300">
-                  Easy-Apply Jobs — <a href="https://hiring.cafe/?searchState=%7B%22searchQuery%22%3A%22software+engineer%22%2C%22sortBy%22%3A%22date%22%2C%22dateFetchedPastNDays%22%3A2%2C%22applicationFormEase%22%3A%5B%22Simple%22%5D%7D" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-200 transition-colors">hiring.cafe</a>
+                <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                  Easy-Apply Jobs — <a href="https://hiring.cafe/?searchState=%7B%22searchQuery%22%3A%22software+engineer%22%2C%22sortBy%22%3A%22date%22%2C%22dateFetchedPastNDays%22%3A2%2C%22applicationFormEase%22%3A%5B%22Simple%22%5D%7D" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-950 dark:hover:text-amber-200 transition-colors">hiring.cafe</a>
                 </p>
                 <p className="mt-0.5 text-[11px] text-slate-500">
                   Sourced via the scraper — only jobs with a &ldquo;Simple&rdquo; application form. Run <code className="dark:text-slate-300 text-slate-700">npm run scrape</code> to refresh.
                 </p>
               </div>
-              <span className="ml-auto shrink-0 rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-1 text-[11px] font-bold text-amber-300">
+              <span className="ml-auto shrink-0 rounded-full bg-amber-100/50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 px-2.5 py-1 text-[11px] font-bold text-amber-800 dark:text-amber-300">
                 {rawHcJobs.length} role{rawHcJobs.length !== 1 ? "s" : ""}
               </span>
             </div>
@@ -1423,10 +1405,10 @@ export default function CompaniesTab() {
                         type="button"
                         onClick={() => setLocationFilter(loc)}
                         className={[
-                          "rounded-full px-2.5 py-1 text-[10px] font-medium border transition-all",
+                          "rounded-full px-2.5 py-1 text-[10px] font-semibold border transition-all duration-200 shadow-sm",
                           locationFilter === loc
-                            ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/40"
-                            : "dark:bg-white/5 bg-slate-100 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-300",
+                            ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
+                            : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
                         ].join(" ")}
                       >
                         {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
@@ -1451,7 +1433,7 @@ export default function CompaniesTab() {
                 {hcJobs.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 gap-2 text-slate-600">
                     <p className="text-sm">No roles match your filters</p>
-                    <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs text-indigo-400 hover:text-indigo-300">Clear filters</button>
+                    <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Clear filters</button>
                   </div>
                 ) : (
                   <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[640px] overflow-y-auto">
@@ -1476,12 +1458,12 @@ export default function CompaniesTab() {
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <p className="text-sm dark:text-slate-200 text-slate-800 font-medium truncate">{job.title}</p>
                                 {/* Easy Apply badge — always shown for hiring-cafe */}
-                                <span className="shrink-0 rounded-full bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-400 uppercase tracking-wide">⚡ Easy Apply</span>
+                                <span className="shrink-0 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-100 dark:border-amber-500/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">⚡ Easy Apply</span>
                                 {isNew && (
-                                  <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">NEW</span>
+                                  <span className="shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/30 uppercase tracking-wide">NEW</span>
                                 )}
                                 {ats && ats.score >= 70 && (
-                                  <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300 border border-emerald-500/25 uppercase tracking-wide">✓ Strong fit</span>
+                                  <span className="shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25 uppercase tracking-wide">✓ Strong fit</span>
                                 )}
                               </div>
                               <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -1493,22 +1475,22 @@ export default function CompaniesTab() {
                                   <p className="text-[11px] text-slate-500 truncate">{job.location}</p>
                                 )}
                                 {salary && (
-                                  <span className="text-[10px] font-medium text-emerald-500/80 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">{salary}</span>
+                                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-1.5 py-0.5 rounded">{salary}</span>
                                 )}
                               </div>
                             </div>
                             {job.fetchedAt && (
-                              <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block mt-0.5">{timeAgo(job.fetchedAt)}</span>
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0 hidden sm:block mt-0.5">{timeAgo(job.fetchedAt)}</span>
                             )}
                             {job.description && (
                               <button type="button" title="Generate tailored resume PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "resume")}
-                                className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all disabled:opacity-40">
+                                className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all disabled:opacity-40">
                                 {genResume ? "…" : "📄 CV"}
                               </button>
                             )}
                             {job.description && (
                               <button type="button" title="Generate cover letter PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "cover")}
-                                className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all disabled:opacity-40">
+                                className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all disabled:opacity-40">
                                 {genCover ? "…" : "✉ CL"}
                               </button>
                             )}
@@ -1520,7 +1502,7 @@ export default function CompaniesTab() {
                               </button>
                             )}
                             <a href={job.url} target="_blank" rel="noopener noreferrer"
-                              className="shrink-0 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400 hover:text-amber-200 hover:bg-amber-500/20 hover:border-amber-400/50 transition-all">
+                              className="shrink-0 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-100/60 dark:hover:bg-amber-500/20 hover:border-amber-300 dark:hover:border-amber-400/50 transition-all">
                               Apply
                             </a>
                           </div>

@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
       # ── Step 1: Scrape new jobs into Google Sheets ──────────────────────────
       - name: Scrape jobs
         run: node scripts/scrape-jobs.mjs
@@ -50,8 +53,6 @@ jobs:
           MAX_CONCURRENT: "2"
 
       # ── Step 3: Auto-apply to pending jobs ─────────────────────────────────
-      - name: Install Playwright browsers
-        run: npx playwright install chromium --with-deps
 
       - name: Auto-apply to jobs
         run: node scripts/auto-apply.mjs
@@ -67,5 +68,5 @@ jobs:
           WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
           WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
           WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}
-          APPLY_LIMIT: "10"
+          APPLY_LIMIT: "200"
           DRY_RUN: "false"

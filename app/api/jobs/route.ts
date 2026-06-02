@@ -13,6 +13,7 @@ export interface Job {
   category: string;
   fetchedAt: string;
   description: string;
+  applyStatus?: string;
 }
 
 export async function GET() {
@@ -36,7 +37,7 @@ export async function GET() {
     const sheets = google.sheets({ version: "v4", auth });
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `${SHEET_NAME}!A:G`,
+      range: `${SHEET_NAME}!A:K`,
     });
 
     const rows = response.data.values ?? [];
@@ -51,6 +52,7 @@ export async function GET() {
       category: row[4] ?? "",
       fetchedAt: row[5] ?? "",
       description: row[6] ?? "",
+      applyStatus: row[10] ?? "",
     }));
 
     return NextResponse.json({ jobs });

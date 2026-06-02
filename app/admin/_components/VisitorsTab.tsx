@@ -154,7 +154,7 @@ export default function VisitorsTab() {
       {/* ── Header row ── */}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-white">Visitors</h2>
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Visitors</h2>
           <p className="mt-0.5 text-sm text-slate-500">
             {filtered.length !== visitors.length
               ? `${filtered.length} of ${visitors.length} visits`
