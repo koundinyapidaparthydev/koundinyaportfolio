@@ -50,8 +50,9 @@ jobs:
         run: npm ci --include=dev
 
       - name: Run Jest with coverage
-        run: npm run test:coverage
+        run: NODE_ENV=test npm run test:coverage
         env:
+          NODE_ENV: test
           # Minimal env vars so the Next.js build context is valid during tests
           NEXTAUTH_SECRET: ci-test-secret
           NEXTAUTH_URL: http://localhost:3000

@@ -1,22 +1,21 @@
-import type { Config } from "jest";
-import nextJest from "next/jest";
+// Must run before next/jest loads (ESM jest.config.ts hoists imports above this).
+process.env.NODE_ENV = "test";
+
+const nextJest = require("next/jest");
 
 const createJestConfig = nextJest({ dir: "./" });
 
-const customConfig: Config = {
+/** @type {import("jest").Config} */
+const customConfig = {
   testEnvironment: "jest-environment-jsdom",
-  // jest.setup.ts runs after the test framework is installed in the environment
   setupFilesAfterEnv: ["<rootDir>/jest.setup.ts"],
   moduleNameMapper: {
-    // Support the @/* path alias defined in tsconfig.json
     "^@/(.*)$": "<rootDir>/$1",
-    // Stub out CSS / image imports so they don't break non-visual tests
     "^.+\\.(css|sass|scss)$": "<rootDir>/__mocks__/fileMock.ts",
     "^.+\\.(png|jpg|jpeg|gif|webp|svg|ico)$": "<rootDir>/__mocks__/fileMock.ts",
   },
   testPathIgnorePatterns: ["/node_modules/", "/.next/", "/cypress/"],
   transform: {
-    // Use next/babel which already includes preset-env, preset-react, preset-typescript
     "^.+\\.(t|j)sx?$": ["babel-jest", { presets: ["next/babel"] }],
   },
   collectCoverageFrom: [
@@ -36,4 +35,4 @@ const customConfig: Config = {
   },
 };
 
-export default createJestConfig(customConfig);
+module.exports = createJestConfig(customConfig);
