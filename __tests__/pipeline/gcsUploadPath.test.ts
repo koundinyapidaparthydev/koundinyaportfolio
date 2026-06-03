@@ -41,7 +41,7 @@ describe("formatRecordingNotes", () => {
       trace: "https://storage.example/trace.zip",
     });
     expect(notes).toContain("submitted");
-    expect(notes).toContain("recording: https://storage.example/video.webm");
+    expect(notes).toContain("video: https://storage.example/video.webm");
     expect(notes).toContain("trace: https://storage.example/trace.zip");
   });
 });
