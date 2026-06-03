@@ -39,16 +39,13 @@ loadEnvLocal();
 
 import { google } from "googleapis";
 import Anthropic from "@anthropic-ai/sdk";
-import { Storage } from "@google-cloud/storage";
 import { spawn } from "child_process";
+import { uploadBufferToGCS } from "./lib/gcs-upload.mjs";
 
 // ── Config ─────────────────────────────────────────────────────────────────────
 const GOOGLE_SHEET_ID             = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const ANTHROPIC_API_KEY           = process.env.ANTHROPIC_API_KEY;
-const GCS_SERVICE_ACCOUNT_JSON    = process.env.GCS_SERVICE_ACCOUNT_JSON;
-const GCS_BUCKET_NAME             = process.env.GCS_BUCKET_NAME;
-const GCS_PROJECT_ID              = process.env.GCS_PROJECT_ID ?? "jobseek-459701";
 const MAX_CONCURRENT              = parseInt(process.env.MAX_CONCURRENT ?? "2", 10);
 const MAX_JOBS                    = parseInt(process.env.MAX_JOBS ?? "0", 10);
 const FORCE_REGENERATE            = process.env.FORCE_REGENERATE === "true";
@@ -255,28 +252,8 @@ async function callClaude(client, resume, company, title, description) {
   return JSON.parse(cleaned);
 }
 
-// ── GCS upload ─────────────────────────────────────────────────────────────────
-
-let _gcsStorage = null;
-function getGcsStorage() {
-  if (_gcsStorage) return _gcsStorage;
-  _gcsStorage = new Storage({
-    credentials: JSON.parse(GCS_SERVICE_ACCOUNT_JSON),
-    projectId: GCS_PROJECT_ID,
-  });
-  return _gcsStorage;
-}
-
-async function uploadToGCS(buffer, fileName) {
-  const storage = getGcsStorage();
-  const bucket  = storage.bucket(GCS_BUCKET_NAME);
-  const file    = bucket.file(fileName);
-  await file.save(buffer, { metadata: { contentType: "application/pdf" }, resumable: false });
-  const [signedUrl] = await file.getSignedUrl({
-    action: "read",
-    expires: Date.now() + 7 * 24 * 60 * 60 * 1000,
-  });
-  return signedUrl;
+async function uploadResumePdf(buffer, fileName) {
+  return uploadBufferToGCS(buffer, fileName, "application/pdf");
 }
 
 // ── PDF render via CJS subprocess ─────────────────────────────────────────────
@@ -412,7 +389,7 @@ async function processJob({ rowIndex, values }, baseResume, claudeClient) {
         const safeTitle   = title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40);
         const ts          = new Date().toISOString().slice(0, 10);
         const fileName    = `resumes/${ts}/${safeCompany}_${safeTitle}_${rowIndex}.pdf`;
-        resumeUrl = await uploadToGCS(pdfBuffer, fileName);
+        resumeUrl = await uploadResumePdf(pdfBuffer, fileName);
       } catch (gcsErr) {
         console.warn(`  ⚠  GCS upload failed for ${label}: ${gcsErr.message}`);
         resumeUrl = `data:application/pdf;base64,${pdfBuffer.toString("base64").slice(0, 100)}...(truncated)`;

@@ -28,6 +28,9 @@ yarn-error.log*
 # local env files
 .env*.local
 
+# pipeline apply recording fallback (CI only)
+/artifacts/
+
 # cypress credentials (keep out of source control)
 cypress.env.json
 

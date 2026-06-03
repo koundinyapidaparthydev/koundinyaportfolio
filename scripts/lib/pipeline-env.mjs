@@ -54,5 +54,12 @@ export function validatePipelineEnv(stage = "generate") {
     }
   }
 
+  if (stage === "apply" && process.env.RECORD_APPLY === "true") {
+    parseServiceAccountJson(process.env.GCS_SERVICE_ACCOUNT_JSON, "GCS");
+    if (!normalizeEnvValue(process.env.GCS_BUCKET_NAME ?? "")) {
+      throw new Error("Missing env: GCS_BUCKET_NAME (required when RECORD_APPLY=true)");
+    }
+  }
+
   return true;
 }

@@ -29,6 +29,26 @@ This is an **SQS-like drain pattern** without AWS: the Google Sheet is the queue
 | `START_ROW` | 2 | First sheet row to consider |
 | `MAX_CONCURRENT` | 2 | Parallel rows within one batch |
 | `DRY_RUN` | false | Skips Playwright submit when `true` |
+| `RECORD_APPLY` | false locally | `true` in CI — records Playwright video/trace/screenshot per apply |
+
+## Apply recordings (GCS)
+
+When `RECORD_APPLY=true` (enabled in **Process Job Batch** workflow), each Playwright apply uploads artifacts to GCS:
+
+```
+gs://{GCS_BUCKET_NAME}/apply-recordings/{YYYY-MM-DD}/row-{rowIndex}-{company-slug}/video.webm
+gs://{GCS_BUCKET_NAME}/apply-recordings/{YYYY-MM-DD}/row-{rowIndex}-{company-slug}/trace.zip
+gs://{GCS_BUCKET_NAME}/apply-recordings/{YYYY-MM-DD}/row-{rowIndex}-{company-slug}/screenshot.png
+```
+
+Signed URLs (7-day expiry, same as resume PDFs) are written in two places:
+
+1. **Sheet column M (Notes)** — appended after apply status, e.g. `submitted | recording: https://… | trace: https://… | screenshot: https://…`
+2. **GitHub Actions log** — lines tagged `Apply recording row {N} video` (and trace/screenshot) via `::notice`; search the run log for `Apply recording` or `recording:`
+
+If GCS upload fails, files are copied to `artifacts/apply-recordings/` in the runner and uploaded as a workflow artifact (`apply-recordings-fallback`, 7-day retention).
+
+Lever applies (HTTP POST, no browser) are not recorded.
 
 ## Run locally
 

@@ -159,6 +159,7 @@ async function main() {
   console.log(`  START_ROW:      ${START_ROW}`);
   console.log(`  MAX_CONCURRENT: ${MAX_CONCURRENT}`);
   console.log(`  DRY_RUN:        ${DRY_RUN}`);
+  console.log(`  RECORD_APPLY:   ${process.env.RECORD_APPLY === "true"}`);
   console.log(`  Model:          ${MODEL}\n`);
 
   const baseResume = await getResume();

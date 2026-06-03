@@ -53,6 +53,9 @@ jobs:
         env:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          RECORD_APPLY: "true"
+          GCS_SERVICE_ACCOUNT_JSON: ${{ secrets.GCS_SERVICE_ACCOUNT_JSON }}
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
 
       - name: Process job batch (generate → apply per row)
         run: node scripts/process-job-batch.mjs
@@ -63,6 +66,7 @@ jobs:
           GCS_SERVICE_ACCOUNT_JSON: ${{ secrets.GCS_SERVICE_ACCOUNT_JSON }}
           GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
           GCS_PROJECT_ID: ${{ secrets.GCS_PROJECT_ID }}
+          RECORD_APPLY: "true"
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001' }}
           BATCH_SIZE: ${{ github.event.inputs.batch_size || '30' }}
           START_ROW: ${{ github.event.inputs.start_row || '2' }}
@@ -78,3 +82,12 @@ jobs:
           WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
           WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
           WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}
+
+      - name: Upload apply recordings fallback (GCS failure only)
+        if: always() && hashFiles('artifacts/apply-recordings/**') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: apply-recordings-fallback
+          path: artifacts/apply-recordings/
+          retention-days: 7
+          if-no-files-found: ignore

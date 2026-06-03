@@ -45,15 +45,20 @@ loadEnvLocal();
 
 import { chromium } from "playwright";
 import { google } from "googleapis";
-import { readFileSync, createWriteStream } from "fs";
+import { existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import path from "path";
 import { fileURLToPath } from "url";
-import { unlink } from "fs/promises";
+import { unlink, mkdir, readdir, rm } from "fs/promises";
 import { pipeline } from "stream/promises";
 import { createWriteStream as createWS } from "fs";
 import { resolveApplicant } from "./lib/applicant-profile.mjs";
+import {
+  uploadApplyRecordingFiles,
+  formatRecordingNotes,
+  buildApplyRecordingPrefix,
+} from "./lib/gcs-upload.mjs";
 
 try {
   validatePipelineEnv("apply");
@@ -66,6 +71,7 @@ const GOOGLE_SHEET_ID             = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const DRY_RUN                     = process.env.DRY_RUN === "true";
 const APPLY_LIMIT                 = parseInt(process.env.APPLY_LIMIT ?? "200", 10);
+const RECORD_APPLY                = process.env.RECORD_APPLY === "true";
 
 // Applicant personal info (Profile 3 via PersonalService or APPLICANT_* env)
 const APPLICANT = resolveApplicant();
@@ -158,10 +164,10 @@ function detectPlatform(url) {
 // Greenhouse apply — Playwright
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function applyGreenhouse(browser, job) {
+async function applyGreenhouse(pw, job) {
   const { jobUrl, resumePath, coverLetter, company, title } = job;
 
-  const page = await browser.newPage();
+  const page = await pw.newPage();
   try {
     // Navigate to the job application page
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -286,9 +292,9 @@ async function applyLever(job) {
 // Workday apply — Playwright (complex SPA)
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function applyWorkday(browser, job) {
+async function applyWorkday(pw, job) {
   const { jobUrl, resumePath, coverLetter, company, title } = job;
-  const page = await browser.newPage();
+  const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "networkidle", timeout: 40_000 });
 
@@ -354,9 +360,9 @@ async function applyWorkday(browser, job) {
 // Ashby apply — Playwright (standard web form, similar structure to Greenhouse)
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function applyAshby(browser, job) {
+async function applyAshby(pw, job) {
   const { jobUrl, resumePath, coverLetter, company, title } = job;
-  const page = await browser.newPage();
+  const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
@@ -406,9 +412,9 @@ async function applyAshby(browser, job) {
 // SmartRecruiters apply — Playwright
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function applySmartRecruiters(browser, job) {
+async function applySmartRecruiters(pw, job) {
   const { jobUrl, resumePath, coverLetter, company, title } = job;
-  const page = await browser.newPage();
+  const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
@@ -457,9 +463,9 @@ async function applySmartRecruiters(browser, job) {
 // BreezyHR apply — Playwright
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function applyBreezy(browser, job) {
+async function applyBreezy(pw, job) {
   const { jobUrl, resumePath, coverLetter, company, title } = job;
-  const page = await browser.newPage();
+  const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
@@ -506,9 +512,9 @@ async function applyBreezy(browser, job) {
 // Workable apply — Playwright
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function applyWorkable(browser, job) {
+async function applyWorkable(pw, job) {
   const { jobUrl, resumePath, coverLetter, company, title } = job;
-  const page = await browser.newPage();
+  const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
@@ -556,9 +562,9 @@ async function applyWorkable(browser, job) {
 // Recruitee apply — Playwright
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function applyRecruitee(browser, job) {
+async function applyRecruitee(pw, job) {
   const { jobUrl, resumePath, coverLetter, company, title } = job;
-  const page = await browser.newPage();
+  const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
 
@@ -606,9 +612,9 @@ async function applyRecruitee(browser, job) {
 // Hiring Cafe apply — resolves the actual external ATS URL then delegates
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function applyHiringCafe(browser, job) {
+async function applyHiringCafe(pw, job) {
   const { jobUrl, resumePath, resumeUrl, coverLetter, company, title } = job;
-  const page = await browser.newPage();
+  const page = await pw.newPage();
 
   try {
     // Navigate to the hiring.cafe job detail page
@@ -636,9 +642,9 @@ async function applyHiringCafe(browser, job) {
 
     // If the link goes back to hiring.cafe (e.g. a redirect wrapper), click and follow
     if (!externalUrl || externalUrl.includes("hiring.cafe")) {
-      const context = browser.contexts()[0] ?? page.context();
+      const parentContext = page.context();
       const [newTab] = await Promise.all([
-        context.waitForEvent("page", { timeout: 10_000 }).catch(() => null),
+        parentContext.waitForEvent("page", { timeout: 10_000 }).catch(() => null),
         applyEl.click(),
       ]);
 
@@ -664,13 +670,13 @@ async function applyHiringCafe(browser, job) {
     const pwPlatforms = ["greenhouse", "icims", "workday", "ashby", "smartrecruiters", "breezy", "workable", "recruitee"];
 
     if (pwPlatforms.includes(platform)) {
-      if (platform === "greenhouse" || platform === "icims") return await applyGreenhouse(browser, outerJob);
-      if (platform === "workday")        return await applyWorkday(browser, outerJob);
-      if (platform === "ashby")          return await applyAshby(browser, outerJob);
-      if (platform === "smartrecruiters") return await applySmartRecruiters(browser, outerJob);
-      if (platform === "breezy")         return await applyBreezy(browser, outerJob);
-      if (platform === "workable")       return await applyWorkable(browser, outerJob);
-      if (platform === "recruitee")      return await applyRecruitee(browser, outerJob);
+      if (platform === "greenhouse" || platform === "icims") return await applyGreenhouse(pw, outerJob);
+      if (platform === "workday")        return await applyWorkday(pw, outerJob);
+      if (platform === "ashby")          return await applyAshby(pw, outerJob);
+      if (platform === "smartrecruiters") return await applySmartRecruiters(pw, outerJob);
+      if (platform === "breezy")         return await applyBreezy(pw, outerJob);
+      if (platform === "workable")       return await applyWorkable(pw, outerJob);
+      if (platform === "recruitee")      return await applyRecruitee(pw, outerJob);
     }
 
     if (platform === "lever") {
@@ -801,6 +807,89 @@ async function sendApplyNotification(applied) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Apply recording (Playwright video + trace + screenshot → GCS)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function runPlaywrightApply(pwTarget, applyFn) {
+  return applyFn(pwTarget);
+}
+
+async function runRecordedPlaywrightApply(browser, rowIndex, company, applyFn) {
+  const artifactsDir = join(tmpdir(), `apply-row-${rowIndex}-${Date.now()}`);
+  await mkdir(artifactsDir, { recursive: true });
+  const tracePath = join(artifactsDir, "trace.zip");
+  const screenshotPath = join(artifactsDir, "screenshot.png");
+
+  const context = await browser.newContext({
+    recordVideo: { dir: artifactsDir, size: { width: 1280, height: 720 } },
+  });
+  await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+
+  let result;
+  try {
+    result = await applyFn(context);
+    const pages = context.pages();
+    if (pages.length > 0) {
+      await pages[pages.length - 1]
+        .screenshot({ path: screenshotPath, fullPage: true })
+        .catch(() => {});
+    }
+  } finally {
+    await context.tracing.stop({ path: tracePath }).catch(() => {});
+    await context.close();
+  }
+
+  const entries = await readdir(artifactsDir);
+  const videoFile = entries.find((name) => name.endsWith(".webm"));
+  const files = [];
+
+  if (videoFile) {
+    files.push({
+      key: "video",
+      localPath: join(artifactsDir, videoFile),
+      remoteName: "video.webm",
+      contentType: "video/webm",
+    });
+  }
+  if (existsSync(tracePath)) {
+    files.push({
+      key: "trace",
+      localPath: tracePath,
+      remoteName: "trace.zip",
+      contentType: "application/zip",
+    });
+  }
+  if (existsSync(screenshotPath)) {
+    files.push({
+      key: "screenshot",
+      localPath: screenshotPath,
+      remoteName: "screenshot.png",
+      contentType: "image/png",
+    });
+  }
+
+  const gcsPrefix = buildApplyRecordingPrefix(rowIndex, company);
+  console.log(`  🎬 Uploading apply recordings → gs://${process.env.GCS_BUCKET_NAME}/${gcsPrefix}/`);
+
+  const { urls } = await uploadApplyRecordingFiles(rowIndex, company, files);
+
+  for (const p of files.map((f) => f.localPath)) {
+    await unlink(p).catch(() => {});
+  }
+  await rm(artifactsDir, { recursive: true, force: true }).catch(() => {});
+
+  return { result, recordingUrls: urls };
+}
+
+async function invokePlaywrightApply(browser, rowIndex, company, applyFn) {
+  if (!RECORD_APPLY) {
+    const result = await runPlaywrightApply(browser, applyFn);
+    return { result, recordingUrls: null };
+  }
+  return runRecordedPlaywrightApply(browser, rowIndex, company, applyFn);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Apply a single sheet row (used by process-job-batch.mjs for same-row chaining)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -820,6 +909,7 @@ export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles =
   console.log(`  📝 [${platform.toUpperCase()}] ${company} — ${title} (row ${rowIndex})`);
 
   let result = { success: false, notes: "unsupported platform" };
+  let recordingUrls = null;
   const playwrightPlatforms = [
     "greenhouse", "icims", "workday", "ashby", "smartrecruiters",
     "breezy", "workable", "recruitee", "hiring-cafe",
@@ -843,23 +933,21 @@ export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles =
 
     const job = { jobUrl, resumePath, resumeUrl, coverLetter, company, title };
 
-    if (platform === "greenhouse" || platform === "icims") {
-      result = await applyGreenhouse(browser, job);
-    } else if (platform === "workday") {
-      result = await applyWorkday(browser, job);
-    } else if (platform === "ashby") {
-      result = await applyAshby(browser, job);
-    } else if (platform === "smartrecruiters") {
-      result = await applySmartRecruiters(browser, job);
-    } else if (platform === "breezy") {
-      result = await applyBreezy(browser, job);
-    } else if (platform === "workable") {
-      result = await applyWorkable(browser, job);
-    } else if (platform === "recruitee") {
-      result = await applyRecruitee(browser, job);
-    } else if (platform === "hiring-cafe") {
-      result = await applyHiringCafe(browser, job);
-    }
+    const runApply = async (pw) => {
+      if (platform === "greenhouse" || platform === "icims") return applyGreenhouse(pw, job);
+      if (platform === "workday") return applyWorkday(pw, job);
+      if (platform === "ashby") return applyAshby(pw, job);
+      if (platform === "smartrecruiters") return applySmartRecruiters(pw, job);
+      if (platform === "breezy") return applyBreezy(pw, job);
+      if (platform === "workable") return applyWorkable(pw, job);
+      if (platform === "recruitee") return applyRecruitee(pw, job);
+      if (platform === "hiring-cafe") return applyHiringCafe(pw, job);
+      return { success: false, notes: "unsupported platform" };
+    };
+
+    const outcome = await invokePlaywrightApply(browser, rowIndex, company, runApply);
+    result = outcome.result;
+    recordingUrls = outcome.recordingUrls;
   } else if (platform === "lever") {
     result = await applyLever({ jobUrl, resumeUrl, coverLetter, company, title });
   } else {
@@ -867,29 +955,33 @@ export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles =
   }
 
   const now = new Date().toISOString();
+  const sheetNotes = recordingUrls
+    ? formatRecordingNotes(result.notes, recordingUrls)
+    : result.notes;
 
   if (result.success) {
-    console.log(`  ✅ Applied: ${company} — ${title} | ${result.notes}`);
+    console.log(`  ✅ Applied: ${company} — ${title} | ${sheetNotes}`);
     await updateApplyStatus(sheets, rowIndex, {
       status: DRY_RUN ? "pending" : "applied",
       appliedAt: now,
-      notes: result.notes,
+      notes: sheetNotes,
     });
     return {
       success: true,
-      notes: result.notes,
+      notes: sheetNotes,
+      recordingUrls,
       applied: { company, title, atsScore, resumeUrl },
     };
   }
 
-  console.log(`  ❌ Failed: ${company} — ${title} | ${result.notes}`);
+  console.log(`  ❌ Failed: ${company} — ${title} | ${sheetNotes}`);
   const newStatus = result.notes?.startsWith("manual-required") ? "manual-required" : "failed";
   await updateApplyStatus(sheets, rowIndex, {
     status: newStatus,
     appliedAt: now,
-    notes: result.notes,
+    notes: sheetNotes,
   });
-  return { success: false, notes: result.notes, applied: null };
+  return { success: false, notes: sheetNotes, recordingUrls, applied: null };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
