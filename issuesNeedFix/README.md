@@ -25,13 +25,18 @@
 - `archiveOldJobs` in `scrape-jobs.mjs` — reads/writes **A–M** (no H–M misalignment after archive)
 - New job append uses **A–M** with H–K blank until generate sets `pending`
 
+## Pipeline batch size
+
+Scheduled **Scrape Jobs** runs process **1** resume generation and **1** auto-apply per run (`MAX_JOBS=1`, `APPLY_LIMIT=1`). Override via Actions → Run workflow → `max_jobs`.
+
 ## Commands
 
 ```bash
 npm run job:diagnose              # sheet audit (needs .env.local)
 npm run job:validate-env          # check generate-stage env
 npm run job:scrape
-npm run generate:resumes:test
+npm run generate:resumes:one   # MAX_JOBS=1
+npm run job:apply-one          # APPLY_LIMIT=1 (set DRY_RUN=true for dry run)
 npm run auto:apply:dry
 npm run job:sync-emails           # needs PERSONAL_SERVICE_CONFIG
 ```

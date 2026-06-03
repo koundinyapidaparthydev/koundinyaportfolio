@@ -66,7 +66,7 @@
 3. Confirm `GOOGLE_SHEET_ID` matches your spreadsheet URL.
 4. From `GOOGLE_SERVICE_ACCOUNT_JSON`, copy `client_email` → share the Google Sheet with that email as **Editor**.
 5. List configured secrets (names only): `gh secret list`
-6. Trigger pipeline: **Actions → Scrape Jobs → Run workflow** on branch `main`.
+6. Trigger pipeline: **Actions → Scrape Jobs → Run workflow** on branch `main` (default **1** job per run via `max_jobs`; scheduled runs use the same limit).
 
 ## Verify locally first
 

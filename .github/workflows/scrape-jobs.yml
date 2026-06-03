@@ -8,7 +8,13 @@ on:
     - cron: "0,30 11-23 * * *"
     # 00:00–01:30 UTC  →  5:00 PM–6:30 PM PDT
     - cron: "0,30 0-1 * * *"
-  workflow_dispatch: # allow manual trigger from GitHub Actions UI
+  workflow_dispatch:
+    inputs:
+      max_jobs:
+        description: Max jobs to generate and apply per run
+        required: false
+        default: "1"
+        type: string
 
 jobs:
   scrape:
@@ -68,6 +74,7 @@ jobs:
           GCS_PROJECT_ID: ${{ secrets.GCS_PROJECT_ID }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001' }}
           MAX_CONCURRENT: "2"
+          MAX_JOBS: ${{ github.event.inputs.max_jobs || '1' }}
 
       # ── Step 3: Auto-apply to pending jobs ─────────────────────────────────
 
@@ -91,5 +98,5 @@ jobs:
           WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
           WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
           WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}
-          APPLY_LIMIT: "200"
+          APPLY_LIMIT: ${{ github.event.inputs.max_jobs || '1' }}
           DRY_RUN: "false"
