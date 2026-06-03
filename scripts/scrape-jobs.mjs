@@ -1438,12 +1438,19 @@ async function writeNewJobs(sheets, newJobs) {
   // Fetch descriptions only for the genuinely new jobs
   const enriched = await enrichWithDescriptions(deduped);
 
+  // Append A–G scraped fields; H–J empty, K blank until generate sets pending
+  const rows13 = enriched.map((row) => {
+    const base = row.slice(0, 7);
+    while (base.length < 7) base.push("");
+    return [...base, "", "", "", ""];
+  });
+
   await sheets.spreadsheets.values.append({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A:G`,
+    range: `${SHEET_NAME}!A:M`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
-    requestBody: { values: enriched },
+    requestBody: { values: rows13 },
   });
 
   console.log(`✅  Added ${enriched.length} new jobs to Google Sheets`);
@@ -1541,6 +1548,12 @@ async function sendWhatsAppNotification(newJobRows) {
  * Move rows older than 2 days from the Jobs sheet to an "Old Jobs" archive
  * sheet. Creates the archive sheet automatically if it does not yet exist.
  */
+function padRowTo13(row) {
+  const out = [...row];
+  while (out.length < 13) out.push("");
+  return out;
+}
+
 async function archiveOldJobs(sheets) {
   const ARCHIVE_SHEET = "Old Jobs";
   const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
@@ -1548,15 +1561,12 @@ async function archiveOldJobs(sheets) {
   try {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A:G`,
+      range: `${SHEET_NAME}!A2:M`,
     });
-    const rows = resp.data.values ?? [];
-    if (rows.length <= 1) return; // headers only
+    const dataRows = (resp.data.values ?? []).map(padRowTo13);
+    if (dataRows.length === 0) return;
 
-    const headers = rows[0];
-    const dataRows = rows.slice(1);
     const now = Date.now();
-
     const oldRows = [];
     const keepRows = [];
     for (const row of dataRows) {
@@ -1574,7 +1584,7 @@ async function archiveOldJobs(sheets) {
       return;
     }
 
-    // Ensure archive sheet exists
+    // Ensure archive sheet exists with full A–M headers
     const meta = await sheets.spreadsheets.get({ spreadsheetId: GOOGLE_SHEET_ID });
     const existing = (meta.data.sheets ?? []).map((s) => s.properties.title);
     if (!existing.includes(ARCHIVE_SHEET)) {
@@ -1586,32 +1596,33 @@ async function archiveOldJobs(sheets) {
       });
       await sheets.spreadsheets.values.update({
         spreadsheetId: GOOGLE_SHEET_ID,
-        range: `${ARCHIVE_SHEET}!A1:G1`,
+        range: `${ARCHIVE_SHEET}!A1:M1`,
         valueInputOption: "RAW",
-        requestBody: { values: [headers] },
+        requestBody: { values: [HEADERS] },
       });
       console.log(`📄  Created archive sheet "${ARCHIVE_SHEET}"`);
     }
 
-    // Append old rows to archive
+    // Append full rows to archive (A–M)
     await sheets.spreadsheets.values.append({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${ARCHIVE_SHEET}!A:G`,
+      range: `${ARCHIVE_SHEET}!A:M`,
       valueInputOption: "RAW",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: oldRows },
     });
 
-    // Rewrite Jobs sheet with headers + recent rows only
+    // Rewrite Jobs: headers + keep rows only; clear leftover data rows
     await sheets.spreadsheets.values.clear({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A:G`,
+      range: `${SHEET_NAME}!A2:M`,
     });
+    const jobsBody = keepRows.length > 0 ? [HEADERS, ...keepRows] : [HEADERS];
     await sheets.spreadsheets.values.update({
       spreadsheetId: GOOGLE_SHEET_ID,
       range: `${SHEET_NAME}!A1`,
       valueInputOption: "RAW",
-      requestBody: { values: [headers, ...keepRows] },
+      requestBody: { values: jobsBody },
     });
 
     console.log(`🗂️   Archived ${oldRows.length} jobs → "${ARCHIVE_SHEET}" | ${keepRows.length} remain in Jobs`);

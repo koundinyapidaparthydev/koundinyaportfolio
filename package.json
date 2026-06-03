@@ -26,6 +26,7 @@
     "job:pipeline": "node scripts/generate-applications.mjs && node scripts/auto-apply.mjs",
     "job:scrape": "node scripts/scrape-jobs.mjs",
     "job:validate-env": "node scripts/validate-pipeline-env.mjs --stage=generate",
+    "job:diagnose": "node scripts/diagnose-sheet.mjs",
     "job:sync-emails": "node scripts/sync-job-emails.mjs"
   },
   "dependencies": {
