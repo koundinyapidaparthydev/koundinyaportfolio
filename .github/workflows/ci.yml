@@ -32,6 +32,9 @@ jobs:
   test:
     name: Jest unit tests
     runs-on: ubuntu-latest
+    env:
+      # Runner often sets NODE_ENV=production; React tests require non-production React.
+      NODE_ENV: test
 
     steps:
       - name: Checkout
