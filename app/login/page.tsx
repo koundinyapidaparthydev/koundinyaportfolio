@@ -52,7 +52,7 @@ function LoginForm() {
         password: data.password,
         redirect: false,
       });
-      if (result?.error) {
+      if (result?.error || result?.ok === false) {
         setServerError("Invalid email or password. Please try again.");
         return;
       }

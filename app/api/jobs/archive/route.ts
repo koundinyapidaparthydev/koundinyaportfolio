@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdminSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +9,7 @@ const ARCHIVE_SHEET = "Old Jobs";
 const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
 export async function POST() {
-  const session = await getServerSession(authOptions);
+  const session = await requireAdminSession();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

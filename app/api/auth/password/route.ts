@@ -13,6 +13,7 @@ import path from "path";
 import { pbkdf2Sync, randomBytes, timingSafeEqual as nodeTSE } from "crypto";
 import { z } from "zod";
 import { requireAdminSession } from "@/lib/auth";
+import { normalizeEnvValue } from "@/lib/env";
 
 const ADMIN_PATH = path.join(process.cwd(), "data", "admin.json");
 
@@ -100,7 +101,7 @@ export async function PATCH(req: NextRequest) {
     currentValid = checkHash(currentPassword, adminData.passwordHash);
   } else {
     // Fall back to env var (initial deployment, no stored hash yet)
-    const envPassword = process.env.ADMIN_PASSWORD ?? "";
+    const envPassword = normalizeEnvValue(process.env.ADMIN_PASSWORD ?? "");
     const a = Buffer.from(currentPassword);
     const b = Buffer.from(envPassword);
     currentValid =

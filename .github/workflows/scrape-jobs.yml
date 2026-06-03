@@ -47,9 +47,10 @@ jobs:
         env:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
-          INTERNAL_API_KEY: ${{ secrets.INTERNAL_API_KEY }}
-          PORTFOLIO_BASE_URL: ${{ secrets.PORTFOLIO_BASE_URL }}
-          ATS_THRESHOLD: "40"
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GCS_SERVICE_ACCOUNT_JSON: ${{ secrets.GCS_SERVICE_ACCOUNT_JSON }}
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+          GCS_PROJECT_ID: ${{ secrets.GCS_PROJECT_ID }}
           MAX_CONCURRENT: "2"
 
       # ── Step 3: Auto-apply to pending jobs ─────────────────────────────────

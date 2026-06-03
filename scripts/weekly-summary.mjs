@@ -38,8 +38,16 @@ const ADMIN_URL = "https://koundinyapidaparhty.vercel.app/admin";
 // Google Sheets — get last N days of jobs
 // ─────────────────────────────────────────────────────────────────────────────
 
+function parseServiceAccountJson(raw) {
+  const creds = JSON.parse(raw);
+  if (!creds?.client_email || !creds?.private_key) {
+    throw new Error("missing client_email or private_key");
+  }
+  return creds;
+}
+
 async function getSheets() {
-  const creds = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
+  const creds = parseServiceAccountJson(GOOGLE_SERVICE_ACCOUNT_JSON);
   const auth = new google.auth.GoogleAuth({
     credentials: creds,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],

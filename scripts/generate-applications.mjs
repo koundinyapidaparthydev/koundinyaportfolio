@@ -106,6 +106,23 @@ if (missing.length > 0) {
   process.exit(1);
 }
 
+try {
+  const creds = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
+  if (!creds?.client_email || !creds?.private_key) {
+    throw new Error("missing client_email or private_key");
+  }
+  const gcsCreds = JSON.parse(GCS_SERVICE_ACCOUNT_JSON);
+  if (!gcsCreds?.client_email || !gcsCreds?.private_key) {
+    throw new Error("GCS credentials missing client_email or private_key");
+  }
+} catch (err) {
+  console.error(
+    "❌  Invalid service account JSON:",
+    err instanceof Error ? err.message : String(err)
+  );
+  process.exit(1);
+}
+
 // ── Resolve project root to import local lib files ─────────────────────────────
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);

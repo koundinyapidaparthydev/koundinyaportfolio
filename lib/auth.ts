@@ -4,6 +4,7 @@ import type { NextAuthOptions } from "next-auth";
 import { promises as fs } from "fs";
 import path from "path";
 import { pbkdf2Sync, timingSafeEqual as nodeTSE } from "crypto";
+import { normalizeEnvValue } from "@/lib/env";
 
 // ─── Stored password hash helpers ────────────────────────────────────────────
 
@@ -17,6 +18,19 @@ async function getStoredPasswordHash(): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+async function verifyAdminPassword(password: string): Promise<boolean> {
+  const adminPassword = normalizeEnvValue(process.env.ADMIN_PASSWORD ?? "");
+  if (!adminPassword) return false;
+
+  const storedHash = await getStoredPasswordHash();
+  if (storedHash) {
+    if (verifyPbkdf2Hash(password, storedHash)) return true;
+    // Fall back to env password when hash is stale (e.g. .env updated, hash not rotated)
+    return timingSafeEqual(password, adminPassword);
+  }
+  return timingSafeEqual(password, adminPassword);
 }
 
 function verifyPbkdf2Hash(password: string, stored: string): boolean {
@@ -65,31 +79,24 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPassword = process.env.ADMIN_PASSWORD;
+        const adminEmail = normalizeEnvValue(process.env.ADMIN_EMAIL ?? "");
+        const email = credentials.email.trim();
 
-        if (!adminEmail || !adminPassword) {
+        if (!adminEmail || !process.env.ADMIN_PASSWORD) {
           console.error("[auth] ADMIN_EMAIL or ADMIN_PASSWORD not set in environment");
           return null;
         }
 
         // Email must always match the env var
-        if (!timingSafeEqual(credentials.email, adminEmail)) return null;
+        if (!timingSafeEqual(email, adminEmail)) return null;
 
-        // Check stored PBKDF2 hash first; fall back to env var plaintext
-        const storedHash = await getStoredPasswordHash();
-        let passwordMatch = false;
-        if (storedHash) {
-          passwordMatch = verifyPbkdf2Hash(credentials.password, storedHash);
-        } else {
-          passwordMatch = timingSafeEqual(credentials.password, adminPassword);
-        }
+        const passwordMatch = await verifyAdminPassword(credentials.password);
 
         if (passwordMatch) {
           return {
             id: "admin-1",
             name: "Koundinya Pidaparthy",
-            email: credentials.email,
+            email,
             role: "admin",
           };
         }

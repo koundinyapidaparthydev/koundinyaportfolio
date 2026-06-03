@@ -113,6 +113,19 @@ if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_JSON) {
   process.exit(1);
 }
 
+try {
+  const creds = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
+  if (!creds?.client_email || !creds?.private_key) {
+    throw new Error("missing client_email or private_key");
+  }
+} catch (err) {
+  console.error(
+    "❌  GOOGLE_SERVICE_ACCOUNT_JSON is invalid:",
+    err instanceof Error ? err.message : String(err)
+  );
+  process.exit(1);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Sheets helpers
 // ─────────────────────────────────────────────────────────────────────────────
