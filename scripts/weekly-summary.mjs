@@ -21,8 +21,19 @@
  */
 
 import { readFileSync } from "fs";
+import { loadEnvLocal } from "./lib/load-env.mjs";
+import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
 import { google } from "googleapis";
 import Anthropic from "@anthropic-ai/sdk";
+
+loadEnvLocal();
+
+try {
+  validatePipelineEnv("weekly");
+} catch (err) {
+  console.error(`❌  ${err.message}`);
+  process.exit(1);
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Config
@@ -208,7 +219,7 @@ Rules:
 `;
 
   const message = await client.messages.create({
-    model: "claude-haiku-4-5",
+    model: process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001",
     max_tokens: 1800,
     messages: [{ role: "user", content: prompt }],
   });

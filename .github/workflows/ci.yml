@@ -76,6 +76,8 @@ jobs:
   cypress:
     name: Cypress E2E
     runs-on: ubuntu-latest
+    env:
+      NODE_ENV: test
     # Run after Jest so we only spin up the dev server when unit tests pass.
     needs: test
 
@@ -97,7 +99,7 @@ jobs:
         env:
           NEXTAUTH_SECRET: ci-test-secret
           NEXTAUTH_URL: http://localhost:3000
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || 'admin@koundinyapidaparthy.com' }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || 'koundinyapidaparthy@gmail.com' }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || 'cypress-test-password' }}
           SMTP_HOST: localhost
           SMTP_PORT: "1025"
@@ -110,7 +112,7 @@ jobs:
         env:
           NEXTAUTH_SECRET: ci-test-secret
           NEXTAUTH_URL: http://localhost:3000
-          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || 'admin@koundinyapidaparthy.com' }}
+          ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || 'koundinyapidaparthy@gmail.com' }}
           ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || 'cypress-test-password' }}
           SMTP_HOST: localhost
           SMTP_PORT: "1025"
@@ -124,7 +126,7 @@ jobs:
       - name: Run Cypress E2E (headless)
         run: npm run cypress:run
         env:
-          CYPRESS_ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || 'admin@koundinyapidaparthy.com' }}
+          CYPRESS_ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL || 'koundinyapidaparthy@gmail.com' }}
           CYPRESS_ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD || 'cypress-test-password' }}
 
       - name: Upload Cypress screenshots on failure

@@ -22,56 +22,21 @@
  *   - Flywire — no active ATS board found
  */
 
+import { loadEnvLocal } from "./lib/load-env.mjs";
+import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
 import { google } from "googleapis";
-import { existsSync, readFileSync } from "fs";
 
-// Auto-load .env.local when running locally (not set in GitHub Actions).
-// Hand-rolled parser preserves JSON values with embedded double-quotes.
-if (existsSync(".env.local")) {
-  const raw = readFileSync(".env.local", "utf8");
-  for (const line of raw.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx < 1) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    let val   = trimmed.slice(eqIdx + 1).trim();
-    if ((val.startsWith("'") && val.endsWith("'")) ||
-        (val.startsWith('"') && val.endsWith('"'))) {
-      val = val.slice(1, -1);
-    }
-    if (!key) continue;
-    const cur = process.env[key];
-    if (!cur) {
-      process.env[key] = val;
-    } else if (val.startsWith('{')) {
-      try { JSON.parse(cur); } catch { process.env[key] = val; }
-    }
-  }
+loadEnvLocal();
+
+try {
+  validatePipelineEnv("scrape");
+} catch (err) {
+  console.error(`❌  ${err.message}`);
+  process.exit(1);
 }
 
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-
-if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_JSON) {
-  console.error(
-    "❌  Missing env vars: GOOGLE_SHEET_ID and/or GOOGLE_SERVICE_ACCOUNT_JSON"
-  );
-  process.exit(1);
-}
-
-try {
-  const creds = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
-  if (!creds?.client_email || !creds?.private_key) {
-    throw new Error("missing client_email or private_key");
-  }
-} catch (err) {
-  console.error(
-    "❌  GOOGLE_SERVICE_ACCOUNT_JSON is invalid:",
-    err instanceof Error ? err.message : String(err)
-  );
-  process.exit(1);
-}
 
 const SHEET_NAME = "Jobs";
 // A–G: scraped fields  |  H–M: filled by generate-applications.mjs / auto-apply.mjs

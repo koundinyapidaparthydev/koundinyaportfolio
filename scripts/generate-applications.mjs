@@ -28,34 +28,14 @@
  *   START_ROW                    – skip rows before this 1-based data row (default 1)
  */
 
-import { existsSync, readFileSync } from "fs";
+import { readFileSync } from "fs";
 import { promises as fsPromises } from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { loadEnvLocal } from "./lib/load-env.mjs";
+import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
 
-// ── Auto-load .env.local ───────────────────────────────────────────────────────
-if (existsSync(".env.local")) {
-  const raw = readFileSync(".env.local", "utf8");
-  for (const line of raw.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx < 1) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    let val   = trimmed.slice(eqIdx + 1).trim();
-    if ((val.startsWith("'") && val.endsWith("'")) ||
-        (val.startsWith('"') && val.endsWith('"'))) {
-      val = val.slice(1, -1);
-    }
-    if (!key) continue;
-    const cur = process.env[key];
-    if (!cur) {
-      process.env[key] = val;
-    } else if (val.startsWith('{')) {
-      try { JSON.parse(cur); } catch { process.env[key] = val; }
-    }
-  }
-}
+loadEnvLocal();
 
 import { google } from "googleapis";
 import Anthropic from "@anthropic-ai/sdk";
@@ -73,7 +53,8 @@ const MAX_CONCURRENT              = parseInt(process.env.MAX_CONCURRENT ?? "2", 
 const MAX_JOBS                    = parseInt(process.env.MAX_JOBS ?? "0", 10);
 const FORCE_REGENERATE            = process.env.FORCE_REGENERATE === "true";
 const START_ROW                   = parseInt(process.env.START_ROW ?? "1", 10);
-const MODEL                       = "claude-haiku-4-5-20251001";
+const MODEL                       =
+  process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001";
 const SHEET_NAME                  = "Jobs";
 
 // Column indices (0-based)
@@ -93,33 +74,10 @@ const COL = {
   NOTES:        12,  // M
 };
 
-// ── Validate env ───────────────────────────────────────────────────────────────
-const missing = [];
-if (!GOOGLE_SHEET_ID)              missing.push("GOOGLE_SHEET_ID");
-if (!GOOGLE_SERVICE_ACCOUNT_JSON)  missing.push("GOOGLE_SERVICE_ACCOUNT_JSON");
-if (!ANTHROPIC_API_KEY)            missing.push("ANTHROPIC_API_KEY");
-if (!GCS_SERVICE_ACCOUNT_JSON)     missing.push("GCS_SERVICE_ACCOUNT_JSON");
-if (!GCS_BUCKET_NAME)              missing.push("GCS_BUCKET_NAME");
-
-if (missing.length > 0) {
-  console.error("❌  Missing required env vars:", missing.join(", "));
-  process.exit(1);
-}
-
 try {
-  const creds = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
-  if (!creds?.client_email || !creds?.private_key) {
-    throw new Error("missing client_email or private_key");
-  }
-  const gcsCreds = JSON.parse(GCS_SERVICE_ACCOUNT_JSON);
-  if (!gcsCreds?.client_email || !gcsCreds?.private_key) {
-    throw new Error("GCS credentials missing client_email or private_key");
-  }
+  validatePipelineEnv("generate");
 } catch (err) {
-  console.error(
-    "❌  Invalid service account JSON:",
-    err instanceof Error ? err.message : String(err)
-  );
+  console.error(`❌  ${err.message}`);
   process.exit(1);
 }
 
@@ -272,11 +230,17 @@ ${JSON.stringify(resume, null, 0)}`;
 // ── Claude call ────────────────────────────────────────────────────────────────
 
 async function callClaude(client, resume, company, title, description) {
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 8192,
-    messages: [{ role: "user", content: buildPrompt(resume, title, company, description) }],
-  });
+  let message;
+  try {
+    message = await client.messages.create({
+      model: MODEL,
+      max_tokens: 8192,
+      messages: [{ role: "user", content: buildPrompt(resume, title, company, description) }],
+    });
+  } catch (err) {
+    const msg = err?.message ?? String(err);
+    throw new Error(`Claude API (${MODEL}): ${msg}`);
+  }
 
   const raw = message.content[0].type === "text" ? message.content[0].text : "";
   let cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();

@@ -38,57 +38,35 @@
  *   APPLY_LIMIT=10               – max applications per run (default: 10)
  */
 
+import { loadEnvLocal } from "./lib/load-env.mjs";
+import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
+
+loadEnvLocal();
+
 import { chromium } from "playwright";
 import { google } from "googleapis";
-import { existsSync, readFileSync, createWriteStream } from "fs";
+import { readFileSync, createWriteStream } from "fs";
 import { tmpdir } from "os";
-
-// Auto-load .env.local when running locally (not set in GitHub Actions).
-// Hand-rolled parser preserves JSON values with embedded double-quotes.
-if (existsSync(".env.local")) {
-  const raw = readFileSync(".env.local", "utf8");
-  for (const line of raw.split("\n")) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("#")) continue;
-    const eqIdx = trimmed.indexOf("=");
-    if (eqIdx < 1) continue;
-    const key = trimmed.slice(0, eqIdx).trim();
-    let val   = trimmed.slice(eqIdx + 1).trim();
-    if ((val.startsWith("'") && val.endsWith("'")) ||
-        (val.startsWith('"') && val.endsWith('"'))) {
-      val = val.slice(1, -1);
-    }
-    if (!key) continue;
-    const cur = process.env[key];
-    if (!cur) {
-      process.env[key] = val;
-    } else if (val.startsWith('{')) {
-      try { JSON.parse(cur); } catch { process.env[key] = val; }
-    }
-  }
-}
 import { join } from "path";
 import { unlink } from "fs/promises";
 import { pipeline } from "stream/promises";
 import { createWriteStream as createWS } from "fs";
+import { resolveApplicant } from "./lib/applicant-profile.mjs";
+
+try {
+  validatePipelineEnv("apply");
+} catch (err) {
+  console.error(`❌  ${err.message}`);
+  process.exit(1);
+}
 
 const GOOGLE_SHEET_ID             = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const DRY_RUN                     = process.env.DRY_RUN === "true";
 const APPLY_LIMIT                 = parseInt(process.env.APPLY_LIMIT ?? "200", 10);
 
-// Applicant personal info (for form filling)
-const APPLICANT = {
-  email:      process.env.APPLICANT_EMAIL      ?? "koundinyapidaparthy@gmail.com",
-  firstName:  process.env.APPLICANT_FIRST_NAME ?? "Koundinya",
-  lastName:   process.env.APPLICANT_LAST_NAME  ?? "Pidaparthy",
-  phone:      process.env.APPLICANT_PHONE      ?? "551-229-8660",
-  linkedin:   process.env.APPLICANT_LINKEDIN   ?? "https://linkedin.com/in/koundinyap",
-  portfolio:  process.env.APPLICANT_PORTFOLIO  ?? "https://koundinyapidaparthy.com",
-  location:   "New York, NY",
-  workAuth:   "yes",    // authorized to work in US
-  sponsorship:"no",     // do not need visa sponsorship
-};
+// Applicant personal info (Profile 3 via PersonalService or APPLICANT_* env)
+const APPLICANT = resolveApplicant();
 
 const SHEET_NAME = "Jobs";
 
@@ -107,24 +85,6 @@ const COL = {
   APPLIED_AT:   11,
   NOTES:        12,
 };
-
-if (!GOOGLE_SHEET_ID || !GOOGLE_SERVICE_ACCOUNT_JSON) {
-  console.error("❌  Missing GOOGLE_SHEET_ID or GOOGLE_SERVICE_ACCOUNT_JSON");
-  process.exit(1);
-}
-
-try {
-  const creds = JSON.parse(GOOGLE_SERVICE_ACCOUNT_JSON);
-  if (!creds?.client_email || !creds?.private_key) {
-    throw new Error("missing client_email or private_key");
-  }
-} catch (err) {
-  console.error(
-    "❌  GOOGLE_SERVICE_ACCOUNT_JSON is invalid:",
-    err instanceof Error ? err.message : String(err)
-  );
-  process.exit(1);
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sheets helpers
@@ -733,6 +693,13 @@ async function fillIfExists(page, selector, value) {
   const el = page.locator(selector).first();
   if (await el.count() > 0) {
     await el.fill(value);
+    // React/Workday controls often ignore fill() without synthetic events (AplifyAI pattern)
+    await el.evaluate((node, val) => {
+      if (!node || val == null) return;
+      node.value = val;
+      node.dispatchEvent(new Event("input", { bubbles: true }));
+      node.dispatchEvent(new Event("change", { bubbles: true }));
+    }, value).catch(() => {});
   }
 }
 
@@ -837,6 +804,7 @@ async function sendApplyNotification(applied) {
 
 async function main() {
   console.log(`🚀  Auto-Apply — starting${DRY_RUN ? " (DRY RUN)" : ""}\n`);
+  console.log(`  Applicant: ${APPLICANT.email} (source: ${APPLICANT.profileSource ?? "env"})\n`);
 
   const sheets = await getSheets();
   const allRows = await getAllRows(sheets);

@@ -23,7 +23,10 @@
     "generate:resumes:300": "MAX_JOBS=300 node scripts/generate-applications.mjs",
     "auto:apply": "node scripts/auto-apply.mjs",
     "auto:apply:dry": "DRY_RUN=true node scripts/auto-apply.mjs",
-    "job:pipeline": "node scripts/generate-applications.mjs && node scripts/auto-apply.mjs"
+    "job:pipeline": "node scripts/generate-applications.mjs && node scripts/auto-apply.mjs",
+    "job:scrape": "node scripts/scrape-jobs.mjs",
+    "job:validate-env": "node scripts/validate-pipeline-env.mjs --stage=generate",
+    "job:sync-emails": "node scripts/sync-job-emails.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
@@ -75,6 +78,7 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wait-on": "^8.0.5"
   }
 }

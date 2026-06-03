@@ -32,7 +32,8 @@ import type { Resume } from "@/types/resume";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const MODEL = "claude-haiku-4-5-20251001";
+const MODEL =
+  process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001";
 
 function buildPrompt(resume: Resume, jobTitle: string, companyName: string, jobDescription: string): string {
   return `You are a senior technical resume writer. Tailor this resume for the job, then write a 3-paragraph cover letter.
