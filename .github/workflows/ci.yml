@@ -44,7 +44,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=dev
 
       - name: Run Jest with coverage
         run: npm run test:coverage
@@ -86,7 +86,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=dev
 
       - name: Build production bundle
         run: npm run build
@@ -149,7 +149,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --include=dev
 
       - name: Build
         run: npm run build
