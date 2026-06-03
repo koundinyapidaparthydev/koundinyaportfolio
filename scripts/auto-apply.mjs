@@ -36,7 +36,7 @@
  * Optional:
  *   DRY_RUN=true                 – log what would be done but don't actually submit
  *   APPLY_LIMIT=10               – max applications per run (default: 10)
- *   RECORD_APPLY=true            – save video/trace/screenshots under artifacts/ per row
+ *   RECORD_APPLY=true            – record apply session; upload to GCS (artifacts/ fallback)
  */
 
 import { loadEnvLocal } from "./lib/load-env.mjs";
@@ -50,10 +50,11 @@ import { tmpdir } from "os";
 import { join } from "path";
 import path from "path";
 import { fileURLToPath } from "url";
-import { unlink, mkdir } from "fs/promises";
+import { unlink, mkdir, readdir } from "fs/promises";
 import { pipeline } from "stream/promises";
-import { createWriteStream as createWS } from "fs";
+import { createWriteStream as createWS, existsSync } from "fs";
 import { resolveApplicant } from "./lib/applicant-profile.mjs";
+import { uploadApplyRecordingFiles, formatRecordingNotes } from "./lib/gcs-upload.mjs";
 
 try {
   validatePipelineEnv("apply");
@@ -845,20 +846,62 @@ async function sendApplyNotification(applied) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Apply recording (Playwright video + trace + screenshots → artifacts/)
+// Apply recording (Playwright video + trace + screenshots → GCS, artifacts/ fallback)
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function runPlaywrightApply(pwTarget, applyFn) {
-  return applyFn(pwTarget, null);
+  const result = await applyFn(pwTarget, null);
+  return { result, recordingUrls: null };
 }
 
-async function runRecordedPlaywrightApply(browser, rowIndex, applyFn) {
+async function collectRecordingFiles(rowIndex, tracePath, videoDir) {
+  const files = [];
+
+  const videoEntries = await readdir(videoDir).catch(() => []);
+  const videoFile = videoEntries.find((name) => name.endsWith(".webm"));
+  if (videoFile) {
+    files.push({
+      key: "video",
+      localPath: join(videoDir, videoFile),
+      remoteName: "video.webm",
+      contentType: "video/webm",
+    });
+  }
+
+  if (existsSync(tracePath)) {
+    files.push({
+      key: "trace",
+      localPath: tracePath,
+      remoteName: "trace.zip",
+      contentType: "application/zip",
+    });
+  }
+
+  const shotEntries = await readdir(ARTIFACT_DIRS.screenshots).catch(() => []);
+  for (const name of shotEntries) {
+    if (name.startsWith(`row-${rowIndex}-`) && name.endsWith(".png")) {
+      const label = name.slice(`row-${rowIndex}-`.length, -4);
+      files.push({
+        key: `screenshot-${label}`,
+        localPath: join(ARTIFACT_DIRS.screenshots, name),
+        remoteName: `${label}.png`,
+        contentType: "image/png",
+      });
+    }
+  }
+
+  return files;
+}
+
+async function runRecordedPlaywrightApply(browser, rowIndex, company, applyFn) {
   await ensureArtifactDirs();
+  const videoDir = join(ARTIFACT_DIRS.videos, `row-${rowIndex}`);
+  await mkdir(videoDir, { recursive: true });
   const tracePath = join(ARTIFACT_DIRS.traces, `row-${rowIndex}-trace.zip`);
   const recording = makeRecordingHelpers(rowIndex);
 
   const context = await browser.newContext({
-    recordVideo: { dir: ARTIFACT_DIRS.videos, size: { width: 1280, height: 720 } },
+    recordVideo: { dir: videoDir, size: { width: 1280, height: 720 } },
   });
   await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
 
@@ -870,15 +913,26 @@ async function runRecordedPlaywrightApply(browser, rowIndex, applyFn) {
     await context.close();
   }
 
-  console.log(`  🎬 Recordings saved under artifacts/ (row ${rowIndex})`);
-  return result;
+  const files = await collectRecordingFiles(rowIndex, tracePath, videoDir);
+  let recordingUrls = {};
+
+  if (files.length > 0) {
+    if (process.env.GCS_BUCKET_NAME && process.env.GCS_SERVICE_ACCOUNT_JSON) {
+      const { urls } = await uploadApplyRecordingFiles(rowIndex, company, files);
+      recordingUrls = urls;
+    } else {
+      console.log(`  🎬 Recordings saved under artifacts/ (row ${rowIndex}, GCS not configured)`);
+    }
+  }
+
+  return { result, recordingUrls };
 }
 
-async function invokePlaywrightApply(browser, rowIndex, applyFn) {
+async function invokePlaywrightApply(browser, rowIndex, company, applyFn) {
   if (!RECORD_APPLY) {
     return runPlaywrightApply(browser, applyFn);
   }
-  return runRecordedPlaywrightApply(browser, rowIndex, applyFn);
+  return runRecordedPlaywrightApply(browser, rowIndex, company, applyFn);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -901,6 +955,7 @@ export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles =
   console.log(`  📝 [${platform.toUpperCase()}] ${company} — ${title} (row ${rowIndex})`);
 
   let result = { success: false, notes: "unsupported platform" };
+  let recordingUrls = null;
   const playwrightPlatforms = [
     "greenhouse", "icims", "workday", "ashby", "smartrecruiters",
     "breezy", "workable", "recruitee", "hiring-cafe",
@@ -937,7 +992,9 @@ export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles =
       return { success: false, notes: "unsupported platform" };
     };
 
-    result = await invokePlaywrightApply(browser, rowIndex, runApply);
+    const outcome = await invokePlaywrightApply(browser, rowIndex, company, runApply);
+    result = outcome.result;
+    recordingUrls = outcome.recordingUrls;
   } else if (platform === "lever") {
     result = await applyLever({ jobUrl, resumeUrl, coverLetter, company, title });
   } else {
@@ -945,39 +1002,43 @@ export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles =
   }
 
   const now = new Date().toISOString();
+  const sheetNotes = recordingUrls
+    ? formatRecordingNotes(result.notes, recordingUrls)
+    : result.notes;
 
   if (result.success) {
-    console.log(`  ✅ Applied: ${company} — ${title} | ${result.notes}`);
+    console.log(`  ✅ Applied: ${company} — ${title} | ${sheetNotes}`);
     await updateApplyStatus(sheets, rowIndex, {
       status: DRY_RUN ? "pending" : "applied",
       appliedAt: now,
-      notes: result.notes,
+      notes: sheetNotes,
     });
     return {
       success: true,
-      notes: result.notes,
+      notes: sheetNotes,
+      recordingUrls,
       applied: { company, title, atsScore, resumeUrl },
     };
   }
 
   if (result.notes === "submitted-unconfirmed") {
-    console.log(`  ⚠  Needs review: ${company} — ${title} | ${result.notes}`);
+    console.log(`  ⚠  Needs review: ${company} — ${title} | ${sheetNotes}`);
     await updateApplyStatus(sheets, rowIndex, {
       status: "needs-review",
       appliedAt: now,
-      notes: result.notes,
+      notes: sheetNotes,
     });
-    return { success: false, notes: result.notes, applied: null };
+    return { success: false, notes: sheetNotes, recordingUrls, applied: null };
   }
 
-  console.log(`  ❌ Failed: ${company} — ${title} | ${result.notes}`);
+  console.log(`  ❌ Failed: ${company} — ${title} | ${sheetNotes}`);
   const newStatus = result.notes?.startsWith("manual-required") ? "manual-required" : "failed";
   await updateApplyStatus(sheets, rowIndex, {
     status: newStatus,
     appliedAt: now,
-    notes: result.notes,
+    notes: sheetNotes,
   });
-  return { success: false, notes: result.notes, applied: null };
+  return { success: false, notes: sheetNotes, recordingUrls, applied: null };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

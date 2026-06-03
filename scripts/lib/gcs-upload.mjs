@@ -103,8 +103,8 @@ export async function uploadApplyRecordingFiles(rowIndex, company, files) {
 
 export function formatRecordingNotes(baseNotes, urls) {
   const parts = [baseNotes].filter(Boolean);
-  if (urls.video) parts.push(`recording: ${urls.video}`);
-  if (urls.trace) parts.push(`trace: ${urls.trace}`);
-  if (urls.screenshot) parts.push(`screenshot: ${urls.screenshot}`);
+  for (const [key, url] of Object.entries(urls)) {
+    if (url) parts.push(`${key}: ${url}`);
+  }
   return parts.join(" | ");
 }
