@@ -83,11 +83,10 @@ jobs:
           WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
           WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}
 
-      - name: Upload apply recordings fallback (GCS failure only)
-        if: always() && hashFiles('artifacts/apply-recordings/**') != ''
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: apply-recordings-fallback
-          path: artifacts/apply-recordings/
-          retention-days: 7
+          name: apply-recordings-${{ github.run_id }}
+          path: artifacts/
+          retention-days: 14
           if-no-files-found: ignore

@@ -36,6 +36,7 @@
  * Optional:
  *   DRY_RUN=true                 – log what would be done but don't actually submit
  *   APPLY_LIMIT=10               – max applications per run (default: 10)
+ *   RECORD_APPLY=true            – save video/trace/screenshots under artifacts/ per row
  */
 
 import { loadEnvLocal } from "./lib/load-env.mjs";
@@ -45,20 +46,14 @@ loadEnvLocal();
 
 import { chromium } from "playwright";
 import { google } from "googleapis";
-import { existsSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 import path from "path";
 import { fileURLToPath } from "url";
-import { unlink, mkdir, readdir, rm } from "fs/promises";
+import { unlink, mkdir } from "fs/promises";
 import { pipeline } from "stream/promises";
 import { createWriteStream as createWS } from "fs";
 import { resolveApplicant } from "./lib/applicant-profile.mjs";
-import {
-  uploadApplyRecordingFiles,
-  formatRecordingNotes,
-  buildApplyRecordingPrefix,
-} from "./lib/gcs-upload.mjs";
 
 try {
   validatePipelineEnv("apply");
@@ -72,6 +67,12 @@ const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const DRY_RUN                     = process.env.DRY_RUN === "true";
 const APPLY_LIMIT                 = parseInt(process.env.APPLY_LIMIT ?? "200", 10);
 const RECORD_APPLY                = process.env.RECORD_APPLY === "true";
+
+const ARTIFACT_DIRS = {
+  videos: "artifacts/apply-videos",
+  traces: "artifacts/traces",
+  screenshots: "artifacts/screenshots",
+};
 
 // Applicant personal info (Profile 3 via PersonalService or APPLICANT_* env)
 const APPLICANT = resolveApplicant();
@@ -126,6 +127,40 @@ async function updateApplyStatus(sheets, rowIndex, { status, appliedAt, notes })
   });
 }
 
+async function ensureArtifactDirs() {
+  await Promise.all(Object.values(ARTIFACT_DIRS).map((d) => mkdir(d, { recursive: true })));
+}
+
+function buildSubmitResult(confirmed) {
+  if (confirmed) return { success: true, notes: "submitted" };
+  return { success: false, notes: "submitted-unconfirmed" };
+}
+
+function makeRecordingHelpers(rowIndex) {
+  return {
+    rowIndex,
+    async screenshot(page, label) {
+      const safeLabel = String(label).replace(/[^a-z0-9_-]/gi, "-");
+      const filePath = join(ARTIFACT_DIRS.screenshots, `row-${rowIndex}-${safeLabel}.png`);
+      await page.screenshot({ path: filePath, fullPage: false }).catch(() => {});
+    },
+  };
+}
+
+async function submitAndConfirm(page, job, submitFn, confirmPattern) {
+  const { recording, company } = job;
+  if (recording) await recording.screenshot(page, "before-submit");
+  await submitFn();
+  await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+  if (recording) await recording.screenshot(page, "after-submit");
+  const body = await page.content();
+  const confirmed = confirmPattern.test(body);
+  if (!confirmed) {
+    console.warn(`  ⚠  Submit uncertain for ${company}`);
+  }
+  return buildSubmitResult(confirmed);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PDF download helper — downloads the GCS signed URL to a local tmp file
 // ─────────────────────────────────────────────────────────────────────────────
@@ -165,7 +200,7 @@ function detectPlatform(url) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function applyGreenhouse(pw, job) {
-  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const { jobUrl, resumePath, coverLetter, company, title, recording } = job;
 
   const page = await pw.newPage();
   try {
@@ -216,23 +251,14 @@ async function applyGreenhouse(pw, job) {
       return { success: true, notes: "dry-run" };
     }
 
-    // Submit
-    await page.locator('button[type="submit"], input[type="submit"]').last().click();
-    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-
-    // Check for success indicators
-    const body = await page.content();
-    const success = /thank you|application submitted|we.ll be in touch|confirmation/i.test(body);
-
-    if (!success) {
-      // Capture screenshot for debugging
-      const screenshotPath = join(tmpdir(), `gh_apply_${Date.now()}.png`);
-      await page.screenshot({ path: screenshotPath, fullPage: false });
-      console.warn(`  ⚠  Greenhouse submit uncertain for ${company}; screenshot: ${screenshotPath}`);
-    }
-
-    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+    return await submitAndConfirm(
+      page,
+      job,
+      () => page.locator('button[type="submit"], input[type="submit"]').last().click(),
+      /thank you|application submitted|we.ll be in touch|confirmation/i,
+    );
   } catch (err) {
+    if (recording) await recording.screenshot(page, "error");
     return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
   } finally {
     await page.close();
@@ -293,7 +319,7 @@ async function applyLever(job) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function applyWorkday(pw, job) {
-  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const { jobUrl, resumePath, coverLetter, company, title, recording } = job;
   const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "networkidle", timeout: 40_000 });
@@ -343,13 +369,14 @@ async function applyWorkday(pw, job) {
       return { success: true, notes: "dry-run" };
     }
 
-    await submitBtn.click();
-    await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
-
-    const body = await page.content();
-    const success = /thank you|submitted|confirmation/i.test(body);
-    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+    return await submitAndConfirm(
+      page,
+      job,
+      () => submitBtn.click(),
+      /thank you|submitted|confirmation/i,
+    );
   } catch (err) {
+    if (recording) await recording.screenshot(page, "error");
     return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
   } finally {
     await page.close();
@@ -361,7 +388,7 @@ async function applyWorkday(pw, job) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function applyAshby(pw, job) {
-  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const { jobUrl, resumePath, coverLetter, company, title, recording } = job;
   const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -396,12 +423,14 @@ async function applyAshby(pw, job) {
       return { success: true, notes: "dry-run" };
     }
 
-    await page.locator('button[type="submit"]').last().click();
-    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-    const body = await page.content();
-    const success = /thank you|submitted|confirmation/i.test(body);
-    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+    return await submitAndConfirm(
+      page,
+      job,
+      () => page.locator('button[type="submit"]').last().click(),
+      /thank you|submitted|confirmation/i,
+    );
   } catch (err) {
+    if (recording) await recording.screenshot(page, "error");
     return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
   } finally {
     await page.close();
@@ -413,7 +442,7 @@ async function applyAshby(pw, job) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function applySmartRecruiters(pw, job) {
-  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const { jobUrl, resumePath, coverLetter, company, title, recording } = job;
   const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -447,12 +476,14 @@ async function applySmartRecruiters(pw, job) {
       return { success: true, notes: "dry-run" };
     }
 
-    await page.locator('button[type="submit"]').last().click();
-    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-    const body = await page.content();
-    const success = /thank you|submitted|confirmation|application received/i.test(body);
-    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+    return await submitAndConfirm(
+      page,
+      job,
+      () => page.locator('button[type="submit"]').last().click(),
+      /thank you|submitted|confirmation|application received/i,
+    );
   } catch (err) {
+    if (recording) await recording.screenshot(page, "error");
     return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
   } finally {
     await page.close();
@@ -464,7 +495,7 @@ async function applySmartRecruiters(pw, job) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function applyBreezy(pw, job) {
-  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const { jobUrl, resumePath, coverLetter, company, title, recording } = job;
   const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -496,12 +527,14 @@ async function applyBreezy(pw, job) {
       return { success: true, notes: "dry-run" };
     }
 
-    await page.locator('button[type="submit"]').last().click();
-    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-    const body = await page.content();
-    const success = /thank you|submitted|application received/i.test(body);
-    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+    return await submitAndConfirm(
+      page,
+      job,
+      () => page.locator('button[type="submit"]').last().click(),
+      /thank you|submitted|application received/i,
+    );
   } catch (err) {
+    if (recording) await recording.screenshot(page, "error");
     return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
   } finally {
     await page.close();
@@ -513,7 +546,7 @@ async function applyBreezy(pw, job) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function applyWorkable(pw, job) {
-  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const { jobUrl, resumePath, coverLetter, company, title, recording } = job;
   const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -546,12 +579,14 @@ async function applyWorkable(pw, job) {
       return { success: true, notes: "dry-run" };
     }
 
-    await page.locator('button[type="submit"]').last().click();
-    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-    const body = await page.content();
-    const success = /thank you|application submitted|confirmation/i.test(body);
-    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+    return await submitAndConfirm(
+      page,
+      job,
+      () => page.locator('button[type="submit"]').last().click(),
+      /thank you|application submitted|confirmation/i,
+    );
   } catch (err) {
+    if (recording) await recording.screenshot(page, "error");
     return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
   } finally {
     await page.close();
@@ -563,7 +598,7 @@ async function applyWorkable(pw, job) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function applyRecruitee(pw, job) {
-  const { jobUrl, resumePath, coverLetter, company, title } = job;
+  const { jobUrl, resumePath, coverLetter, company, title, recording } = job;
   const page = await pw.newPage();
   try {
     await page.goto(jobUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
@@ -596,12 +631,14 @@ async function applyRecruitee(pw, job) {
       return { success: true, notes: "dry-run" };
     }
 
-    await page.locator('button[type="submit"]').last().click();
-    await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-    const body = await page.content();
-    const success = /thank you|submitted|application received/i.test(body);
-    return { success: true, notes: success ? "submitted" : "submitted-unconfirmed" };
+    return await submitAndConfirm(
+      page,
+      job,
+      () => page.locator('button[type="submit"]').last().click(),
+      /thank you|submitted|application received/i,
+    );
   } catch (err) {
+    if (recording) await recording.screenshot(page, "error");
     return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
   } finally {
     await page.close();
@@ -613,7 +650,7 @@ async function applyRecruitee(pw, job) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function applyHiringCafe(pw, job) {
-  const { jobUrl, resumePath, resumeUrl, coverLetter, company, title } = job;
+  const { jobUrl, resumePath, resumeUrl, coverLetter, company, title, recording } = job;
   const page = await pw.newPage();
 
   try {
@@ -666,7 +703,7 @@ async function applyHiringCafe(pw, job) {
 
     // Detect platform and delegate to the right apply function
     const platform  = detectPlatform(externalUrl);
-    const outerJob  = { jobUrl: externalUrl, resumePath, resumeUrl, coverLetter, company, title };
+    const outerJob  = { jobUrl: externalUrl, resumePath, resumeUrl, coverLetter, company, title, recording };
     const pwPlatforms = ["greenhouse", "icims", "workday", "ashby", "smartrecruiters", "breezy", "workable", "recruitee"];
 
     if (pwPlatforms.includes(platform)) {
@@ -686,6 +723,7 @@ async function applyHiringCafe(pw, job) {
     return { success: false, notes: `manual-required: ${platform} at ${externalUrl.slice(0, 80)}` };
 
   } catch (err) {
+    if (recording) await recording.screenshot(page, "error");
     return { success: false, notes: err.message?.slice(0, 200) ?? "unknown error" };
   } finally {
     await page.close().catch(() => {});
@@ -807,86 +845,40 @@ async function sendApplyNotification(applied) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Apply recording (Playwright video + trace + screenshot → GCS)
+// Apply recording (Playwright video + trace + screenshots → artifacts/)
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function runPlaywrightApply(pwTarget, applyFn) {
-  return applyFn(pwTarget);
+  return applyFn(pwTarget, null);
 }
 
-async function runRecordedPlaywrightApply(browser, rowIndex, company, applyFn) {
-  const artifactsDir = join(tmpdir(), `apply-row-${rowIndex}-${Date.now()}`);
-  await mkdir(artifactsDir, { recursive: true });
-  const tracePath = join(artifactsDir, "trace.zip");
-  const screenshotPath = join(artifactsDir, "screenshot.png");
+async function runRecordedPlaywrightApply(browser, rowIndex, applyFn) {
+  await ensureArtifactDirs();
+  const tracePath = join(ARTIFACT_DIRS.traces, `row-${rowIndex}-trace.zip`);
+  const recording = makeRecordingHelpers(rowIndex);
 
   const context = await browser.newContext({
-    recordVideo: { dir: artifactsDir, size: { width: 1280, height: 720 } },
+    recordVideo: { dir: ARTIFACT_DIRS.videos, size: { width: 1280, height: 720 } },
   });
   await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
 
   let result;
   try {
-    result = await applyFn(context);
-    const pages = context.pages();
-    if (pages.length > 0) {
-      await pages[pages.length - 1]
-        .screenshot({ path: screenshotPath, fullPage: true })
-        .catch(() => {});
-    }
+    result = await applyFn(context, recording);
   } finally {
     await context.tracing.stop({ path: tracePath }).catch(() => {});
     await context.close();
   }
 
-  const entries = await readdir(artifactsDir);
-  const videoFile = entries.find((name) => name.endsWith(".webm"));
-  const files = [];
-
-  if (videoFile) {
-    files.push({
-      key: "video",
-      localPath: join(artifactsDir, videoFile),
-      remoteName: "video.webm",
-      contentType: "video/webm",
-    });
-  }
-  if (existsSync(tracePath)) {
-    files.push({
-      key: "trace",
-      localPath: tracePath,
-      remoteName: "trace.zip",
-      contentType: "application/zip",
-    });
-  }
-  if (existsSync(screenshotPath)) {
-    files.push({
-      key: "screenshot",
-      localPath: screenshotPath,
-      remoteName: "screenshot.png",
-      contentType: "image/png",
-    });
-  }
-
-  const gcsPrefix = buildApplyRecordingPrefix(rowIndex, company);
-  console.log(`  🎬 Uploading apply recordings → gs://${process.env.GCS_BUCKET_NAME}/${gcsPrefix}/`);
-
-  const { urls } = await uploadApplyRecordingFiles(rowIndex, company, files);
-
-  for (const p of files.map((f) => f.localPath)) {
-    await unlink(p).catch(() => {});
-  }
-  await rm(artifactsDir, { recursive: true, force: true }).catch(() => {});
-
-  return { result, recordingUrls: urls };
+  console.log(`  🎬 Recordings saved under artifacts/ (row ${rowIndex})`);
+  return result;
 }
 
-async function invokePlaywrightApply(browser, rowIndex, company, applyFn) {
+async function invokePlaywrightApply(browser, rowIndex, applyFn) {
   if (!RECORD_APPLY) {
-    const result = await runPlaywrightApply(browser, applyFn);
-    return { result, recordingUrls: null };
+    return runPlaywrightApply(browser, applyFn);
   }
-  return runRecordedPlaywrightApply(browser, rowIndex, company, applyFn);
+  return runRecordedPlaywrightApply(browser, rowIndex, applyFn);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -909,7 +901,6 @@ export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles =
   console.log(`  📝 [${platform.toUpperCase()}] ${company} — ${title} (row ${rowIndex})`);
 
   let result = { success: false, notes: "unsupported platform" };
-  let recordingUrls = null;
   const playwrightPlatforms = [
     "greenhouse", "icims", "workday", "ashby", "smartrecruiters",
     "breezy", "workable", "recruitee", "hiring-cafe",
@@ -933,21 +924,20 @@ export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles =
 
     const job = { jobUrl, resumePath, resumeUrl, coverLetter, company, title };
 
-    const runApply = async (pw) => {
-      if (platform === "greenhouse" || platform === "icims") return applyGreenhouse(pw, job);
-      if (platform === "workday") return applyWorkday(pw, job);
-      if (platform === "ashby") return applyAshby(pw, job);
-      if (platform === "smartrecruiters") return applySmartRecruiters(pw, job);
-      if (platform === "breezy") return applyBreezy(pw, job);
-      if (platform === "workable") return applyWorkable(pw, job);
-      if (platform === "recruitee") return applyRecruitee(pw, job);
-      if (platform === "hiring-cafe") return applyHiringCafe(pw, job);
+    const runApply = async (pw, recording) => {
+      const jobWithRecording = { ...job, recording };
+      if (platform === "greenhouse" || platform === "icims") return applyGreenhouse(pw, jobWithRecording);
+      if (platform === "workday") return applyWorkday(pw, jobWithRecording);
+      if (platform === "ashby") return applyAshby(pw, jobWithRecording);
+      if (platform === "smartrecruiters") return applySmartRecruiters(pw, jobWithRecording);
+      if (platform === "breezy") return applyBreezy(pw, jobWithRecording);
+      if (platform === "workable") return applyWorkable(pw, jobWithRecording);
+      if (platform === "recruitee") return applyRecruitee(pw, jobWithRecording);
+      if (platform === "hiring-cafe") return applyHiringCafe(pw, jobWithRecording);
       return { success: false, notes: "unsupported platform" };
     };
 
-    const outcome = await invokePlaywrightApply(browser, rowIndex, company, runApply);
-    result = outcome.result;
-    recordingUrls = outcome.recordingUrls;
+    result = await invokePlaywrightApply(browser, rowIndex, runApply);
   } else if (platform === "lever") {
     result = await applyLever({ jobUrl, resumeUrl, coverLetter, company, title });
   } else {
@@ -955,33 +945,39 @@ export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles =
   }
 
   const now = new Date().toISOString();
-  const sheetNotes = recordingUrls
-    ? formatRecordingNotes(result.notes, recordingUrls)
-    : result.notes;
 
   if (result.success) {
-    console.log(`  ✅ Applied: ${company} — ${title} | ${sheetNotes}`);
+    console.log(`  ✅ Applied: ${company} — ${title} | ${result.notes}`);
     await updateApplyStatus(sheets, rowIndex, {
       status: DRY_RUN ? "pending" : "applied",
       appliedAt: now,
-      notes: sheetNotes,
+      notes: result.notes,
     });
     return {
       success: true,
-      notes: sheetNotes,
-      recordingUrls,
+      notes: result.notes,
       applied: { company, title, atsScore, resumeUrl },
     };
   }
 
-  console.log(`  ❌ Failed: ${company} — ${title} | ${sheetNotes}`);
+  if (result.notes === "submitted-unconfirmed") {
+    console.log(`  ⚠  Needs review: ${company} — ${title} | ${result.notes}`);
+    await updateApplyStatus(sheets, rowIndex, {
+      status: "needs-review",
+      appliedAt: now,
+      notes: result.notes,
+    });
+    return { success: false, notes: result.notes, applied: null };
+  }
+
+  console.log(`  ❌ Failed: ${company} — ${title} | ${result.notes}`);
   const newStatus = result.notes?.startsWith("manual-required") ? "manual-required" : "failed";
   await updateApplyStatus(sheets, rowIndex, {
     status: newStatus,
     appliedAt: now,
-    notes: sheetNotes,
+    notes: result.notes,
   });
-  return { success: false, notes: sheetNotes, recordingUrls, applied: null };
+  return { success: false, notes: result.notes, applied: null };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

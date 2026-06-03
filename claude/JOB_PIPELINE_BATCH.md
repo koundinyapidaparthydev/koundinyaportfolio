@@ -29,6 +29,24 @@ This is an **SQS-like drain pattern** without AWS: the Google Sheet is the queue
 | `START_ROW` | 2 | First sheet row to consider |
 | `MAX_CONCURRENT` | 2 | Parallel rows within one batch |
 | `DRY_RUN` | false | Skips Playwright submit when `true` |
+| `RECORD_APPLY` | false (true in CI workflow) | Saves video/trace/screenshots under `artifacts/` per row |
+
+## Apply recordings (CI)
+
+When `RECORD_APPLY=true`, each Playwright apply writes:
+
+- `artifacts/apply-videos/` — one `.webm` per row (browser context video)
+- `artifacts/traces/row-{N}-trace.zip` — Playwright trace (open with `npx playwright show-trace`)
+- `artifacts/screenshots/row-{N}-{before-submit|after-submit|error}.png`
+
+After a **Process Job Batch** run on GitHub Actions, download the artifact from the workflow run page (**Summary → Artifacts → `apply-recordings-{run_id}`**). Artifacts are kept for 14 days.
+
+Locally:
+
+```bash
+RECORD_APPLY=true BATCH_SIZE=1 node scripts/process-job-batch.mjs
+# then inspect ./artifacts/
+```
 | `RECORD_APPLY` | false locally | `true` in CI — records Playwright video/trace/screenshot per apply |
 
 ## Apply recordings (GCS)
