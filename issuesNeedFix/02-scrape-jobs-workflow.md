@@ -1,7 +1,7 @@
 # Issue 02: Scrape Jobs Workflow Failing
 
-**Workflow file:** `.github/workflows/scrape-jobs.yml`  
-**GitHub UI name:** Scrape Jobs → Generate Resumes → Auto-Apply
+**Workflow files:** `.github/workflows/scrape-jobs.yml` (scrape only), `.github/workflows/process-job-batch.yml` (generate + apply, batch of 30)  
+**GitHub UI names:** Scrape Jobs | Process Job Batch (Generate + Apply)
 
 ## Symptoms
 
@@ -9,11 +9,12 @@
 - Scrape step may succeed; generate or auto-apply step exits with code 1.
 - Push to `main` does **not** auto-trigger this workflow (schedule + `workflow_dispatch` only).
 
-## Pipeline steps
+## Pipeline steps (split workflows)
 
-1. **Scrape jobs** — `node scripts/scrape-jobs.mjs` → Google Sheet  
-2. **Generate tailored resumes** — `node scripts/generate-applications.mjs` → Claude Haiku → PDF → GCS → Sheet columns H–J  
-3. **Auto-apply** — `node scripts/auto-apply.mjs` → Playwright → Sheet columns K–M  
+1. **Scrape jobs** (`scrape-jobs.yml`, :00/:30 UTC) — `scrape-jobs.mjs` → Sheet A–G  
+2. **Process batch** (`process-job-batch.yml`, :15/:45 UTC) — `process-job-batch.mjs` → up to 30 rows: generate → apply same row → H–M  
+
+See `claude/JOB_PIPELINE_BATCH.md` for the sheet-queue pattern and local commands.
 
 ## Root causes
 

@@ -46,18 +46,11 @@ The PDF layout mirrors the visual structure of the portfolio:
 
 ---
 
-## Styling
+## Styling (ATS-friendly)
 
-`@react-pdf/renderer` uses a subset of CSS-like styles. Only **flexbox**, basic box model properties, and text styles are supported. No CSS Grid, pseudo-classes, or media queries.
+PDFs use **black and gray text on a white background only** — no blue accents, colored section headers, or pill-style skill tags. Standard **Helvetica** throughout. Section order: Summary → Skills → Experience → Projects → Education.
 
-```ts
-const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Helvetica' },
-  section: { marginBottom: 12 },
-  heading: { fontSize: 14, fontWeight: 'bold', color: '#1e293b' },
-  bullet: { fontSize: 10, lineHeight: 1.5, color: '#334155' },
-});
-```
+`@react-pdf/renderer` uses a subset of CSS-like styles (flexbox, basic box model, text). The pipeline subprocess `scripts/pdf-render-helper.cjs` mirrors the same layout for `generate-applications.mjs`.
 
 ---
 

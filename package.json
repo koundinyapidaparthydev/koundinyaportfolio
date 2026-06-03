@@ -26,6 +26,8 @@
     "auto:apply:dry": "DRY_RUN=true node scripts/auto-apply.mjs",
     "job:apply-one": "APPLY_LIMIT=1 node scripts/auto-apply.mjs",
     "job:pipeline": "node scripts/generate-applications.mjs && node scripts/auto-apply.mjs",
+    "job:process-batch": "node scripts/process-job-batch.mjs",
+    "job:process-batch:test": "BATCH_SIZE=1 DRY_RUN=true node scripts/process-job-batch.mjs",
     "job:scrape": "node scripts/scrape-jobs.mjs",
     "job:validate-env": "node scripts/validate-pipeline-env.mjs --stage=generate",
     "job:diagnose": "node scripts/diagnose-sheet.mjs",

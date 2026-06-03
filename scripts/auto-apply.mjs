@@ -48,6 +48,8 @@ import { google } from "googleapis";
 import { readFileSync, createWriteStream } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import path from "path";
+import { fileURLToPath } from "url";
 import { unlink } from "fs/promises";
 import { pipeline } from "stream/promises";
 import { createWriteStream as createWS } from "fs";
@@ -799,6 +801,98 @@ async function sendApplyNotification(applied) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Apply a single sheet row (used by process-job-batch.mjs for same-row chaining)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export async function applyToRow(browser, sheets, rowIndex, values, { tmpFiles = [] } = {}) {
+  const company     = values[COL.COMPANY]      ?? "";
+  const title       = values[COL.TITLE]        ?? "";
+  const jobUrl      = values[COL.URL]          ?? "";
+  const resumeUrl   = values[COL.RESUME_URL]   ?? "";
+  const coverLetter = values[COL.COVER_LETTER] ?? "";
+  const atsScore    = values[COL.ATS_SCORE]    ?? "";
+
+  if (!resumeUrl) {
+    return { success: false, notes: "no resume URL", applied: null };
+  }
+
+  const platform = detectPlatform(jobUrl);
+  console.log(`  📝 [${platform.toUpperCase()}] ${company} — ${title} (row ${rowIndex})`);
+
+  let result = { success: false, notes: "unsupported platform" };
+  const playwrightPlatforms = [
+    "greenhouse", "icims", "workday", "ashby", "smartrecruiters",
+    "breezy", "workable", "recruitee", "hiring-cafe",
+  ];
+
+  if (playwrightPlatforms.includes(platform)) {
+    let resumePath = null;
+    try {
+      resumePath = await downloadPdf(resumeUrl);
+      tmpFiles.push(resumePath);
+    } catch (err) {
+      console.error(`  ❌ Could not download resume PDF: ${err.message}`);
+      result = { success: false, notes: `PDF download failed: ${err.message}` };
+      await updateApplyStatus(sheets, rowIndex, {
+        status: "failed",
+        appliedAt: new Date().toISOString(),
+        notes: result.notes,
+      });
+      return { ...result, applied: null };
+    }
+
+    const job = { jobUrl, resumePath, resumeUrl, coverLetter, company, title };
+
+    if (platform === "greenhouse" || platform === "icims") {
+      result = await applyGreenhouse(browser, job);
+    } else if (platform === "workday") {
+      result = await applyWorkday(browser, job);
+    } else if (platform === "ashby") {
+      result = await applyAshby(browser, job);
+    } else if (platform === "smartrecruiters") {
+      result = await applySmartRecruiters(browser, job);
+    } else if (platform === "breezy") {
+      result = await applyBreezy(browser, job);
+    } else if (platform === "workable") {
+      result = await applyWorkable(browser, job);
+    } else if (platform === "recruitee") {
+      result = await applyRecruitee(browser, job);
+    } else if (platform === "hiring-cafe") {
+      result = await applyHiringCafe(browser, job);
+    }
+  } else if (platform === "lever") {
+    result = await applyLever({ jobUrl, resumeUrl, coverLetter, company, title });
+  } else {
+    result = { success: false, notes: "manual-required: unsupported platform" };
+  }
+
+  const now = new Date().toISOString();
+
+  if (result.success) {
+    console.log(`  ✅ Applied: ${company} — ${title} | ${result.notes}`);
+    await updateApplyStatus(sheets, rowIndex, {
+      status: DRY_RUN ? "pending" : "applied",
+      appliedAt: now,
+      notes: result.notes,
+    });
+    return {
+      success: true,
+      notes: result.notes,
+      applied: { company, title, atsScore, resumeUrl },
+    };
+  }
+
+  console.log(`  ❌ Failed: ${company} — ${title} | ${result.notes}`);
+  const newStatus = result.notes?.startsWith("manual-required") ? "manual-required" : "failed";
+  await updateApplyStatus(sheets, rowIndex, {
+    status: newStatus,
+    appliedAt: now,
+    notes: result.notes,
+  });
+  return { success: false, notes: result.notes, applied: null };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -830,87 +924,8 @@ async function main() {
 
   try {
     for (const { rowIndex, values } of toApply) {
-      const company     = values[COL.COMPANY]      ?? "";
-      const title       = values[COL.TITLE]        ?? "";
-      const jobUrl      = values[COL.URL]          ?? "";
-      const resumeUrl   = values[COL.RESUME_URL]   ?? "";
-      const coverLetter = values[COL.COVER_LETTER] ?? "";
-      const atsScore    = values[COL.ATS_SCORE]    ?? "";
-
-      const platform = detectPlatform(jobUrl);
-      console.log(`  📝 [${platform.toUpperCase()}] ${company} — ${title}`);
-
-      let result = { success: false, notes: "unsupported platform" };
-
-      // Platforms that need a local PDF file for upload
-      const playwrightPlatforms = ["greenhouse", "icims", "workday", "ashby", "smartrecruiters", "breezy", "workable", "recruitee", "hiring-cafe"];
-
-      if (playwrightPlatforms.includes(platform)) {
-        // Need to download PDF locally for file upload
-        let resumePath = null;
-        try {
-          resumePath = await downloadPdf(resumeUrl);
-          tmpFiles.push(resumePath);
-        } catch (err) {
-          console.error(`  ❌ Could not download resume PDF: ${err.message}`);
-          result = { success: false, notes: `PDF download failed: ${err.message}` };
-          await updateApplyStatus(sheets, rowIndex, {
-            status: "failed",
-            appliedAt: new Date().toISOString(),
-            notes: result.notes,
-          });
-          continue;
-        }
-
-        const job = { jobUrl, resumePath, resumeUrl, coverLetter, company, title };
-
-        if (platform === "greenhouse" || platform === "icims") {
-          result = await applyGreenhouse(browser, job);
-        } else if (platform === "workday") {
-          result = await applyWorkday(browser, job);
-        } else if (platform === "ashby") {
-          result = await applyAshby(browser, job);
-        } else if (platform === "smartrecruiters") {
-          result = await applySmartRecruiters(browser, job);
-        } else if (platform === "breezy") {
-          result = await applyBreezy(browser, job);
-        } else if (platform === "workable") {
-          result = await applyWorkable(browser, job);
-        } else if (platform === "recruitee") {
-          result = await applyRecruitee(browser, job);
-        } else if (platform === "hiring-cafe") {
-          result = await applyHiringCafe(browser, job);
-        }
-      } else if (platform === "lever") {
-        const job = { jobUrl, resumeUrl, coverLetter, company, title };
-        result = await applyLever(job);
-      } else {
-        // Unknown platform — skip and mark as manual
-        result = { success: false, notes: "manual-required: unsupported platform" };
-      }
-
-      const now = new Date().toISOString();
-
-      if (result.success) {
-        console.log(`  ✅ Applied: ${company} — ${title} | ${result.notes}`);
-        await updateApplyStatus(sheets, rowIndex, {
-          status: DRY_RUN ? "pending" : "applied",
-          appliedAt: now,
-          notes: result.notes,
-        });
-        applied.push({ company, title, atsScore, resumeUrl });
-      } else {
-        console.log(`  ❌ Failed: ${company} — ${title} | ${result.notes}`);
-        // Don't mark as failed if it's a manual-required — keep as pending
-        const newStatus = result.notes?.startsWith("manual-required") ? "manual-required" : "failed";
-        await updateApplyStatus(sheets, rowIndex, {
-          status: newStatus,
-          appliedAt: now,
-          notes: result.notes,
-        });
-      }
-
-      // Small delay between applications
+      const outcome = await applyToRow(browser, sheets, rowIndex, values, { tmpFiles });
+      if (outcome.applied) applied.push(outcome.applied);
       await new Promise((r) => setTimeout(r, 3000));
     }
   } finally {
@@ -929,7 +944,13 @@ async function main() {
   await sendApplyNotification(applied);
 }
 
-main().catch((err) => {
-  console.error("Fatal:", err);
-  process.exit(1);
-});
+const isMain =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  main().catch((err) => {
+    console.error("Fatal:", err);
+    process.exit(1);
+  });
+}

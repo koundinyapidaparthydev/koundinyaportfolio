@@ -1,0 +1,80 @@
+name: Process Job Batch (Generate + Apply)
+
+# Runs 15 minutes after scrape (scrape at :00/:30 UTC → batch at :15/:45 UTC)
+on:
+  schedule:
+    - cron: "15,45 11-23 * * *"
+    - cron: "15,45 0-1 * * *"
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: Max rows to process this run (hard cap 50)
+        required: false
+        default: "30"
+        type: string
+      start_row:
+        description: Optional 1-based sheet row to start from (e.g. 2)
+        required: false
+        default: "2"
+        type: string
+
+jobs:
+  process-batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Validate generate env
+        run: node scripts/validate-pipeline-env.mjs --stage=generate
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GCS_SERVICE_ACCOUNT_JSON: ${{ secrets.GCS_SERVICE_ACCOUNT_JSON }}
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+
+      - name: Validate apply env
+        run: node scripts/validate-pipeline-env.mjs --stage=apply
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Process job batch (generate → apply per row)
+        run: node scripts/process-job-batch.mjs
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GCS_SERVICE_ACCOUNT_JSON: ${{ secrets.GCS_SERVICE_ACCOUNT_JSON }}
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+          GCS_PROJECT_ID: ${{ secrets.GCS_PROJECT_ID }}
+          ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001' }}
+          BATCH_SIZE: ${{ github.event.inputs.batch_size || '30' }}
+          START_ROW: ${{ github.event.inputs.start_row || '2' }}
+          MAX_CONCURRENT: "2"
+          APPLY_LIMIT: ${{ github.event.inputs.batch_size || '30' }}
+          DRY_RUN: "false"
+          APPLICANT_EMAIL: ${{ secrets.APPLICANT_EMAIL || 'koundinyapidaparthy@gmail.com' }}
+          APPLICANT_FIRST_NAME: ${{ secrets.APPLICANT_FIRST_NAME || 'Koundinya' }}
+          APPLICANT_LAST_NAME: ${{ secrets.APPLICANT_LAST_NAME || 'Pidaparthy' }}
+          APPLICANT_PHONE: ${{ secrets.APPLICANT_PHONE || '5512298660' }}
+          APPLICANT_LINKEDIN: ${{ secrets.APPLICANT_LINKEDIN || 'https://linkedin.com/in/koundinyap' }}
+          APPLICANT_PORTFOLIO: ${{ secrets.APPLICANT_PORTFOLIO || 'https://koundinyapidaparhty.vercel.app' }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}

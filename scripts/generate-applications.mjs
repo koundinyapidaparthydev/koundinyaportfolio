@@ -521,7 +521,24 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("Fatal:", err);
-  process.exit(1);
-});
+export {
+  COL,
+  SHEET_NAME,
+  getSheets,
+  ensureExtendedHeaders,
+  getAllRows,
+  updateRow,
+  processJob,
+  getResume,
+};
+
+const isMain =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMain) {
+  main().catch((err) => {
+    console.error("Fatal:", err);
+    process.exit(1);
+  });
+}
