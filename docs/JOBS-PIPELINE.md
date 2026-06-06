@@ -25,7 +25,7 @@ flowchart LR
 | **Diagnose sheet** | `scripts/diagnose-sheet.mjs` | `npm run job:diagnose` |
 | **Env check** | `scripts/validate-pipeline-env.mjs` | `npm run job:validate-env` |
 
-**GitHub Actions:** `.github/workflows/scrape-jobs.yml` runs every 30 minutes (4 AM–6 PM PDT window).
+**GitHub Actions:** `.github/workflows/scrape-jobs.yml` runs every 30 minutes, 24/7.
 
 ---
 
