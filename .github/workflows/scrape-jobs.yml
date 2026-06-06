@@ -2,7 +2,7 @@ name: Scrape Jobs
 
 # Runs every 30 minutes between 4 AM and 6 PM PDT (UTC-7)
 # 4:00 AM PDT = 11:00 UTC   /   6:00 PM PDT = 01:00 UTC (next day)
-# Generate + apply run separately via process-job-batch.yml (:15/:45 UTC)
+# Scrape-only pipeline — no generate/apply workflows
 on:
   schedule:
     - cron: "0,30 11-23 * * *"

@@ -1,25 +1,27 @@
 #!/usr/bin/env node
 /**
- * Job scraper — fetches engineering roles from each company and writes to Google Sheets.
+ * Job scraper — fetches engineering roles from configured companies → Google Sheets.
  *
- * Required env vars:
- *   GOOGLE_SHEET_ID              — ID of the target Google Sheet
- *   GOOGLE_SERVICE_ACCOUNT_JSON  — full service-account JSON as a string
+ * Required env:
+ *   GOOGLE_SHEET_ID, GOOGLE_SERVICE_ACCOUNT_JSON
  *
- * Supported ATS adapters (30+ companies, 7 platforms):
- *   - Greenhouse  (StubHub, AXS, Lyft, Airbnb, CLEAR, SeatGeek, Uber Freight,
- *                  Coinbase, DoorDash, Reddit, Figma, Discord, Dropbox, Duolingo,
- *                  Brex, Plaid, Roblox)
- *   - Workday     (Live Nation, Sabre, NCL, SeaWorld, Expedia Group, Hilton)
- *   - Lever       (Yelp, Postman, Thumbtack)
- *   - Ashby       (Linear, Replit, Retool)
- *   - SmartRecruiters (Royal Caribbean Group)
- *   - iCIMS RSS   (Disney — descriptions fetched inline)
- *   - Custom      (Booking.com)
+ * Optional env:
+ *   DRY_RUN=true              — fetch + log summary; no sheet writes or WhatsApp
+ *   ENGINEERING_FILTER=off    — include all titles (skip keyword filter)
+ *   ENGINEERING_KEYWORDS      — comma-separated override for title keywords
+ *   WHATSAPP_*                — new-job notifications (see sendWhatsAppNotification)
+ *   ENRICH_PLAYWRIGHT=true    — after scrape, run scripts/enrich-descriptions.mjs
  *
- * Not scrapeable:
- *   - Universal Studios — Cloudflare-blocked
- *   - Flywire — no active ATS board found
+ * Active ATS adapters:
+ *   Greenhouse, Workday, Lever, Ashby, SmartRecruiters, iCIMS (Disney), Booking.com,
+ *   Hiring.cafe (Playwright), Amazon/Google/Meta/Apple custom APIs
+ *
+ * Implemented but not wired (add slug in fetchAllJobs when board is known):
+ *   Workable  — fetchWorkable(slug) → apply.workable.com API
+ *   BreezyHR  — fetchBreezyHR(slug) → {slug}.breezy.hr/json
+ *   Recruitee — fetchRecruitee(slug) → {slug}.recruitee.com/api/offers/
+ *
+ * Not scrapeable: Universal Studios (Cloudflare), Flywire (no public board)
  */
 
 import { loadEnvLocal } from "./lib/load-env.mjs";
@@ -37,9 +39,12 @@ try {
 
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+const DRY_RUN = process.env.DRY_RUN === "true";
+const ENGINEERING_FILTER_OFF = process.env.ENGINEERING_FILTER === "off";
+const ENRICH_PLAYWRIGHT = process.env.ENRICH_PLAYWRIGHT === "true";
 
 const SHEET_NAME = "Jobs";
-// A–G: scraped fields  |  H–M: filled by generate-applications.mjs / auto-apply.mjs
+// A–G: scraped by this script | H–M: legacy columns (left empty on insert)
 const HEADERS = [
   "Company", "Title", "Location", "URL", "Category", "Fetched At", "Description",
   "Resume URL", "Cover Letter", "ATS Score", "Apply Status", "Applied At", "Notes",
@@ -49,26 +54,64 @@ const HEADERS = [
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
+const DEFAULT_ENGINEERING_KEYWORDS = [
+  "engineer",
+  "software",
+  "developer",
+  "full stack",
+  "fullstack",
+  "frontend",
+  "front-end",
+  "backend",
+  "back-end",
+  "devops",
+  "sre",
+  "platform",
+  "architect",
+  "mobile",
+  "ios",
+  "android",
+  "machine learning",
+  "ml ",
+  " data ",
+  "infrastructure",
+  "security engineer",
+  "staff",
+  "principal",
+];
+
+const ENGINEERING_KEYWORDS = (process.env.ENGINEERING_KEYWORDS ?? "")
+  .split(",")
+  .map((k) => k.trim().toLowerCase())
+  .filter(Boolean);
+
 function isEngineeringRole(title = "") {
+  if (ENGINEERING_FILTER_OFF) return true;
   const t = title.toLowerCase();
-  return [
-    "engineer",
-    "software",
-    "developer",
-    "full stack",
-    "fullstack",
-    "frontend",
-    "front-end",
-    "backend",
-    "back-end",
-    "devops",
-    "sre",
-    "platform",
-    "architect",
-    "mobile",
-    "ios",
-    "android",
-  ].some((k) => t.includes(k));
+  const keywords =
+    ENGINEERING_KEYWORDS.length > 0 ? ENGINEERING_KEYWORDS : DEFAULT_ENGINEERING_KEYWORDS;
+  return keywords.some((k) => t.includes(k));
+}
+
+/** Infer ATS platform from job URL for scrape summaries. */
+function detectPlatformFromUrl(url = "") {
+  const u = url.toLowerCase();
+  if (u.includes("greenhouse.io") || u.includes("boards.greenhouse")) return "greenhouse";
+  if (u.includes("myworkdayjobs.com") || u.includes("workday.com")) return "workday";
+  if (u.includes("lever.co")) return "lever";
+  if (u.includes("ashbyhq.com")) return "ashby";
+  if (u.includes("smartrecruiters.com")) return "smartrecruiters";
+  if (u.includes("icims.com")) return "icims";
+  if (u.includes("hiring.cafe")) return "hiring-cafe";
+  if (u.includes("amazon.jobs")) return "amazon";
+  if (u.includes("careers.google.com")) return "google";
+  if (u.includes("metacareers.com")) return "meta";
+  if (u.includes("jobs.apple.com")) return "apple";
+  if (u.includes("jobs.booking.com")) return "booking";
+  if (u.includes("apply.workable.com")) return "workable";
+  if (u.includes("breezy.hr")) return "breezy";
+  if (u.includes("recruitee.com")) return "recruitee";
+  return "other";
 }
 
 function now() {
@@ -526,6 +569,16 @@ async function fetchDisney() {
  * Workday's unofficial public REST API (used by their own frontend)
  * Pattern: POST https://{host}/wday/cxs/{tenant}/{site}/jobs
  */
+function buildWorkdayJobUrl(host, site, externalPath) {
+  if (!externalPath) return `https://${host}/en-US/${site}`;
+  if (/^https?:\/\//i.test(externalPath)) return externalPath;
+  const path = externalPath.startsWith("/") ? externalPath : `/${externalPath}`;
+  if (path.startsWith("/job/") && !path.includes("/en-US/")) {
+    return `https://${host}/en-US/${site}${path}`;
+  }
+  return `https://${host}${path}`;
+}
+
 async function fetchWorkday(host, tenant, site, company, category, searchText = "engineer") {
   const url = `https://${host}/wday/cxs/${tenant}/${site}/jobs`;
   try {
@@ -553,7 +606,7 @@ async function fetchWorkday(host, tenant, site, company, category, searchText = 
       company,
       j.title,
       j.locationsText ?? "",
-      j.externalPath ? `https://${host}${j.externalPath}` : `https://${host}/en-US/${site}`,
+      buildWorkdayJobUrl(host, site, j.externalPath),
       category,
       now(),
     ]);
@@ -1107,6 +1160,55 @@ async function fetchApple(category = "general") {
 // Company definitions
 // ─────────────────────────────────────────────────────────────────────────────
 
+function printScrapeSummary(allJobs, { taskCount = 0, rejected = 0 } = {}) {
+  const byPlatform = {};
+  const byCompany = {};
+
+  for (const row of allJobs) {
+    const company = row[0] ?? "Unknown";
+    byCompany[company] = (byCompany[company] ?? 0) + 1;
+    const platform = detectPlatformFromUrl(row[3] ?? "");
+    byPlatform[platform] = (byPlatform[platform] ?? 0) + 1;
+  }
+
+  console.log("\n═══════════════════════════════════════════════════════════");
+  console.log("📊  Scrape summary");
+  console.log(`   Sources: ${taskCount}  |  Jobs fetched: ${allJobs.length}  |  Rejected: ${rejected}`);
+  if (ENGINEERING_FILTER_OFF) {
+    console.log("   Title filter: OFF (ENGINEERING_FILTER=off)");
+  } else if (ENGINEERING_KEYWORDS.length > 0) {
+    console.log(`   Title filter: custom (${ENGINEERING_KEYWORDS.length} keywords)`);
+  } else {
+    console.log(`   Title filter: default (${DEFAULT_ENGINEERING_KEYWORDS.length} keywords)`);
+  }
+  if (DRY_RUN) console.log("   Mode: DRY_RUN (no sheet writes)");
+
+  const platformLines = Object.entries(byPlatform)
+    .sort((a, b) => b[1] - a[1])
+    .map(([p, n]) => `      ${p}: ${n}`);
+  if (platformLines.length) {
+    console.log("\n   By platform (from URLs):");
+    for (const line of platformLines) console.log(line);
+  }
+
+  const topCompanies = Object.entries(byCompany)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 15);
+  if (topCompanies.length) {
+    console.log("\n   Top companies:");
+    for (const [name, n] of topCompanies) {
+      console.log(`      ${name}: ${n}`);
+    }
+    const rest = Object.keys(byCompany).length - topCompanies.length;
+    if (rest > 0) console.log(`      … +${rest} more companies`);
+  }
+
+  if (rejected > 0) {
+    console.log(`\n   ❌ ${rejected} source(s) threw (see warnings above)`);
+  }
+  console.log("═══════════════════════════════════════════════════════════\n");
+}
+
 async function fetchAllJobs() {
   console.log("🔍  Fetching jobs from all companies...\n");
 
@@ -1372,11 +1474,15 @@ async function fetchAllJobs() {
   ];
 
   const results = await Promise.allSettled(tasks);
+  const rejected = results.filter((r) => r.status === "rejected");
+  for (const r of rejected) {
+    console.warn("  ⚠  Scrape source rejected:", r.reason?.message ?? r.reason);
+  }
   const allJobs = results
     .filter((r) => r.status === "fulfilled")
     .flatMap((r) => r.value);
 
-  console.log(`\n📋  Total: ${allJobs.length} engineering roles fetched\n`);
+  printScrapeSummary(allJobs, { taskCount: tasks.length, rejected: rejected.length });
   return allJobs;
 }
 
@@ -1429,6 +1535,13 @@ async function writeNewJobs(sheets, newJobs) {
   );
 
   const deduped = newJobs.filter((row) => row[3] && !existingUrls.has(row[3]));
+
+  if (DRY_RUN) {
+    console.log(
+      `🏃  DRY_RUN: ${deduped.length} new URLs (${newJobs.length} fetched, ${existingUrls.size} already in sheet)`
+    );
+    return deduped;
+  }
 
   if (deduped.length === 0) {
     console.log("✅  No new jobs to add (all already in sheet)");
@@ -1555,6 +1668,10 @@ function padRowTo13(row) {
 }
 
 async function archiveOldJobs(sheets) {
+  if (DRY_RUN) {
+    console.log("🏃  DRY_RUN: skipping archive");
+    return;
+  }
   const ARCHIVE_SHEET = "Old Jobs";
   const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
@@ -1635,14 +1752,38 @@ async function archiveOldJobs(sheets) {
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
 
+async function runPlaywrightEnrich() {
+  if (!ENRICH_PLAYWRIGHT) return;
+  console.log("\n🌐  ENRICH_PLAYWRIGHT=true — running enrich-descriptions.mjs...\n");
+  const { spawn } = await import("child_process");
+  await new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ["scripts/enrich-descriptions.mjs"], {
+      stdio: "inherit",
+      cwd: process.cwd(),
+      env: process.env,
+    });
+    child.on("error", reject);
+    child.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`enrich-descriptions exited ${code}`))));
+  });
+}
+
 async function main() {
+  if (DRY_RUN) console.log("🏃  DRY_RUN mode — no sheet writes or WhatsApp\n");
+
   const [jobs, sheets] = await Promise.all([fetchAllJobs(), getSheets()]);
-  await ensureSheetAndHeaders(sheets);
-  await archiveOldJobs(sheets);       // archive 2+ day old jobs first
-  await migrateLegacyCompanyNames(sheets);
+  if (!DRY_RUN) {
+    await ensureSheetAndHeaders(sheets);
+    await archiveOldJobs(sheets);
+    await migrateLegacyCompanyNames(sheets);
+  }
   const newJobRows = await writeNewJobs(sheets, jobs);
-  await backfillDescriptions(sheets);
-  await sendWhatsAppNotification(newJobRows);
+  if (!DRY_RUN) {
+    await backfillDescriptions(sheets);
+    await sendWhatsAppNotification(newJobRows);
+    await runPlaywrightEnrich();
+  } else {
+    console.log(`🏃  DRY_RUN: ${jobs.length} jobs fetched; ${newJobRows.length} would be new`);
+  }
 }
 
 /**
@@ -1726,6 +1867,8 @@ async function migrateLegacyCompanyNames(sheets) {
  * Does NOT touch fetchedAt or any other column — time filters remain accurate.
  */
 async function backfillDescriptions(sheets) {
+  if (DRY_RUN) return;
+
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: GOOGLE_SHEET_ID,
     range: `${SHEET_NAME}!A2:G`,

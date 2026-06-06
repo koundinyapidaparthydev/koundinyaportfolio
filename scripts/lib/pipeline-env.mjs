@@ -1,7 +1,17 @@
 /**
- * Shared validation for job-pipeline scripts and GitHub Actions preflight.
+ * Shared validation for job-scraping scripts and GitHub Actions preflight.
  */
-import { normalizeEnvValue } from "./applicant-profile.mjs";
+
+export function normalizeEnvValue(value) {
+  const trimmed = String(value ?? "").trim();
+  if (
+    (trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+    (trimmed.startsWith('"') && trimmed.endsWith('"'))
+  ) {
+    return trimmed.slice(1, -1);
+  }
+  return trimmed;
+}
 
 export function parseServiceAccountJson(raw, label = "service account") {
   if (!raw?.trim()) {
@@ -16,14 +26,6 @@ export function parseServiceAccountJson(raw, label = "service account") {
 
 const STAGES = {
   scrape: ["GOOGLE_SHEET_ID", "GOOGLE_SERVICE_ACCOUNT_JSON"],
-  generate: [
-    "GOOGLE_SHEET_ID",
-    "GOOGLE_SERVICE_ACCOUNT_JSON",
-    "ANTHROPIC_API_KEY",
-    "GCS_SERVICE_ACCOUNT_JSON",
-    "GCS_BUCKET_NAME",
-  ],
-  apply: ["GOOGLE_SHEET_ID", "GOOGLE_SERVICE_ACCOUNT_JSON"],
   weekly: [
     "GOOGLE_SHEET_ID",
     "GOOGLE_SERVICE_ACCOUNT_JSON",
@@ -34,7 +36,7 @@ const STAGES = {
   ],
 };
 
-export function validatePipelineEnv(stage = "generate") {
+export function validatePipelineEnv(stage = "scrape") {
   const keys = STAGES[stage];
   if (!keys) {
     throw new Error(`Unknown stage: ${stage}. Use: ${Object.keys(STAGES).join(", ")}`);
@@ -46,20 +48,5 @@ export function validatePipelineEnv(stage = "generate") {
   }
 
   parseServiceAccountJson(process.env.GOOGLE_SERVICE_ACCOUNT_JSON, "Google Sheets");
-
-  if (stage === "generate") {
-    parseServiceAccountJson(process.env.GCS_SERVICE_ACCOUNT_JSON, "GCS");
-    if (!process.env.ANTHROPIC_API_KEY?.startsWith("sk-")) {
-      console.warn("⚠️  ANTHROPIC_API_KEY may be invalid (expected sk-… prefix)");
-    }
-  }
-
-  if (stage === "apply" && process.env.RECORD_APPLY === "true") {
-    parseServiceAccountJson(process.env.GCS_SERVICE_ACCOUNT_JSON, "GCS");
-    if (!normalizeEnvValue(process.env.GCS_BUCKET_NAME ?? "")) {
-      throw new Error("Missing env: GCS_BUCKET_NAME (required when RECORD_APPLY=true)");
-    }
-  }
-
   return true;
 }
