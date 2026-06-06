@@ -6,8 +6,6 @@ import {
   NEW_JOB_WINDOW_MS,
   TIME_FILTERS,
   filterByTime as filterJobsByTime,
-  filterByCountryLocation,
-  type CountryLocationFilter,
   type TimeFilter,
 } from "@/lib/admin/allJobsFilters";
 
