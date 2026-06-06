@@ -825,9 +825,9 @@ async function fetchHiringCafe(category = "hiring-cafe") {
     }));
     const searchUrl = `https://hiring.cafe/?searchState=${searchState}`;
 
-    await page.goto(searchUrl, { waitUntil: "networkidle", timeout: 60_000 });
-    // Give lazy-loaded content a moment
-    await page.waitForTimeout(3_000);
+    // hiring.cafe keeps long-polling analytics open — networkidle never settles
+    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    await page.waitForTimeout(4_000);
 
     // ── 2. Try structured data from window.__NEXT_DATA__ ─────────────────
     const nextData = await page.evaluate(() => {
@@ -837,22 +837,51 @@ async function fetchHiringCafe(category = "hiring-cafe") {
       } catch { return null; }
     });
 
-    /** Normalise any item shape → row */
+    /** Normalise any item shape → row (legacy API + current ssrHits schema) */
     function toRow(item) {
-      const title     = item.jobTitle    ?? item.title    ?? item.name    ?? "";
-      const company   = item.companyName ?? item.company  ?? item.employer ?? "Hiring Cafe";
-      const location  = item.location    ?? item.city     ?? item.locationName ?? "";
-      const salary    = item.salary      ?? item.compensation ?? "";
-      const skills    = Array.isArray(item.skills) ? item.skills.join(", ") : (item.skills ?? "");
-      const id        = item.id ?? item.jobId ?? item._id ?? item.listingId ?? "";
-      const url       = item.jobUrl ?? item.applyUrl
-                     ?? (id ? `https://hiring.cafe/job/${id}` : "");
+      const v5   = item.v5_processed_job_data ?? {};
+      const v7   = item.v7_processed_job_data ?? {};
+      const info = item.job_information ?? {};
+
+      const title =
+        item.hc_title ?? item.job_title ?? info.title ?? info.job_title_raw ??
+        item.jobTitle ?? item.title ?? item.name ?? "";
+      const company =
+        v5.company_name ?? item.enriched_company_data?.name ??
+        v7.company_profile?.name ??
+        item.companyName ?? item.company ?? item.employer ?? "Hiring Cafe";
+      const location =
+        v5.formatted_workplace_location ??
+        (Array.isArray(v5.workplace_cities) ? v5.workplace_cities.join(", ") : "") ??
+        item.location ?? item.city ?? item.locationName ?? "";
+
+      let salary = item.salary ?? item.compensation ?? "";
+      if (!salary && v5.yearly_min_compensation != null) {
+        const lo = Math.round(v5.yearly_min_compensation / 1000);
+        const hi = Math.round((v5.yearly_max_compensation ?? v5.yearly_min_compensation) / 1000);
+        salary = `$${lo}k-$${hi}k/yr`;
+      } else if (!salary && v7.compensation_and_benefits?.salary) {
+        const s = v7.compensation_and_benefits.salary;
+        salary = `$${Math.round(s.low / 1000)}k-$${Math.round(s.high / 1000)}k/yr`;
+      }
+
+      const skills = Array.isArray(item.skills)
+        ? item.skills.join(", ")
+        : (Array.isArray(v5.technical_tools) ? v5.technical_tools.join(", ") : (item.skills ?? ""));
+
+      const id = item.objectID ?? item.id ?? item.jobId ?? item._id ?? item.listingId ?? "";
+      const url =
+        item.hc_apply_url ?? item.apply_url ?? item.jobUrl ?? item.applyUrl ??
+        (/^[a-z0-9]{8,}$/i.test(String(id)) ? `https://hiring.cafe/job/${id}` : "");
       if (!title || !url) return null;
 
+      const summary =
+        v5.requirements_summary ??
+        v7.experience_requirements?.requirements_summary ??
+        item.description ?? item.summary ?? info.description ?? "";
       const salaryLine  = salary ? `Salary: ${salary}` : "";
       const skillsLine  = skills ? `Skills: ${skills}` : "";
-      const description = [salaryLine, skillsLine, item.description ?? item.summary ?? ""]
-        .filter(Boolean).join("\n").slice(0, 2500);
+      const description = [salaryLine, skillsLine, summary].filter(Boolean).join("\n").slice(0, 2500);
 
       return [company, title, location, url, "hiring-cafe", now(), description];
     }
@@ -871,7 +900,7 @@ async function fetchHiringCafe(category = "hiring-cafe") {
     if (nextData) {
       const pageProps = nextData?.props?.pageProps ?? {};
       const items =
-        pageProps.jobs    ?? pageProps.listings ?? pageProps.postings ??
+        pageProps.ssrHits ?? pageProps.jobs    ?? pageProps.listings ?? pageProps.postings ??
         pageProps.results ?? pageProps.hits      ?? [];
       if (Array.isArray(items) && items.length > 0) {
         const rows = items.map(toRow).filter(Boolean)
