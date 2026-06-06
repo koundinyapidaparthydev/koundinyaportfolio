@@ -4,31 +4,40 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { calculateAtsScore } from "@/lib/atsScoring";
 import type { Resume } from "@/types/resume";
 import type { AtsResult } from "@/lib/atsScoring";
-
-type CompanyCategory = "travel" | "ai-agentic" | "general" | "hiring-cafe";
-type TimeFilter = "30m" | "2h" | "12h" | "1d" | "2d";
-
-/** "New" pulse badge — aligned with default 30m filter and scrape cadence */
-const NEW_JOB_WINDOW_MS = 30 * 60_000;
-type SortMode = "newest" | "ats" | "title";
-type LocationFilter = "all" | "remote" | "onsite";
+import {
+  CATEGORY_BADGE,
+  CATEGORY_OPTIONS,
+  COMPANIES_TIME_FILTERS,
+  NEW_JOB_WINDOW_MS,
+  filterCompaniesByCategories,
+  filterCompaniesBySearch,
+  filterJobsByCompaniesTime,
+  filterRolesByLocation,
+  filterRolesBySearch,
+  sortCompanies,
+  sortRoles,
+  toggleCategoryFilter,
+  type CompanyCategory,
+  type CompanyJobRow,
+  type CompaniesTimeFilter,
+  type CompanySortMode,
+  type LocationFilter,
+  type RoleSortMode,
+} from "@/lib/admin/companiesTabFilters";
 
 interface Company {
   name: string;
   url: string;
-  color: string; // tailwind bg color class
-  logo: string;  // path under /Company_Images/
+  color: string;
+  logo: string;
 }
 
-interface Job {
-  company: string;
-  title: string;
-  location: string;
-  url: string;
-  category: string;
-  fetchedAt: string;
-  description: string;
+interface CompanyWithCategory extends Company {
+  category: CompanyCategory;
+  isVirtual?: boolean;
 }
+
+type Job = CompanyJobRow;
 
 const TRAVEL_COMPANIES: Company[] = [
   { name: "Live Nation",          url: "https://livenation.wd503.myworkdayjobs.com/en-US/LNExternalSite?timeType=def6fe28d9a210a683974354a3d819b6&jobFamilyGroup=def6fe28d9a210a6e1ddb30d81afbf0e&Location_Country=bc33aa3152ec42d4995f4791a106ed09", color: "from-red-500/20 to-red-600/10 border-red-500/30 hover:border-red-400/60",     logo: "/Company_Images/LiveNation.jpg" },
@@ -119,65 +128,22 @@ const GENERAL_COMPANIES: Company[] = [
   { name: "Zendesk",        url: "https://zendesk.wd1.myworkdayjobs.com/zendesk",                                                     color: "from-lime-600/20 to-lime-700/10 border-lime-600/30 hover:border-lime-500/60",         logo: "/Company_Images/Zendesk.ico" },
 ];
 
-const TABS: { id: CompanyCategory; label: string }[] = [
-  { id: "travel", label: "✈️ Travel Ticketing" },
-  { id: "ai-agentic", label: "🤖 AI & Agentic" },
-  { id: "general", label: "🌐 General Full Stack" },
-  { id: "hiring-cafe", label: "☕ Hiring Cafe" },
+const HIRING_CAFE_KEY = "__hiring-cafe__";
+
+const HIRING_CAFE_VIRTUAL: CompanyWithCategory = {
+  name: "Hiring Cafe",
+  url: "https://hiring.cafe/?searchState=%7B%22searchQuery%22%3A%22software+engineer%22%2C%22sortBy%22%3A%22date%22%2C%22dateFetchedPastNDays%22%3A2%2C%22applicationFormEase%22%3A%5B%22Simple%22%5D%7D",
+  color: "from-amber-500/20 to-amber-600/10 border-amber-500/30 hover:border-amber-400/60",
+  logo: "",
+  category: "hiring-cafe",
+  isVirtual: true,
+};
+
+const ALL_COMPANIES: CompanyWithCategory[] = [
+  ...TRAVEL_COMPANIES.map((c) => ({ ...c, category: "travel" as const })),
+  ...AI_AGENTIC_COMPANIES.map((c) => ({ ...c, category: "ai-agentic" as const })),
+  ...GENERAL_COMPANIES.map((c) => ({ ...c, category: "general" as const })),
 ];
-
-const TIME_FILTERS: { id: TimeFilter; label: string; ms: number }[] = [
-  { id: "30m", label: "⚡ Last 30 mins", ms: NEW_JOB_WINDOW_MS },
-  { id: "2h",  label: "Last 2 hrs",     ms:  2 * 3_600_000 },
-  { id: "12h", label: "Last 12 hrs",    ms: 12 * 3_600_000 },
-  { id: "1d",  label: "Last 24 hrs",    ms: 24 * 3_600_000 },
-  { id: "2d",  label: "Last 48 hrs",    ms: 48 * 3_600_000 },
-];
-
-function filterByTime(jobs: Job[], filter: TimeFilter): Job[] {
-  const { ms } = TIME_FILTERS.find((f) => f.id === filter)!;
-  const now = Date.now();
-  return jobs.filter(
-    (j) => j.fetchedAt && now - new Date(j.fetchedAt).getTime() <= ms
-  );
-}
-
-function filterBySearch(jobs: Job[], q: string): Job[] {
-  if (!q.trim()) return jobs;
-  const lower = q.toLowerCase();
-  return jobs.filter(
-    (j) =>
-      j.title.toLowerCase().includes(lower) ||
-      j.company.toLowerCase().includes(lower)
-  );
-}
-
-function filterByLocation(jobs: Job[], filter: LocationFilter): Job[] {
-  if (filter === "all") return jobs;
-  return jobs.filter((j) => {
-    const combined = (j.location + " " + j.description).toLowerCase();
-    if (filter === "remote") return combined.includes("remote");
-    return !combined.includes("remote") && !combined.includes("hybrid");
-  });
-}
-
-function sortJobs(
-  jobs: Job[],
-  mode: SortMode,
-  scores: Map<string, number>
-): Job[] {
-  const arr = [...jobs];
-  switch (mode) {
-    case "ats":
-      return arr.sort((a, b) => (scores.get(b.url) ?? 0) - (scores.get(a.url) ?? 0));
-    case "title":
-      return arr.sort((a, b) => a.title.localeCompare(b.title));
-    default:
-      return arr.sort(
-        (a, b) => new Date(b.fetchedAt).getTime() - new Date(a.fetchedAt).getTime()
-      );
-  }
-}
 
 function inferSeniority(title: string): "senior" | "mid" | "junior" {
   const t = title.toLowerCase();
@@ -233,21 +199,27 @@ function timeAgo(iso: string): string {
 
 function CompanyCard({
   company,
+  category,
   jobCount,
   newCount,
   isSelected,
   onSelect,
 }: {
   company: Company;
+  category: CompanyCategory;
   jobCount: number;
   newCount: number;
   isSelected: boolean;
   onSelect: () => void;
 }) {
+  const badge = CATEGORY_BADGE[category];
+  const isVirtual = category === "hiring-cafe";
+
   return (
     <div
       className={[
-        "group flex flex-col gap-2 rounded-xl border bg-gradient-to-br p-4 transition-all duration-200 cursor-pointer shadow-sm hover:shadow dark:shadow-none",
+        "group flex min-h-[7.5rem] flex-col justify-between gap-2 rounded-xl border bg-gradient-to-br p-4 transition-all duration-200 cursor-pointer shadow-sm",
+        "hover:-translate-y-0.5 hover:shadow-md dark:shadow-none dark:hover:shadow-lg dark:hover:shadow-black/20",
         company.color,
         isSelected ? "ring-2 ring-indigo-400/60 dark:ring-indigo-400/60" : "",
       ].join(" ")}
@@ -257,25 +229,33 @@ function CompanyCard({
       onKeyDown={(e) => e.key === "Enter" && onSelect()}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={company.logo}
-            alt=""
-            width={24}
-            height={24}
-            className="rounded-sm shrink-0 object-contain bg-white/10 dark:bg-white/10"
-            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
-          />
-          <span className="font-semibold text-slate-700 dark:text-slate-200 text-sm leading-tight group-hover:text-slate-900 dark:group-hover:text-white transition-colors truncate">
+        <div className="flex min-w-0 items-center gap-2">
+          {isVirtual ? (
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm bg-amber-500/20 text-sm">
+              ☕
+            </span>
+          ) : (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={company.logo}
+              alt=""
+              width={24}
+              height={24}
+              className="shrink-0 rounded-sm object-contain bg-white/10 dark:bg-white/10"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
+          )}
+          <span className="truncate text-sm font-semibold leading-tight text-slate-700 transition-colors group-hover:text-slate-900 dark:text-slate-200 dark:group-hover:text-white">
             {company.name}
           </span>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex shrink-0 items-center gap-1.5">
           {newCount > 0 && (
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
           )}
           <a
@@ -283,7 +263,7 @@ function CompanyCard({
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
-            className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-350 transition-colors mt-0.5"
+            className="mt-0.5 text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
             aria-label={`Open ${company.name} careers`}
           >
             <svg
@@ -304,18 +284,30 @@ function CompanyCard({
           </a>
         </div>
       </div>
-      <div className="flex items-center justify-between">
-        <span className="text-[10px] text-slate-400 dark:text-slate-500 group-hover:text-slate-500 dark:group-hover:text-slate-400 transition-colors truncate">
-          {new URL(company.url).hostname}
-        </span>
-        <div className="flex items-center gap-1 ml-1 shrink-0">
+      <div className="flex items-end justify-between gap-2">
+        <div className="min-w-0 space-y-1">
+          <span
+            className={[
+              "inline-flex rounded-full border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide",
+              badge.className,
+            ].join(" ")}
+          >
+            {badge.label}
+          </span>
+          {!isVirtual && (
+            <p className="truncate text-[10px] text-slate-400 transition-colors group-hover:text-slate-500 dark:text-slate-500 dark:group-hover:text-slate-400">
+              {new URL(company.url).hostname}
+            </p>
+          )}
+        </div>
+        <div className="ml-1 flex shrink-0 items-center gap-1">
           {newCount > 0 && (
-            <span className="rounded-full bg-emerald-50 dark:bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/30">
+            <span className="rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400">
               +{newCount} new
             </span>
           )}
           {jobCount > 0 && (
-            <span className="rounded-full bg-indigo-50 dark:bg-indigo-500/20 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-500/30">
+            <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 dark:border-indigo-500/30 dark:bg-indigo-500/20 dark:text-indigo-300">
               {jobCount}
             </span>
           )}
@@ -422,22 +414,28 @@ function AtsInsightPanel({ ats, job }: { ats: AtsResult; job: Job }) {
   );
 }
 
-export default function CompaniesTab() {
-  const [activeCategory, setActiveCategory] = useState<CompanyCategory>("travel");
+export default function CompaniesTab({
+  onViewAllJobs,
+}: {
+  onViewAllJobs?: () => void;
+}) {
+  const [categoryFilters, setCategoryFilters] = useState<Set<CompanyCategory>>(new Set());
+  const [companySearch, setCompanySearch] = useState("");
+  const [companySort, setCompanySort] = useState<CompanySortMode>("name");
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("30m");
+  const [timeFilter, setTimeFilter] = useState<CompaniesTimeFilter>("30m");
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [resume, setResume] = useState<Resume | null>(null);
   const [generating, setGenerating] = useState<Record<string, "resume" | "cover">>({});
   const [bulkState, setBulkState] = useState<{ running: boolean; done: number; total: number; errors: number }>(
     { running: false, done: 0, total: 0, errors: 0 }
   );
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<SortMode>("newest");
+  const [roleSearch, setRoleSearch] = useState("");
+  const [sortBy, setSortBy] = useState<RoleSortMode>("newest");
   const [locationFilter, setLocationFilter] = useState<LocationFilter>("all");
   const [archiving, setArchiving] = useState(false);
   const [archiveResult, setArchiveResult] = useState<{ archived: number; kept: number } | null>(null);
@@ -538,24 +536,74 @@ export default function CompaniesTab() {
   );
 
   // Apply time filter first
-  const filteredJobs = filterByTime(jobs, timeFilter);
-  const newJobs = filterByTime(jobs, "30m");
+  const filteredJobs = filterJobsByCompaniesTime(jobs, timeFilter);
+  const newJobs = filterJobsByCompaniesTime(jobs, "30m");
   const jobsByCompany = filteredJobs.reduce<Record<string, Job[]>>((acc, job) => {
     (acc[job.company] ??= []).push(job);
     return acc;
   }, {});
+  const jobCountsByCompany = Object.fromEntries(
+    Object.entries(jobsByCompany).map(([name, list]) => [name, list.length])
+  );
   const newByCompany = newJobs.reduce<Record<string, number>>((acc, job) => {
     acc[job.company] = (acc[job.company] ?? 0) + 1;
     return acc;
   }, {});
+  const hiringCafeJobCount = filteredJobs.filter((j) => j.category === "hiring-cafe").length;
+  const hiringCafeNewCount = newJobs.filter((j) => j.category === "hiring-cafe").length;
 
-  const rawSelectedJobs = selectedCompany ? (jobsByCompany[selectedCompany] ?? []) : [];
-  const selectedJobs = sortJobs(
-    filterByLocation(filterBySearch(rawSelectedJobs, searchQuery), locationFilter),
+  const visibleCompanies = useMemo(() => {
+    let list = filterCompaniesByCategories(ALL_COMPANIES, categoryFilters);
+    list = filterCompaniesBySearch(list, companySearch);
+
+    const showHiringCafe =
+      (categoryFilters.size === 0 || categoryFilters.has("hiring-cafe")) &&
+      (!companySearch.trim() || "hiring cafe".includes(companySearch.toLowerCase()));
+
+    const counts = {
+      ...jobCountsByCompany,
+      [HIRING_CAFE_VIRTUAL.name]: hiringCafeJobCount,
+    };
+
+    const cards: CompanyWithCategory[] = showHiringCafe ? [...list, HIRING_CAFE_VIRTUAL] : list;
+    return sortCompanies(cards, companySort, counts);
+  }, [categoryFilters, companySearch, companySort, jobCountsByCompany, hiringCafeJobCount]);
+
+  const isHiringCafeSelected = selectedCompany === HIRING_CAFE_KEY;
+  const selectedCompanyLabel = isHiringCafeSelected
+    ? HIRING_CAFE_VIRTUAL.name
+    : selectedCompany;
+
+  const rawSelectedJobs = isHiringCafeSelected
+    ? filteredJobs.filter((j) => j.category === "hiring-cafe")
+    : selectedCompany
+      ? (jobsByCompany[selectedCompany] ?? [])
+      : [];
+
+  const selectedJobs = sortRoles(
+    filterRolesByLocation(filterRolesBySearch(rawSelectedJobs, roleSearch), locationFilter),
     sortBy,
     atsScores
   );
   const totalFiltered = filteredJobs.length;
+
+  const resetRoleFilters = useCallback(() => {
+    setRoleSearch("");
+    setSortBy("newest");
+    setLocationFilter("all");
+  }, []);
+
+  const selectCompany = useCallback(
+    (key: string) => {
+      setSelectedCompany((prev) => (prev === key ? null : key));
+      setExpandedJob(null);
+      resetRoleFilters();
+    },
+    [resetRoleFilters]
+  );
+
+  const timeFilterLabel =
+    COMPANIES_TIME_FILTERS.find((f) => f.id === timeFilter)?.label.toLowerCase() ?? "";
 
   // Jobs with ATS >= 70% that have descriptions (auto-gen candidates)
   const topMatches = useMemo(
@@ -615,8 +663,18 @@ export default function CompaniesTab() {
         <div>
           <h2 className="text-lg font-semibold dark:text-slate-100 text-slate-900">Companies</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Job portals organised by domain — click a card to see open engineering roles.
+            All company portals in one place — filter by category, search, and open roles.
           </p>
+          {onViewAllJobs && (
+            <button
+              type="button"
+              onClick={onViewAllJobs}
+              className="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-indigo-600 transition-colors hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
+            >
+              View all jobs
+              <span aria-hidden="true">→</span>
+            </button>
+          )}
         </div>
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <div className="flex items-center gap-2">
@@ -711,821 +769,359 @@ export default function CompaniesTab() {
         </div>
       )}
 
-      {/* Sub-tabs */}
-      <div className="mb-4 flex gap-1 rounded-xl dark:bg-white/5 bg-slate-100 p-1 border dark:border-transparent border-slate-200/50 shadow-sm">
-        {TABS.map(({ id, label }) => (
+      {/* Stats bar */}
+      <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-200/70 bg-slate-50/80 px-4 py-2.5 dark:border-white/8 dark:bg-white/[0.03]">
+        <span className="text-xs text-slate-600 dark:text-slate-400">
+          <span className="font-bold text-slate-800 dark:text-slate-200">{visibleCompanies.length}</span>{" "}
+          {visibleCompanies.length === 1 ? "company" : "companies"}
+        </span>
+        <span className="text-xs text-slate-600 dark:text-slate-400">
+          <span className="font-bold text-slate-800 dark:text-slate-200">{totalFiltered}</span>{" "}
+          {totalFiltered === 1 ? "role" : "roles"} in window
+        </span>
+        {categoryFilters.size > 0 && (
           <button
-            key={id}
             type="button"
-            onClick={() => { setActiveCategory(id); setSelectedCompany(null); setExpandedJob(null); }}
-            className={[
-              "flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-all duration-200",
-              activeCategory === id
-                ? "bg-white dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border border-slate-200/60 dark:border-transparent shadow-sm"
-                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200",
-            ].join(" ")}
+            onClick={() => setCategoryFilters(new Set())}
+            className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
           >
-            {label}
+            Clear category filters
           </button>
-        ))}
+        )}
+      </div>
+
+      {/* Search + company sort */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <div className="relative min-w-[180px] flex-1">
+          <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            type="search"
+            value={companySearch}
+            onChange={(e) => setCompanySearch(e.target.value)}
+            placeholder="Search companies…"
+            className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400/40 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:placeholder:text-slate-500"
+          />
+        </div>
+        <select
+          value={companySort}
+          onChange={(e) => setCompanySort(e.target.value as CompanySortMode)}
+          className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-600 focus:border-indigo-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
+        >
+          <option value="name">Sort: Name A–Z</option>
+          <option value="jobCount">Sort: Most roles</option>
+          <option value="category">Sort: Category</option>
+        </select>
+      </div>
+
+      {/* Category filter pills */}
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        <button
+          type="button"
+          onClick={() => setCategoryFilters(new Set())}
+          className={[
+            "rounded-full border px-3 py-1 text-[11px] font-semibold transition-all",
+            categoryFilters.size === 0
+              ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
+              : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:text-slate-200",
+          ].join(" ")}
+        >
+          All categories
+        </button>
+        {CATEGORY_OPTIONS.map(({ id, label }) => {
+          const active = categoryFilters.has(id);
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setCategoryFilters((prev) => toggleCategoryFilter(prev, id))}
+              className={[
+                "rounded-full border px-3 py-1 text-[11px] font-semibold transition-all",
+                active
+                  ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
+                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:text-slate-200",
+              ].join(" ")}
+            >
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Time filter pills */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 mr-1">Show new jobs from:</span>
-        {TIME_FILTERS.map(({ id, label }) => {
-          const count = filterByTime(jobs, id).length;
+        <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">Show new jobs from:</span>
+        {COMPANIES_TIME_FILTERS.map(({ id, label }) => {
+          const count = filterJobsByCompaniesTime(jobs, id).length;
           return (
             <button
               key={id}
               type="button"
               onClick={() => setTimeFilter(id)}
               className={[
-                "flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold border transition-all duration-200 shadow-sm",
+                "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold shadow-sm transition-all duration-200",
                 timeFilter === id
-                  ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
-                  : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
+                  ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
+                  : "bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:text-slate-200",
               ].join(" ")}
             >
               {label}
               {count > 0 && (
-                <span className={[
-                  "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                  timeFilter === id
-                    ? "bg-indigo-100 dark:bg-indigo-500/30 text-indigo-700 dark:text-indigo-200"
-                    : id === "30m" && count > 0
-                    ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-transparent"
-                    : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400",
-                ].join(" ")}>
+                <span
+                  className={[
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                    timeFilter === id
+                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200"
+                      : id === "30m" && count > 0
+                        ? "border border-emerald-100 bg-emerald-50 text-emerald-600 dark:border-transparent dark:bg-emerald-500/20 dark:text-emerald-400"
+                        : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-400",
+                  ].join(" ")}
+                >
                   {count}
                 </span>
               )}
             </button>
           );
         })}
-        {totalFiltered > 0 && (
-          <span className="ml-auto text-[11px] text-slate-600">
-            {totalFiltered} role{totalFiltered !== 1 ? "s" : ""} shown
-          </span>
-        )}
       </div>
 
-      {/* Content */}
-      {activeCategory === "travel" && (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {TRAVEL_COMPANIES.map((company) => (
+      {/* Unified company grid */}
+      {visibleCompanies.length === 0 ? (
+        <div className="flex flex-col items-center justify-center gap-2 py-16 text-slate-500">
+          <p className="text-sm">No companies match your filters</p>
+          <button
+            type="button"
+            onClick={() => {
+              setCompanySearch("");
+              setCategoryFilters(new Set());
+            }}
+            className="text-xs font-semibold text-indigo-600 dark:text-indigo-400"
+          >
+            Clear filters
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          {visibleCompanies.map((company) => {
+            const key = company.isVirtual ? HIRING_CAFE_KEY : company.name;
+            const jobCount = company.isVirtual
+              ? hiringCafeJobCount
+              : (jobsByCompany[company.name]?.length ?? 0);
+            const newCount = company.isVirtual
+              ? hiringCafeNewCount
+              : (newByCompany[company.name] ?? 0);
+            return (
               <CompanyCard
-                key={company.name}
+                key={key}
                 company={company}
-                jobCount={jobsByCompany[company.name]?.length ?? 0}
-                newCount={newByCompany[company.name] ?? 0}
-                isSelected={selectedCompany === company.name}
-                onSelect={() => {
-                    setSelectedCompany(
-                      selectedCompany === company.name ? null : company.name
-                    );
-                    setExpandedJob(null);
-                    setSearchQuery("");
-                    setSortBy("newest");
-                    setLocationFilter("all");
-                  }}
+                category={company.category}
+                jobCount={jobCount}
+                newCount={newCount}
+                isSelected={selectedCompany === key}
+                onSelect={() => selectCompany(key)}
               />
-            ))}
+            );
+          })}
+        </div>
+      )}
+
+      {selectedCompany && (
+        <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
+          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3 dark:border-white/8">
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                {selectedCompanyLabel}
+              </h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {rawSelectedJobs.length === 0
+                  ? `No new roles in the ${timeFilterLabel}`
+                  : `${rawSelectedJobs.length} engineering ${rawSelectedJobs.length === 1 ? "role" : "roles"} · ${timeFilterLabel}`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedCompany(null)}
+              className="p-1 text-slate-600 transition-colors hover:text-slate-300"
+              aria-label="Close"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
 
-          {/* Jobs panel */}
-          {selectedCompany && (
-            <div className="mt-5 rounded-xl border dark:border-white/10 border-slate-200 dark:bg-white/[0.03] bg-white overflow-hidden shadow-sm">
-              {/* Panel header */}
-              <div className="flex items-center justify-between border-b dark:border-white/8 border-slate-200 px-5 py-3">
-                <div>
-                  <h3 className="text-sm font-semibold dark:text-slate-200 text-slate-800">
-                    {selectedCompany}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {rawSelectedJobs.length === 0
-                      ? `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`
-                      : `${rawSelectedJobs.length} engineering ${rawSelectedJobs.length === 1 ? "role" : "roles"} · ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCompany(null)}
-                  className="text-slate-600 hover:text-slate-300 transition-colors p-1"
-                  aria-label="Close"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+          {isHiringCafeSelected && rawSelectedJobs.length > 0 && (
+            <div className="border-b border-amber-200/60 bg-amber-50/50 px-5 py-2.5 dark:border-amber-500/20 dark:bg-amber-500/[0.06]">
+              <p className="text-[11px] text-amber-800 dark:text-amber-300">
+                ☕ Easy-apply roles from{" "}
+                <a href={HIRING_CAFE_VIRTUAL.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-950 dark:hover:text-amber-200">
+                  hiring.cafe
+                </a>{" "}
+                — simple application forms only
+              </p>
+            </div>
+          )}
+
+          {rawSelectedJobs.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-5 py-2.5 dark:border-white/5">
+              <div className="relative min-w-[160px] flex-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+                <input
+                  type="text"
+                  value={roleSearch}
+                  onChange={(e) => setRoleSearch(e.target.value)}
+                  placeholder={isHiringCafeSelected ? "Search roles or companies…" : "Search roles…"}
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-7 pr-3 text-xs text-slate-700 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 dark:border-white/8 dark:bg-white/5 dark:text-slate-300"
+                />
               </div>
-
-              {/* Filter/search bar */}
-              {rawSelectedJobs.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 px-5 py-2.5 border-b dark:border-white/5 border-slate-100">
-                  <div className="relative flex-1 min-w-[160px]">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search roles…"
-                      className="w-full rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 pl-7 pr-3 py-1.5 text-xs dark:text-slate-300 text-slate-700 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    {(["all", "remote", "onsite"] as LocationFilter[]).map((loc) => (
-                      <button
-                        key={loc}
-                        type="button"
-                        onClick={() => setLocationFilter(loc)}
-                        className={[
-                          "rounded-full px-2.5 py-1 text-[10px] font-semibold border transition-all duration-200 shadow-sm",
-                          locationFilter === loc
-                            ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
-                            : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
-                        ].join(" ")}
-                      >
-                        {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
-                      </button>
-                    ))}
-                  </div>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortMode)}
-                    className="rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1.5 text-[10px] dark:text-slate-400 text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
+              <div className="flex gap-1">
+                {(["all", "remote", "onsite"] as LocationFilter[]).map((loc) => (
+                  <button
+                    key={loc}
+                    type="button"
+                    onClick={() => setLocationFilter(loc)}
+                    className={[
+                      "rounded-full border px-2.5 py-1 text-[10px] font-semibold shadow-sm transition-all duration-200",
+                      locationFilter === loc
+                        ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
+                        : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:text-slate-200",
+                    ].join(" ")}
                   >
-                    <option value="newest">Newest first</option>
-                    <option value="ats">Highest ATS</option>
-                    <option value="title">Title A–Z</option>
-                  </select>
-                  {selectedJobs.length !== rawSelectedJobs.length && (
-                    <span className="text-[10px] text-slate-500">{selectedJobs.length}/{rawSelectedJobs.length} shown</span>
-                  )}
-                </div>
-              )}
-
-              {/* Job list */}
-              {loading ? (
-                <div className="flex items-center justify-center py-10 text-slate-600 text-sm">Loading jobs…</div>
-              ) : rawSelectedJobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <p className="text-sm">
-                    {error ? "Configure Google Sheets to see live jobs" : `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()} — try a wider window`}
-                  </p>
-                </div>
-              ) : selectedJobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 gap-2 text-slate-600">
-                  <p className="text-sm">No roles match your filters</p>
-                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Clear filters</button>
-                </div>
-              ) : (
-                <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
-                  {selectedJobs.map((job, i) => {
-                    const isNew = job.fetchedAt &&
-                      Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
-                    const isExpanded = expandedJob === job.url;
-                    const ats = resume && job.description
-                      ? calculateAtsScore(job.description, resume)
-                      : null;
-                    const resumeKey = `${job.url}:resume`;
-                    const coverKey  = `${job.url}:cover`;
-                    const genResume = !!generating[resumeKey];
-                    const genCover  = !!generating[coverKey];
-                    return (
-                      <li key={i} className={["px-5 py-3 dark:hover:bg-white/[0.03] hover:bg-slate-50 transition-colors", isExpanded ? "dark:bg-white/[0.02] bg-slate-50/80" : ""].join(" ")}>
-                        <div className="flex items-center gap-2">
-                          {ats && (
-                            <div className="shrink-0" title={`ATS score: ${ats.score}%`}>
-                              <AtsRing score={ats.score} size={36} />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-sm dark:text-slate-200 text-slate-800 font-medium truncate">{job.title}</p>
-                              {isNew && (
-                                <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">NEW</span>
-                              )}
-                              {ats && ats.score >= 70 && (
-                                <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300 border border-emerald-500/25 uppercase tracking-wide">✓ Strong fit</span>
-                              )}
-                            </div>
-                            {job.location && (
-                              <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
-                            )}
-                          </div>
-                          {job.fetchedAt && (
-                            <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">{timeAgo(job.fetchedAt)}</span>
-                          )}
-                          {job.description && (
-                            <button type="button" title="Generate tailored resume PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "resume")}
-                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all disabled:opacity-40">
-                              {genResume ? "…" : "📄 CV"}
-                            </button>
-                          )}
-                          {job.description && (
-                            <button type="button" title="Generate cover letter PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "cover")}
-                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all disabled:opacity-40">
-                              {genCover ? "…" : "✉ CL"}
-                            </button>
-                          )}
-                          {job.description && (
-                            <button type="button" onClick={() => setExpandedJob(isExpanded ? null : job.url)}
-                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 dark:hover:text-slate-200 hover:text-slate-600 dark:hover:bg-white/10 hover:bg-slate-100 transition-all"
-                              aria-label={isExpanded ? "Hide details" : "Show details"}>
-                              {isExpanded ? "▲" : "▼"}
-                            </button>
-                          )}
-                          <a href={job.url} target="_blank" rel="noopener noreferrer"
-                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-white px-3 py-1 text-xs text-slate-600 dark:text-slate-400 dark:hover:text-slate-100 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all font-medium">
-                            Apply
-                          </a>
-                        </div>
-                        {isExpanded && ats && <AtsInsightPanel ats={ats} job={job} />}
-                        {isExpanded && !ats && job.description && (
-                          <div className="mt-3 pt-3 border-t dark:border-white/5 border-slate-200">
-                            <div className="text-xs dark:text-slate-400 text-slate-500 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto pr-1">{job.description}</div>
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
+                    {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
+                  </button>
+                ))}
+              </div>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as RoleSortMode)}
+                className="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[10px] text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 dark:border-white/8 dark:bg-white/5 dark:text-slate-400"
+              >
+                <option value="newest">Newest first</option>
+                <option value="ats">Highest ATS</option>
+                <option value="title">Title A–Z</option>
+              </select>
+              {selectedJobs.length !== rawSelectedJobs.length && (
+                <span className="text-[10px] text-slate-500">{selectedJobs.length}/{rawSelectedJobs.length} shown</span>
               )}
             </div>
           )}
-        </>
-      )}
 
-      {activeCategory === "ai-agentic" && (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {AI_AGENTIC_COMPANIES.map((company) => (
-              <CompanyCard
-                key={company.name}
-                company={company}
-                jobCount={jobsByCompany[company.name]?.length ?? 0}
-                newCount={newByCompany[company.name] ?? 0}
-                isSelected={selectedCompany === company.name}
-                onSelect={() => {
-                    setSelectedCompany(
-                      selectedCompany === company.name ? null : company.name
-                    );
-                    setExpandedJob(null);
-                    setSearchQuery("");
-                    setSortBy("newest");
-                    setLocationFilter("all");
-                  }}
-              />
-            ))}
-          </div>
-
-          {/* Jobs panel */}
-          {selectedCompany && AI_AGENTIC_COMPANIES.some(c => c.name === selectedCompany) && (
-            <div className="mt-5 rounded-xl border dark:border-white/10 border-slate-200 dark:bg-white/[0.03] bg-white overflow-hidden shadow-sm">
-              {/* Panel header */}
-              <div className="flex items-center justify-between border-b dark:border-white/8 border-slate-200 px-5 py-3">
-                <div>
-                  <h3 className="text-sm font-semibold dark:text-slate-200 text-slate-800">
-                    {selectedCompany}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {rawSelectedJobs.length === 0
-                      ? `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`
-                      : `${rawSelectedJobs.length} engineering ${rawSelectedJobs.length === 1 ? "role" : "roles"} · ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCompany(null)}
-                  className="text-slate-600 hover:text-slate-300 transition-colors p-1"
-                  aria-label="Close"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Filter/search bar */}
-              {rawSelectedJobs.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 px-5 py-2.5 border-b dark:border-white/5 border-slate-100">
-                  <div className="relative flex-1 min-w-[160px]">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search roles…"
-                      className="w-full rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 pl-7 pr-3 py-1.5 text-xs dark:text-slate-300 text-slate-700 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    {(["all", "remote", "onsite"] as LocationFilter[]).map((loc) => (
-                      <button
-                        key={loc}
-                        type="button"
-                        onClick={() => setLocationFilter(loc)}
-                        className={[
-                          "rounded-full px-2.5 py-1 text-[10px] font-semibold border transition-all duration-200 shadow-sm",
-                          locationFilter === loc
-                            ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
-                            : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
-                        ].join(" ")}
-                      >
-                        {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
-                      </button>
-                    ))}
-                  </div>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortMode)}
-                    className="rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1.5 text-[10px] dark:text-slate-400 text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
-                  >
-                    <option value="newest">Newest first</option>
-                    <option value="ats">Highest ATS</option>
-                    <option value="title">Title A–Z</option>
-                  </select>
-                  {selectedJobs.length !== rawSelectedJobs.length && (
-                    <span className="text-[10px] text-slate-500">{selectedJobs.length}/{rawSelectedJobs.length} shown</span>
-                  )}
-                </div>
-              )}
-
-              {/* Job list */}
-              {loading ? (
-                <div className="flex items-center justify-center py-10 text-slate-600 text-sm">Loading jobs…</div>
-              ) : rawSelectedJobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <p className="text-sm">
-                    {error ? "Configure Google Sheets to see live jobs" : `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()} — try a wider window`}
-                  </p>
-                </div>
-              ) : selectedJobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 gap-2 text-slate-600">
-                  <p className="text-sm">No roles match your filters</p>
-                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Clear filters</button>
-                </div>
-              ) : (
-                <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
-                  {selectedJobs.map((job, i) => {
-                    const isNew = job.fetchedAt &&
-                      Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
-                    const isExpanded = expandedJob === job.url;
-                    const ats = resume && job.description
-                      ? calculateAtsScore(job.description, resume)
-                      : null;
-                    const resumeKey = `${job.url}:resume`;
-                    const coverKey  = `${job.url}:cover`;
-                    const genResume = !!generating[resumeKey];
-                    const genCover  = !!generating[coverKey];
-                    return (
-                      <li key={i} className={["px-5 py-3 dark:hover:bg-white/[0.03] hover:bg-slate-50 transition-colors", isExpanded ? "dark:bg-white/[0.02] bg-slate-50/80" : ""].join(" ")}>
-                        <div className="flex items-center gap-2">
-                          {ats && (
-                            <div className="shrink-0" title={`ATS score: ${ats.score}%`}>
-                              <AtsRing score={ats.score} size={36} />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-sm dark:text-slate-200 text-slate-800 font-medium truncate">{job.title}</p>
-                              {isNew && (
-                                <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">NEW</span>
-                              )}
-                              {ats && ats.score >= 70 && (
-                                <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300 border border-emerald-500/25 uppercase tracking-wide">✓ Strong fit</span>
-                              )}
-                            </div>
-                            {job.location && (
-                              <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
-                            )}
-                          </div>
-                          {job.fetchedAt && (
-                            <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">{timeAgo(job.fetchedAt)}</span>
-                          )}
-                          {job.description && (
-                            <button type="button" title="Generate tailored resume PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "resume")}
-                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all disabled:opacity-40">
-                              {genResume ? "…" : "📄 CV"}
-                            </button>
-                          )}
-                          {job.description && (
-                            <button type="button" title="Generate cover letter PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "cover")}
-                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all disabled:opacity-40">
-                              {genCover ? "…" : "✉ CL"}
-                            </button>
-                          )}
-                          {job.description && (
-                            <button type="button" onClick={() => setExpandedJob(isExpanded ? null : job.url)}
-                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 dark:hover:text-slate-200 hover:text-slate-600 dark:hover:bg-white/10 hover:bg-slate-100 transition-all"
-                              aria-label={isExpanded ? "Hide details" : "Show details"}>
-                              {isExpanded ? "▲" : "▼"}
-                            </button>
-                          )}
-                          <a href={job.url} target="_blank" rel="noopener noreferrer"
-                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-white px-3 py-1 text-xs text-slate-600 dark:text-slate-400 dark:hover:text-slate-100 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all font-medium">
-                            Apply
-                          </a>
+          {loading ? (
+            <div className="flex items-center justify-center py-10 text-sm text-slate-600">Loading jobs…</div>
+          ) : rawSelectedJobs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-10 text-slate-600">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <p className="text-sm">
+                {error ? "Configure Google Sheets to see live jobs" : `No new roles in the ${timeFilterLabel} — try a wider window`}
+              </p>
+            </div>
+          ) : selectedJobs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-8 text-slate-600">
+              <p className="text-sm">No roles match your filters</p>
+              <button type="button" onClick={resetRoleFilters} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                Clear filters
+              </button>
+            </div>
+          ) : (
+            <ul className="max-h-[520px] divide-y divide-slate-100 overflow-y-auto dark:divide-white/5">
+              {selectedJobs.map((job, i) => {
+                const isNew = job.fetchedAt && Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
+                const isExpanded = expandedJob === job.url;
+                const ats = resume && job.description ? calculateAtsScore(job.description, resume) : null;
+                const salary = isHiringCafeSelected ? extractSalary(job.description ?? "") : "";
+                const resumeKey = `${job.url}:resume`;
+                const coverKey = `${job.url}:cover`;
+                const genResume = !!generating[resumeKey];
+                const genCover = !!generating[coverKey];
+                return (
+                  <li key={i} className={["px-5 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.03]", isExpanded ? "bg-slate-50/80 dark:bg-white/[0.02]" : ""].join(" ")}>
+                    <div className={isHiringCafeSelected ? "flex items-start gap-2" : "flex items-center gap-2"}>
+                      {ats && (
+                        <div className={isHiringCafeSelected ? "mt-0.5 shrink-0" : "shrink-0"} title={`ATS score: ${ats.score}%`}>
+                          <AtsRing score={ats.score} size={36} />
                         </div>
-                        {isExpanded && ats && <AtsInsightPanel ats={ats} job={job} />}
-                        {isExpanded && !ats && job.description && (
-                          <div className="mt-3 pt-3 border-t dark:border-white/5 border-slate-200">
-                            <div className="text-xs dark:text-slate-400 text-slate-500 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto pr-1">{job.description}</div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{job.title}</p>
+                          {isHiringCafeSelected && (
+                            <span className="shrink-0 rounded-full border border-amber-100 bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400">
+                              ⚡ Easy Apply
+                            </span>
+                          )}
+                          {isNew && (
+                            <span className="shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400">
+                              NEW
+                            </span>
+                          )}
+                          {ats && ats.score >= 70 && (
+                            <span className="shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/15 dark:text-emerald-300">
+                              ✓ Strong fit
+                            </span>
+                          )}
+                        </div>
+                        {(job.location || (isHiringCafeSelected && job.company)) && (
+                          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                            {isHiringCafeSelected && job.company && job.company !== "Hiring Cafe" && (
+                              <span className="rounded bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-400">{job.company}</span>
+                            )}
+                            {job.location && <p className="truncate text-xs text-slate-500">{job.location}</p>}
+                            {salary && (
+                              <span className="rounded border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">{salary}</span>
+                            )}
                           </div>
                         )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          )}
-        </>
-      )}
-      {activeCategory === "general" && (
-        <>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {GENERAL_COMPANIES.map((company) => (
-              <CompanyCard
-                key={company.name}
-                company={company}
-                jobCount={jobsByCompany[company.name]?.length ?? 0}
-                newCount={newByCompany[company.name] ?? 0}
-                isSelected={selectedCompany === company.name}
-                onSelect={() => {
-                    setSelectedCompany(
-                      selectedCompany === company.name ? null : company.name
-                    );
-                    setExpandedJob(null);
-                    setSearchQuery("");
-                    setSortBy("newest");
-                    setLocationFilter("all");
-                  }}
-              />
-            ))}
-          </div>
-
-          {/* Jobs panel */}
-          {selectedCompany && GENERAL_COMPANIES.some(c => c.name === selectedCompany) && (
-            <div className="mt-5 rounded-xl border dark:border-white/10 border-slate-200 dark:bg-white/[0.03] bg-white overflow-hidden shadow-sm">
-              {/* Panel header */}
-              <div className="flex items-center justify-between border-b dark:border-white/8 border-slate-200 px-5 py-3">
-                <div>
-                  <h3 className="text-sm font-semibold dark:text-slate-200 text-slate-800">
-                    {selectedCompany}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {rawSelectedJobs.length === 0
-                      ? `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`
-                      : `${rawSelectedJobs.length} engineering ${rawSelectedJobs.length === 1 ? "role" : "roles"} · ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()}`}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedCompany(null)}
-                  className="text-slate-600 hover:text-slate-300 transition-colors p-1"
-                  aria-label="Close"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* Filter/search bar */}
-              {rawSelectedJobs.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2 px-5 py-2.5 border-b dark:border-white/5 border-slate-100">
-                  <div className="relative flex-1 min-w-[160px]">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                    </svg>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search roles…"
-                      className="w-full rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 pl-7 pr-3 py-1.5 text-xs dark:text-slate-300 text-slate-700 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    {(["all", "remote", "onsite"] as LocationFilter[]).map((loc) => (
-                      <button
-                        key={loc}
-                        type="button"
-                        onClick={() => setLocationFilter(loc)}
+                      </div>
+                      {job.fetchedAt && (
+                        <span className="hidden shrink-0 text-[10px] text-slate-500 sm:block">{timeAgo(job.fetchedAt)}</span>
+                      )}
+                      {job.description && (
+                        <button type="button" title="Generate tailored resume PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "resume")}
+                          className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:hover:border-indigo-500/30 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300">
+                          {genResume ? "…" : "📄 CV"}
+                        </button>
+                      )}
+                      {job.description && (
+                        <button type="button" title="Generate cover letter PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "cover")}
+                          className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:hover:border-violet-500/30 dark:hover:bg-violet-500/10 dark:hover:text-violet-300">
+                          {genCover ? "…" : "✉ CL"}
+                        </button>
+                      )}
+                      {job.description && (
+                        <button type="button" onClick={() => setExpandedJob(isExpanded ? null : job.url)}
+                          className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-slate-200"
+                          aria-label={isExpanded ? "Hide details" : "Show details"}>
+                          {isExpanded ? "▲" : "▼"}
+                        </button>
+                      )}
+                      <a href={job.url} target="_blank" rel="noopener noreferrer"
                         className={[
-                          "rounded-full px-2.5 py-1 text-[10px] font-semibold border transition-all duration-200 shadow-sm",
-                          locationFilter === loc
-                            ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
-                            : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
-                        ].join(" ")}
-                      >
-                        {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
-                      </button>
-                    ))}
-                  </div>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortMode)}
-                    className="rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1.5 text-[10px] dark:text-slate-400 text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
-                  >
-                    <option value="newest">Newest first</option>
-                    <option value="ats">Highest ATS</option>
-                    <option value="title">Title A–Z</option>
-                  </select>
-                  {selectedJobs.length !== rawSelectedJobs.length && (
-                    <span className="text-[10px] text-slate-500">{selectedJobs.length}/{rawSelectedJobs.length} shown</span>
-                  )}
-                </div>
-              )}
-
-              {/* Job list */}
-              {loading ? (
-                <div className="flex items-center justify-center py-10 text-slate-600 text-sm">Loading jobs…</div>
-              ) : rawSelectedJobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 gap-2 text-slate-600">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <p className="text-sm">
-                    {error ? "Configure Google Sheets to see live jobs" : `No new roles in the ${TIME_FILTERS.find(f => f.id === timeFilter)?.label.toLowerCase()} — try a wider window`}
-                  </p>
-                </div>
-              ) : selectedJobs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 gap-2 text-slate-600">
-                  <p className="text-sm">No roles match your filters</p>
-                  <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Clear filters</button>
-                </div>
-              ) : (
-                <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
-                  {selectedJobs.map((job, i) => {
-                    const isNew = job.fetchedAt &&
-                      Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
-                    const isExpanded = expandedJob === job.url;
-                    const ats = resume && job.description
-                      ? calculateAtsScore(job.description, resume)
-                      : null;
-                    const resumeKey = `${job.url}:resume`;
-                    const coverKey  = `${job.url}:cover`;
-                    const genResume = !!generating[resumeKey];
-                    const genCover  = !!generating[coverKey];
-                    return (
-                      <li key={i} className={["px-5 py-3 dark:hover:bg-white/[0.03] hover:bg-slate-50 transition-colors", isExpanded ? "dark:bg-white/[0.02] bg-slate-50/80" : ""].join(" ")}>
-                        <div className="flex items-center gap-2">
-                          {ats && (
-                            <div className="shrink-0" title={`ATS score: ${ats.score}%`}>
-                              <AtsRing score={ats.score} size={36} />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="text-sm dark:text-slate-200 text-slate-800 font-medium truncate">{job.title}</p>
-                              {isNew && (
-                                <span className="shrink-0 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">NEW</span>
-                              )}
-                              {ats && ats.score >= 70 && (
-                                <span className="shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-300 border border-emerald-500/25 uppercase tracking-wide">✓ Strong fit</span>
-                              )}
-                            </div>
-                            {job.location && (
-                              <p className="text-xs text-slate-500 mt-0.5 truncate">{job.location}</p>
-                            )}
-                          </div>
-                          {job.fetchedAt && (
-                            <span className="text-[10px] text-slate-600 shrink-0 hidden sm:block">{timeAgo(job.fetchedAt)}</span>
-                          )}
-                          {job.description && (
-                            <button type="button" title="Generate tailored resume PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "resume")}
-                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all disabled:opacity-40">
-                              {genResume ? "…" : "📄 CV"}
-                            </button>
-                          )}
-                          {job.description && (
-                            <button type="button" title="Generate cover letter PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "cover")}
-                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-violet-300 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all disabled:opacity-40">
-                              {genCover ? "…" : "✉ CL"}
-                            </button>
-                          )}
-                          {job.description && (
-                            <button type="button" onClick={() => setExpandedJob(isExpanded ? null : job.url)}
-                              className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 dark:hover:text-slate-200 hover:text-slate-600 dark:hover:bg-white/10 hover:bg-slate-100 transition-all"
-                              aria-label={isExpanded ? "Hide details" : "Show details"}>
-                              {isExpanded ? "▲" : "▼"}
-                            </button>
-                          )}
-                          <a href={job.url} target="_blank" rel="noopener noreferrer"
-                            className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-white px-3 py-1 text-xs text-slate-600 dark:text-slate-400 dark:hover:text-slate-100 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 hover:border-indigo-400 dark:hover:border-indigo-500/40 transition-all font-medium">
-                            Apply
-                          </a>
-                        </div>
-                        {isExpanded && ats && <AtsInsightPanel ats={ats} job={job} />}
-                        {isExpanded && !ats && job.description && (
-                          <div className="mt-3 pt-3 border-t dark:border-white/5 border-slate-200">
-                            <div className="text-xs dark:text-slate-400 text-slate-500 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto pr-1">{job.description}</div>
-                          </div>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
+                          "shrink-0 rounded-lg border px-3 py-1 text-xs font-medium transition-all",
+                          isHiringCafeSelected
+                            ? "border-amber-200 bg-amber-50 font-semibold text-amber-700 hover:border-amber-300 hover:bg-amber-100/60 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/20 dark:hover:text-slate-100",
+                        ].join(" ")}>
+                        Apply
+                      </a>
+                    </div>
+                    {isExpanded && ats && <AtsInsightPanel ats={ats} job={job} />}
+                    {isExpanded && !ats && job.description && (
+                      <div className="mt-3 border-t border-slate-200 pt-3 dark:border-white/5">
+                        <div className="max-h-60 overflow-y-auto whitespace-pre-wrap pr-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{job.description}</div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
           )}
-        </>
+        </div>
       )}
-
-      {/* ── Hiring Cafe — easy-apply job list ── */}
-      {activeCategory === "hiring-cafe" && (() => {
-        const hcJobs = sortJobs(
-          filterByLocation(
-            filterBySearch(
-              filterByTime(jobs.filter((j) => j.category === "hiring-cafe"), timeFilter),
-              searchQuery
-            ),
-            locationFilter
-          ),
-          sortBy,
-          atsScores
-        );
-        const rawHcJobs = filterByTime(jobs.filter((j) => j.category === "hiring-cafe"), timeFilter);
-
-        return (
-          <div>
-            {/* Source banner */}
-            <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-500/20 dark:border-amber-500/20 bg-amber-50/40 dark:bg-amber-500/[0.06] px-4 py-3 shadow-sm dark:shadow-none">
-              <span className="text-xl">☕</span>
-              <div className="min-w-0">
-                <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
-                  Easy-Apply Jobs — <a href="https://hiring.cafe/?searchState=%7B%22searchQuery%22%3A%22software+engineer%22%2C%22sortBy%22%3A%22date%22%2C%22dateFetchedPastNDays%22%3A2%2C%22applicationFormEase%22%3A%5B%22Simple%22%5D%7D" target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-950 dark:hover:text-amber-200 transition-colors">hiring.cafe</a>
-                </p>
-                <p className="mt-0.5 text-[11px] text-slate-500">
-                  Sourced via the scraper — only jobs with a &ldquo;Simple&rdquo; application form. Run <code className="dark:text-slate-300 text-slate-700">npm run scrape</code> to refresh.
-                </p>
-              </div>
-              <span className="ml-auto shrink-0 rounded-full bg-amber-100/50 dark:bg-amber-500/15 border border-amber-200 dark:border-amber-500/30 px-2.5 py-1 text-[11px] font-bold text-amber-800 dark:text-amber-300">
-                {rawHcJobs.length} role{rawHcJobs.length !== 1 ? "s" : ""}
-              </span>
-            </div>
-
-            {rawHcJobs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-600">
-                <span className="text-4xl opacity-40">☕</span>
-                <p className="text-sm">
-                  {error
-                    ? "Configure Google Sheets to see live jobs"
-                    : `No Hiring Cafe jobs in the ${TIME_FILTERS.find((f) => f.id === timeFilter)?.label.toLowerCase()} — run the scraper or widen the time window`}
-                </p>
-              </div>
-            ) : (
-              <div className="rounded-xl border dark:border-white/10 border-slate-200 dark:bg-white/[0.03] bg-white overflow-hidden shadow-sm">
-                {/* Filter bar */}
-                <div className="flex flex-wrap items-center gap-2 px-5 py-2.5 border-b dark:border-white/5 border-slate-100">
-                  <div className="relative flex-1 min-w-[160px]">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Search roles or companies…"
-                      className="w-full rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 pl-7 pr-3 py-1.5 text-xs dark:text-slate-300 text-slate-700 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50"
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    {(["all", "remote", "onsite"] as LocationFilter[]).map((loc) => (
-                      <button
-                        key={loc}
-                        type="button"
-                        onClick={() => setLocationFilter(loc)}
-                        className={[
-                          "rounded-full px-2.5 py-1 text-[10px] font-semibold border transition-all duration-200 shadow-sm",
-                          locationFilter === loc
-                            ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 border-indigo-200 dark:border-indigo-500/40"
-                            : "bg-white dark:bg-white/5 text-slate-500 dark:border-white/10 border-slate-200 hover:text-slate-800 dark:hover:text-slate-200 hover:border-slate-300 dark:hover:border-white/20",
-                        ].join(" ")}
-                      >
-                        {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
-                      </button>
-                    ))}
-                  </div>
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as SortMode)}
-                    className="rounded-lg border dark:border-white/8 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1.5 text-[10px] dark:text-slate-400 text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 cursor-pointer"
-                  >
-                    <option value="newest">Newest first</option>
-                    <option value="ats">Highest ATS</option>
-                    <option value="title">Title A–Z</option>
-                  </select>
-                  {hcJobs.length !== rawHcJobs.length && (
-                    <span className="text-[10px] text-slate-500">{hcJobs.length}/{rawHcJobs.length} shown</span>
-                  )}
-                </div>
-
-                {/* Job list */}
-                {hcJobs.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 gap-2 text-slate-600">
-                    <p className="text-sm">No roles match your filters</p>
-                    <button type="button" onClick={() => { setSearchQuery(""); setLocationFilter("all"); }} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors">Clear filters</button>
-                  </div>
-                ) : (
-                  <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[640px] overflow-y-auto">
-                    {hcJobs.map((job, i) => {
-                      const isNew      = job.fetchedAt && Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
-                      const isExpanded = expandedJob === job.url;
-                      const ats        = resume && job.description ? calculateAtsScore(job.description, resume) : null;
-                      const salary     = extractSalary(job.description ?? "");
-                      const resumeKey  = `${job.url}:resume`;
-                      const coverKey   = `${job.url}:cover`;
-                      const genResume  = !!generating[resumeKey];
-                      const genCover   = !!generating[coverKey];
-                      return (
-                        <li key={i} className={["px-5 py-3 dark:hover:bg-white/[0.03] hover:bg-slate-50 transition-colors", isExpanded ? "dark:bg-white/[0.02] bg-slate-50/80" : ""].join(" ")}>
-                          <div className="flex items-start gap-2">
-                            {ats && (
-                              <div className="shrink-0 mt-0.5" title={`ATS score: ${ats.score}%`}>
-                                <AtsRing score={ats.score} size={36} />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className="text-sm dark:text-slate-200 text-slate-800 font-medium truncate">{job.title}</p>
-                                {/* Easy Apply badge — always shown for hiring-cafe */}
-                                <span className="shrink-0 rounded-full bg-amber-50 dark:bg-amber-500/15 border border-amber-100 dark:border-amber-500/30 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">⚡ Easy Apply</span>
-                                {isNew && (
-                                  <span className="shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/30 uppercase tracking-wide">NEW</span>
-                                )}
-                                {ats && ats.score >= 70 && (
-                                  <span className="shrink-0 rounded-full bg-emerald-50 dark:bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-bold text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25 uppercase tracking-wide">✓ Strong fit</span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                                {/* Company badge */}
-                                {job.company && job.company !== "Hiring Cafe" && (
-                                  <span className="text-[10px] font-semibold dark:text-slate-400 text-slate-600 bg-slate-500/10 px-1.5 py-0.5 rounded">{job.company}</span>
-                                )}
-                                {job.location && (
-                                  <p className="text-[11px] text-slate-500 truncate">{job.location}</p>
-                                )}
-                                {salary && (
-                                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 px-1.5 py-0.5 rounded">{salary}</span>
-                                )}
-                              </div>
-                            </div>
-                            {job.fetchedAt && (
-                              <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0 hidden sm:block mt-0.5">{timeAgo(job.fetchedAt)}</span>
-                            )}
-                            {job.description && (
-                              <button type="button" title="Generate tailored resume PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "resume")}
-                                className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-500/10 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all disabled:opacity-40">
-                                {genResume ? "…" : "📄 CV"}
-                              </button>
-                            )}
-                            {job.description && (
-                              <button type="button" title="Generate cover letter PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "cover")}
-                                className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 hover:text-violet-600 dark:hover:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-500/10 hover:border-violet-200 dark:hover:border-violet-500/30 transition-all disabled:opacity-40">
-                                {genCover ? "…" : "✉ CL"}
-                              </button>
-                            )}
-                            {job.description && (
-                              <button type="button" onClick={() => setExpandedJob(isExpanded ? null : job.url)}
-                                className="shrink-0 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 dark:hover:text-slate-200 hover:text-slate-600 dark:hover:bg-white/10 hover:bg-slate-100 transition-all"
-                                aria-label={isExpanded ? "Hide details" : "Show details"}>
-                                {isExpanded ? "▲" : "▼"}
-                              </button>
-                            )}
-                            <a href={job.url} target="_blank" rel="noopener noreferrer"
-                              className="shrink-0 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-200 hover:bg-amber-100/60 dark:hover:bg-amber-500/20 hover:border-amber-300 dark:hover:border-amber-400/50 transition-all">
-                              Apply
-                            </a>
-                          </div>
-                          {isExpanded && ats && <AtsInsightPanel ats={ats} job={job} />}
-                          {isExpanded && !ats && job.description && (
-                            <div className="mt-3 pt-3 border-t dark:border-white/5 border-slate-200">
-                              <div className="text-xs dark:text-slate-400 text-slate-500 whitespace-pre-wrap leading-relaxed max-h-60 overflow-y-auto pr-1">{job.description}</div>
-                            </div>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })()}
     </section>
   );
 }

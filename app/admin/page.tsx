@@ -80,7 +80,9 @@ export default function AdminPage() {
             {activeTab === "edit-resume" && <EditResumeTab />}
             {activeTab === "visitors" && <VisitorsTab />}
             {activeTab === "settings" && <SettingsTab />}
-            {activeTab === "companies" && <CompaniesTab />}
+            {activeTab === "companies" && (
+              <CompaniesTab onViewAllJobs={() => setActiveTab("all-jobs")} />
+            )}
             {activeTab === "all-jobs" && <AllJobsTab />}
           </main>
         </div>

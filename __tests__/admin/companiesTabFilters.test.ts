@@ -1,49 +1,19 @@
-/**
- * Time-filter logic mirrored from CompaniesTab.tsx
- */
-
-type TimeFilter = "30m" | "2h" | "12h" | "1d" | "2d";
-
-interface Job {
-  fetchedAt: string;
-}
-
-const NEW_JOB_WINDOW_MS = 30 * 60_000;
-
-const TIME_FILTERS: { id: TimeFilter; label: string; ms: number }[] = [
-  { id: "30m", label: "⚡ Last 30 mins", ms: NEW_JOB_WINDOW_MS },
-  { id: "2h", label: "Last 2 hrs", ms: 2 * 3_600_000 },
-  { id: "12h", label: "Last 12 hrs", ms: 12 * 3_600_000 },
-  { id: "1d", label: "Last 24 hrs", ms: 24 * 3_600_000 },
-  { id: "2d", label: "Last 48 hrs", ms: 48 * 3_600_000 },
-];
-
-function filterByTime(jobs: Job[], filter: TimeFilter, now = Date.now()): Job[] {
-  const { ms } = TIME_FILTERS.find((f) => f.id === filter)!;
-  return jobs.filter(
-    (j) => j.fetchedAt && now - new Date(j.fetchedAt).getTime() <= ms
-  );
-}
-
-function buildLastSeenUpdates(
-  sheetUrls: string[],
-  scrapedUrls: Set<string>,
-  timestamp: string
-) {
-  return sheetUrls
-    .map((url, idx) => ({ url, sheetRow: idx + 2 }))
-    .filter(({ url }) => url && scrapedUrls.has(url))
-    .map(({ sheetRow }) => ({
-      range: `Jobs!F${sheetRow}`,
-      values: [[timestamp]],
-    }));
-}
+import {
+  COMPANIES_TIME_FILTERS,
+  buildLastSeenUpdates,
+  filterCompaniesByCategories,
+  filterCompaniesBySearch,
+  filterJobsByCompaniesTime,
+  sortCompanies,
+  toggleCategoryFilter,
+  type CompanyJobRow,
+} from "@/lib/admin/companiesTabFilters";
 
 describe("CompaniesTab time filters", () => {
   const now = Date.parse("2026-06-06T12:00:00.000Z");
 
   it("includes 30m as the first filter option", () => {
-    expect(TIME_FILTERS[0]).toEqual({
+    expect(COMPANIES_TIME_FILTERS[0]).toEqual({
       id: "30m",
       label: "⚡ Last 30 mins",
       ms: 30 * 60_000,
@@ -51,19 +21,83 @@ describe("CompaniesTab time filters", () => {
   });
 
   it("30m filter keeps jobs seen within 30 minutes", () => {
-    const jobs: Job[] = [
-      { fetchedAt: new Date(now - 20 * 60_000).toISOString() },
-      { fetchedAt: new Date(now - 45 * 60_000).toISOString() },
+    const jobs: CompanyJobRow[] = [
+      {
+        company: "A",
+        title: "Eng",
+        location: "",
+        url: "https://a.com",
+        category: "general",
+        fetchedAt: new Date(now - 20 * 60_000).toISOString(),
+        description: "",
+      },
+      {
+        company: "B",
+        title: "Eng",
+        location: "",
+        url: "https://b.com",
+        category: "general",
+        fetchedAt: new Date(now - 45 * 60_000).toISOString(),
+        description: "",
+      },
     ];
-    expect(filterByTime(jobs, "30m", now)).toHaveLength(1);
+    expect(filterJobsByCompaniesTime(jobs, "30m", now)).toHaveLength(1);
   });
 
   it("2h filter is wider than 30m", () => {
-    const jobs: Job[] = [
-      { fetchedAt: new Date(now - 90 * 60_000).toISOString() },
+    const jobs: CompanyJobRow[] = [
+      {
+        company: "A",
+        title: "Eng",
+        location: "",
+        url: "https://a.com",
+        category: "general",
+        fetchedAt: new Date(now - 90 * 60_000).toISOString(),
+        description: "",
+      },
     ];
-    expect(filterByTime(jobs, "30m", now)).toHaveLength(0);
-    expect(filterByTime(jobs, "2h", now)).toHaveLength(1);
+    expect(filterJobsByCompaniesTime(jobs, "30m", now)).toHaveLength(0);
+    expect(filterJobsByCompaniesTime(jobs, "2h", now)).toHaveLength(1);
+  });
+});
+
+describe("CompaniesTab company filters", () => {
+  const companies = [
+    { name: "Airbnb", category: "travel" as const },
+    { name: "OpenAI", category: "ai-agentic" as const },
+    { name: "Google", category: "general" as const },
+  ];
+
+  it("returns all companies when no category filter is active", () => {
+    expect(filterCompaniesByCategories(companies, new Set())).toHaveLength(3);
+  });
+
+  it("filters companies by selected categories", () => {
+    const selected = new Set(["travel", "general"] as const);
+    const result = filterCompaniesByCategories(companies, selected);
+    expect(result.map((c) => c.name)).toEqual(["Airbnb", "Google"]);
+  });
+
+  it("filters companies by search query", () => {
+    expect(filterCompaniesBySearch(companies, "open")).toEqual([companies[1]]);
+  });
+
+  it("sorts companies by name", () => {
+    const sorted = sortCompanies(companies, "name", {});
+    expect(sorted.map((c) => c.name)).toEqual(["Airbnb", "Google", "OpenAI"]);
+  });
+
+  it("sorts companies by job count descending", () => {
+    const counts = { Airbnb: 2, OpenAI: 5, Google: 1 };
+    const sorted = sortCompanies(companies, "jobCount", counts);
+    expect(sorted.map((c) => c.name)).toEqual(["OpenAI", "Airbnb", "Google"]);
+  });
+
+  it("toggles category filters on and off", () => {
+    let filters = toggleCategoryFilter(new Set(), "travel");
+    expect([...filters]).toEqual(["travel"]);
+    filters = toggleCategoryFilter(filters, "travel");
+    expect([...filters]).toEqual([]);
   });
 });
 

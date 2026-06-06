@@ -306,12 +306,12 @@ export default function AllJobsTab() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search company, title, location, URL…"
-          className="h-8 min-w-[200px] flex-1 rounded-xl border border-white/10 bg-white/5 px-3 text-xs text-slate-300 placeholder:text-slate-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
+          className="h-9 min-w-[200px] flex-1 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400/40 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:placeholder:text-slate-500"
         />
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as SortMode)}
-          className="h-8 rounded-xl border border-white/10 bg-white/5 px-2 text-xs text-slate-300 focus:border-indigo-500/40 focus:outline-none"
+          className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs text-slate-600 focus:border-indigo-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
         >
           {SORT_OPTIONS.map(({ id, label }) => (
             <option key={id} value={id}>
@@ -322,7 +322,7 @@ export default function AllJobsTab() {
         <select
           value={platform}
           onChange={(e) => setPlatform(e.target.value as PlatformFilter)}
-          className="h-8 rounded-xl border border-white/10 bg-white/5 px-2 text-xs text-slate-300 focus:border-indigo-500/40 focus:outline-none"
+          className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs text-slate-600 focus:border-indigo-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
         >
           {PLATFORM_FILTERS.map(({ id, label }) => (
             <option key={id} value={id}>

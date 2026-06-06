@@ -56,4 +56,17 @@ describe("AdminSidebar", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /all jobs/i })[0]);
     expect(onSelect).toHaveBeenCalledWith("all-jobs");
   });
+
+  it("lists All Jobs immediately after Overview in nav order", () => {
+    render(<AdminSidebar activeTab="overview" onSelect={onSelect} />);
+    const labels = screen
+      .getAllByRole("button")
+      .map((btn) => btn.textContent?.trim())
+      .filter(Boolean);
+    const overviewIdx = labels.indexOf("Overview");
+    const allJobsIdx = labels.indexOf("All Jobs");
+    const companiesIdx = labels.indexOf("Companies");
+    expect(allJobsIdx).toBeGreaterThan(overviewIdx);
+    expect(companiesIdx).toBeGreaterThan(allJobsIdx);
+  });
 });
