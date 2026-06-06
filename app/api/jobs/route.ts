@@ -6,6 +6,7 @@ export const dynamic = "force-dynamic"; // never cache this route
 const SHEET_NAME = "Jobs";
 
 export interface Job {
+  rowIndex: number;
   company: string;
   title: string;
   location: string;
@@ -13,7 +14,12 @@ export interface Job {
   category: string;
   fetchedAt: string;
   description: string;
+  resumeUrl?: string;
+  coverLetter?: string;
+  atsScore?: string;
   applyStatus?: string;
+  appliedAt?: string;
+  notes?: string;
 }
 
 export async function GET() {
@@ -37,14 +43,15 @@ export async function GET() {
     const sheets = google.sheets({ version: "v4", auth });
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `${SHEET_NAME}!A:K`,
+      range: `${SHEET_NAME}!A:M`,
     });
 
     const rows = response.data.values ?? [];
     // First row is headers — skip it
     const dataRows = rows.length > 1 ? rows.slice(1) : [];
 
-    const jobs: Job[] = dataRows.map((row) => ({
+    const jobs: Job[] = dataRows.map((row, idx) => ({
+      rowIndex: idx + 2,
       company: row[0] ?? "",
       title: row[1] ?? "",
       location: row[2] ?? "",
@@ -52,7 +59,12 @@ export async function GET() {
       category: row[4] ?? "",
       fetchedAt: row[5] ?? "",
       description: row[6] ?? "",
+      resumeUrl: row[7] ?? "",
+      coverLetter: row[8] ?? "",
+      atsScore: row[9] ?? "",
       applyStatus: row[10] ?? "",
+      appliedAt: row[11] ?? "",
+      notes: row[12] ?? "",
     }));
 
     return NextResponse.json({ jobs });

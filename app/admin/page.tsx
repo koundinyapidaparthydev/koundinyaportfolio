@@ -34,6 +34,10 @@ const CompaniesTab = dynamic(
   () => import("./_components/CompaniesTab"),
   { loading: () => <TabLoader /> }
 );
+const AllJobsTab = dynamic(
+  () => import("./_components/AllJobsTab"),
+  { loading: () => <TabLoader /> }
+);
 
 function TabLoader() {
   return (
@@ -77,6 +81,7 @@ export default function AdminPage() {
             {activeTab === "visitors" && <VisitorsTab />}
             {activeTab === "settings" && <SettingsTab />}
             {activeTab === "companies" && <CompaniesTab />}
+            {activeTab === "all-jobs" && <AllJobsTab />}
           </main>
         </div>
       </div>

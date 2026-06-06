@@ -12,12 +12,14 @@ describe("AdminSidebar", () => {
     jest.clearAllMocks();
   });
 
-  it("renders all 4 nav labels", () => {
+  it("renders all nav labels", () => {
     render(<AdminSidebar activeTab="overview" onSelect={onSelect} />);
     expect(screen.getAllByText("Overview").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Edit Resume").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Visitors").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Settings").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Companies").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("All Jobs").length).toBeGreaterThanOrEqual(1);
   });
 
   it("renders the Preview live site link", () => {
@@ -47,5 +49,11 @@ describe("AdminSidebar", () => {
     render(<AdminSidebar activeTab="overview" onSelect={onSelect} />);
     fireEvent.click(screen.getAllByRole("button", { name: /edit resume/i })[0]);
     expect(onSelect).toHaveBeenCalledWith("edit-resume");
+  });
+
+  it("calls onSelect with 'all-jobs' when the All Jobs button is clicked", () => {
+    render(<AdminSidebar activeTab="overview" onSelect={onSelect} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /all jobs/i })[0]);
+    expect(onSelect).toHaveBeenCalledWith("all-jobs");
   });
 });
