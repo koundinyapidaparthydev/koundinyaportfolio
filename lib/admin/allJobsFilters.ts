@@ -178,7 +178,7 @@ export function uniqueCategories(jobs: AllJobsRow[]): string[] {
     const c = (j.category ?? "").trim();
     if (c) set.add(c);
   }
-  return [...set].sort((a, b) => a.localeCompare(b));
+  return Array.from(set).sort((a, b) => a.localeCompare(b));
 }
 
 export function formatRelativeTime(iso: string, now = Date.now()): string {

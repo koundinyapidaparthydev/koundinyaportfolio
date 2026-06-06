@@ -52,7 +52,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 function categoryLabel(cat: string) {
-  return CATEGORY_LABELS[cat] ?? cat || "—";
+  return CATEGORY_LABELS[cat] ?? (cat || "—");
 }
 
 const PLATFORM_BADGE: Record<string, string> = {
