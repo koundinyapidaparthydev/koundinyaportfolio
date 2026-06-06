@@ -8,10 +8,12 @@ import {
   CATEGORY_BADGE,
   CATEGORY_OPTIONS,
   COMPANIES_TIME_FILTERS,
+  COUNTRY_LOCATION_FILTERS,
   NEW_JOB_WINDOW_MS,
   filterCompaniesByCategories,
   filterCompaniesBySearch,
   filterJobsByCompaniesTime,
+  filterByCountryLocation,
   filterRolesByLocation,
   filterRolesBySearch,
   sortCompanies,
@@ -21,6 +23,7 @@ import {
   type CompanyJobRow,
   type CompaniesTimeFilter,
   type CompanySortMode,
+  type CountryLocationFilter,
   type LocationFilter,
   type RoleSortMode,
 } from "@/lib/admin/companiesTabFilters";
@@ -428,6 +431,7 @@ export default function CompaniesTab({
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [timeFilter, setTimeFilter] = useState<CompaniesTimeFilter>("30m");
+  const [countryLocation, setCountryLocation] = useState<CountryLocationFilter>("all");
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [resume, setResume] = useState<Resume | null>(null);
   const [generating, setGenerating] = useState<Record<string, "resume" | "cover">>({});
@@ -535,9 +539,10 @@ export default function CompaniesTab({
     []
   );
 
-  // Apply time filter first
-  const filteredJobs = filterJobsByCompaniesTime(jobs, timeFilter);
-  const newJobs = filterJobsByCompaniesTime(jobs, "30m");
+  // Apply country location filter, then time filter
+  const locationScopedJobs = filterByCountryLocation(jobs, countryLocation);
+  const filteredJobs = filterJobsByCompaniesTime(locationScopedJobs, timeFilter);
+  const newJobs = filterJobsByCompaniesTime(locationScopedJobs, "30m");
   const jobsByCompany = filteredJobs.reduce<Record<string, Job[]>>((acc, job) => {
     (acc[job.company] ??= []).push(job);
     return acc;
@@ -849,11 +854,54 @@ export default function CompaniesTab({
         })}
       </div>
 
+      {/* Country location filter pills */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+          Location:
+        </span>
+        {COUNTRY_LOCATION_FILTERS.map(({ id, label }) => {
+          const count = filterJobsByCompaniesTime(
+            filterByCountryLocation(jobs, id),
+            timeFilter
+          ).length;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setCountryLocation(id)}
+              className={[
+                "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold shadow-sm transition-all duration-200",
+                countryLocation === id
+                  ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
+                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:text-slate-200",
+              ].join(" ")}
+            >
+              {label}
+              {count > 0 && (
+                <span
+                  className={[
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                    countryLocation === id
+                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200"
+                      : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-400",
+                  ].join(" ")}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       {/* Time filter pills */}
       <div className="mb-5 flex flex-wrap items-center gap-2">
         <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">Show new jobs from:</span>
         {COMPANIES_TIME_FILTERS.map(({ id, label }) => {
-          const count = filterJobsByCompaniesTime(jobs, id).length;
+          const count = filterJobsByCompaniesTime(
+            filterByCountryLocation(jobs, countryLocation),
+            id
+          ).length;
           return (
             <button
               key={id}

@@ -12,14 +12,17 @@ import {
   TIME_FILTERS,
   PLATFORM_FILTERS,
   SORT_OPTIONS,
+  COUNTRY_LOCATION_FILTERS,
   applyAllJobsFilters,
   detectPlatformFromUrl,
   filterByTime,
+  filterByCountryLocation,
   formatRelativeTime,
   uniqueCategories,
   type TimeFilter,
   type SortMode,
   type PlatformFilter,
+  type CountryLocationFilter,
 } from "@/lib/admin/allJobsFilters";
 
 async function fetchJobs(): Promise<Job[]> {
@@ -228,6 +231,7 @@ export default function AllJobsTab() {
   const [category, setCategory] = useState("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("2d");
   const [platform, setPlatform] = useState<PlatformFilter>("all");
+  const [countryLocation, setCountryLocation] = useState<CountryLocationFilter>("all");
   const [sort, setSort] = useState<SortMode>("newest");
   const [hasDescription, setHasDescription] = useState(false);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
@@ -254,9 +258,10 @@ export default function AllJobsTab() {
         timeFilter,
         platform,
         hasDescription,
+        countryLocation,
         sort,
       }),
-    [jobs, search, category, timeFilter, platform, hasDescription, sort]
+    [jobs, search, category, timeFilter, platform, hasDescription, countryLocation, sort]
   );
 
   const selectedJob = useMemo(
@@ -370,6 +375,43 @@ export default function AllJobsTab() {
             {categoryLabel(cat)}
           </button>
         ))}
+      </div>
+
+      {/* Country location filter pills */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+          Location:
+        </span>
+        {COUNTRY_LOCATION_FILTERS.map(({ id, label }) => {
+          const count = filterByCountryLocation(jobs, id).length;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setCountryLocation(id)}
+              className={[
+                "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold shadow-sm transition-all duration-200",
+                countryLocation === id
+                  ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
+                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:text-slate-200",
+              ].join(" ")}
+            >
+              {label}
+              {count > 0 && (
+                <span
+                  className={[
+                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
+                    countryLocation === id
+                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200"
+                      : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-400",
+                  ].join(" ")}
+                >
+                  {count}
+                </span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {/* Time filter pills */}

@@ -2,6 +2,18 @@
  * Filter/sort helpers for the All Jobs admin tab.
  */
 
+import {
+  filterByCountryLocation,
+  type CountryLocationFilter,
+} from "@/lib/admin/jobLocationMatch";
+
+export {
+  COUNTRY_LOCATION_FILTERS,
+  matchesLocation,
+  filterByCountryLocation,
+  type CountryLocationFilter,
+} from "@/lib/admin/jobLocationMatch";
+
 export type TimeFilter = "30m" | "2h" | "12h" | "1d" | "2d" | "all";
 export type SortMode = "newest" | "company" | "title";
 export type PlatformFilter =
@@ -159,6 +171,7 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
     timeFilter: TimeFilter;
     platform: PlatformFilter;
     hasDescription: boolean;
+    countryLocation: CountryLocationFilter;
     sort: SortMode;
     now?: number;
   }
@@ -167,6 +180,7 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
   result = filterBySearch(result, opts.search);
   result = filterByCategory(result, opts.category);
   result = filterByTime(result, opts.timeFilter, opts.now);
+  result = filterByCountryLocation(result, opts.countryLocation);
   result = filterByPlatform(result, opts.platform);
   result = filterByHasDescription(result, opts.hasDescription);
   return sortAllJobs(result, opts.sort);

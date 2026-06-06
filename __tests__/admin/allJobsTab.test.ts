@@ -145,11 +145,31 @@ describe("applyAllJobsFilters", () => {
       timeFilter: "30m",
       platform: "ashby",
       hasDescription: true,
+      countryLocation: "all",
       sort: "newest",
       now: NOW,
     });
     expect(result).toHaveLength(1);
     expect(result[0].company).toBe("OpenAI");
+  });
+
+  it("filters by country location", () => {
+    const jobs = [
+      job({ location: "San Francisco, CA", company: "US Co" }),
+      job({ location: "Bangalore, India", company: "IN Co" }),
+      job({ location: "London, UK", company: "UK Co" }),
+    ];
+    const usOnly = applyAllJobsFilters(jobs, {
+      search: "",
+      category: "all",
+      timeFilter: "all",
+      platform: "all",
+      hasDescription: false,
+      countryLocation: "us",
+      sort: "newest",
+      now: NOW,
+    });
+    expect(usOnly.map((j) => j.company)).toEqual(["US Co"]);
   });
 });
 
