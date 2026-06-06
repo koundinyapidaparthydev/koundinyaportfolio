@@ -6,7 +6,10 @@ import type { Resume } from "@/types/resume";
 import type { AtsResult } from "@/lib/atsScoring";
 
 type CompanyCategory = "travel" | "ai-agentic" | "general" | "hiring-cafe";
-type TimeFilter = "2h" | "12h" | "1d" | "2d";
+type TimeFilter = "30m" | "2h" | "12h" | "1d" | "2d";
+
+/** "New" pulse badge — aligned with default 30m filter and scrape cadence */
+const NEW_JOB_WINDOW_MS = 30 * 60_000;
 type SortMode = "newest" | "ats" | "title";
 type LocationFilter = "all" | "remote" | "onsite";
 
@@ -124,10 +127,11 @@ const TABS: { id: CompanyCategory; label: string }[] = [
 ];
 
 const TIME_FILTERS: { id: TimeFilter; label: string; ms: number }[] = [
-  { id: "2h",  label: "⚡ Last 2 hrs",  ms:  2 * 3_600_000 },
-  { id: "12h", label: "Last 12 hrs", ms: 12 * 3_600_000 },
-  { id: "1d",  label: "Last 24 hrs", ms: 24 * 3_600_000 },
-  { id: "2d",  label: "Last 48 hrs", ms: 48 * 3_600_000 },
+  { id: "30m", label: "⚡ Last 30 mins", ms: NEW_JOB_WINDOW_MS },
+  { id: "2h",  label: "Last 2 hrs",     ms:  2 * 3_600_000 },
+  { id: "12h", label: "Last 12 hrs",    ms: 12 * 3_600_000 },
+  { id: "1d",  label: "Last 24 hrs",    ms: 24 * 3_600_000 },
+  { id: "2d",  label: "Last 48 hrs",    ms: 48 * 3_600_000 },
 ];
 
 function filterByTime(jobs: Job[], filter: TimeFilter): Job[] {
@@ -425,7 +429,7 @@ export default function CompaniesTab() {
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("12h");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("30m");
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [resume, setResume] = useState<Resume | null>(null);
   const [generating, setGenerating] = useState<Record<string, "resume" | "cover">>({});
@@ -535,7 +539,7 @@ export default function CompaniesTab() {
 
   // Apply time filter first
   const filteredJobs = filterByTime(jobs, timeFilter);
-  const newJobs = filterByTime(jobs, "2h");
+  const newJobs = filterByTime(jobs, "30m");
   const jobsByCompany = filteredJobs.reduce<Record<string, Job[]>>((acc, job) => {
     (acc[job.company] ??= []).push(job);
     return acc;
@@ -749,7 +753,7 @@ export default function CompaniesTab() {
                   "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
                   timeFilter === id
                     ? "bg-indigo-100 dark:bg-indigo-500/30 text-indigo-700 dark:text-indigo-200"
-                    : id === "2h" && count > 0
+                    : id === "30m" && count > 0
                     ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-transparent"
                     : "bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400",
                 ].join(" ")}>
@@ -885,7 +889,7 @@ export default function CompaniesTab() {
                 <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
                   {selectedJobs.map((job, i) => {
                     const isNew = job.fetchedAt &&
-                      Date.now() - new Date(job.fetchedAt).getTime() <= 2 * 3_600_000;
+                      Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
                     const isExpanded = expandedJob === job.url;
                     const ats = resume && job.description
                       ? calculateAtsScore(job.description, resume)
@@ -1077,7 +1081,7 @@ export default function CompaniesTab() {
                 <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
                   {selectedJobs.map((job, i) => {
                     const isNew = job.fetchedAt &&
-                      Date.now() - new Date(job.fetchedAt).getTime() <= 2 * 3_600_000;
+                      Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
                     const isExpanded = expandedJob === job.url;
                     const ats = resume && job.description
                       ? calculateAtsScore(job.description, resume)
@@ -1268,7 +1272,7 @@ export default function CompaniesTab() {
                 <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[520px] overflow-y-auto">
                   {selectedJobs.map((job, i) => {
                     const isNew = job.fetchedAt &&
-                      Date.now() - new Date(job.fetchedAt).getTime() <= 2 * 3_600_000;
+                      Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
                     const isExpanded = expandedJob === job.url;
                     const ats = resume && job.description
                       ? calculateAtsScore(job.description, resume)
@@ -1438,7 +1442,7 @@ export default function CompaniesTab() {
                 ) : (
                   <ul className="divide-y dark:divide-white/5 divide-slate-100 max-h-[640px] overflow-y-auto">
                     {hcJobs.map((job, i) => {
-                      const isNew      = job.fetchedAt && Date.now() - new Date(job.fetchedAt).getTime() <= 2 * 3_600_000;
+                      const isNew      = job.fetchedAt && Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
                       const isExpanded = expandedJob === job.url;
                       const ats        = resume && job.description ? calculateAtsScore(job.description, resume) : null;
                       const salary     = extractSalary(job.description ?? "");

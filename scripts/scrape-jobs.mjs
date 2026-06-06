@@ -1524,6 +1524,49 @@ async function ensureSheetAndHeaders(sheets) {
   });
 }
 
+/**
+ * Bump column F ("Fetched At") for jobs still on the board at scrape time.
+ *
+ * Column F is scrape-time, NOT the ATS posted date. On first discovery we set
+ * it to now(); on every subsequent scrape where the URL is still live we
+ * refresh it so the admin 30m/2h filters and 2-day archive reflect *last
+ * seen*, not first seen.
+ */
+async function refreshLastSeenAt(sheets, scrapedJobs) {
+  const scrapedUrls = new Set(scrapedJobs.map((row) => row[3]).filter(Boolean));
+  if (scrapedUrls.size === 0) return 0;
+
+  const resp = await sheets.spreadsheets.values.get({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    range: `${SHEET_NAME}!D2:D`,
+  });
+  const urlRows = resp.data.values ?? [];
+  if (urlRows.length === 0) return 0;
+
+  const timestamp = now();
+  const updateData = urlRows
+    .map((row, idx) => ({ url: row[0] ?? "", sheetRow: idx + 2 }))
+    .filter(({ url }) => url && scrapedUrls.has(url))
+    .map(({ sheetRow }) => ({
+      range: `${SHEET_NAME}!F${sheetRow}`,
+      values: [[timestamp]],
+    }));
+
+  if (updateData.length === 0) return 0;
+
+  if (DRY_RUN) {
+    console.log(`🏃  DRY_RUN: would refresh last-seen for ${updateData.length} existing jobs`);
+    return updateData.length;
+  }
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    requestBody: { valueInputOption: "RAW", data: updateData },
+  });
+  console.log(`🔄  Refreshed last-seen for ${updateData.length} existing jobs`);
+  return updateData.length;
+}
+
 async function writeNewJobs(sheets, newJobs) {
   // Fetch existing URLs to deduplicate
   const existingResp = await sheets.spreadsheets.values.get({
@@ -1773,6 +1816,7 @@ async function main() {
   const [jobs, sheets] = await Promise.all([fetchAllJobs(), getSheets()]);
   if (!DRY_RUN) {
     await ensureSheetAndHeaders(sheets);
+    await refreshLastSeenAt(sheets, jobs);
     await archiveOldJobs(sheets);
     await migrateLegacyCompanyNames(sheets);
   }
@@ -1864,7 +1908,7 @@ async function migrateLegacyCompanyNames(sheets) {
 
 /**
  * Fill in descriptions for existing rows that are missing one (column G empty).
- * Does NOT touch fetchedAt or any other column — time filters remain accurate.
+ * Does NOT touch fetchedAt (column F) — that is managed by refreshLastSeenAt.
  */
 async function backfillDescriptions(sheets) {
   if (DRY_RUN) return;
