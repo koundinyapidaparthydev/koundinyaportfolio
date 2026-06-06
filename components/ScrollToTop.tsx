@@ -6,10 +6,14 @@
  */
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function ScrollToTop() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -34,7 +38,10 @@ export function ScrollToTop() {
           transition={{ duration: 0.25, ease: "easeOut" }}
           onClick={scrollToTop}
           aria-label="Scroll to top"
-          className="fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 transition-colors hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+          className={cn(
+            "fixed right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 transition-colors hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400",
+            isHome ? "bottom-[5.5rem]" : "bottom-6"
+          )}
         >
           <ChevronUp className="h-5 w-5" />
         </motion.button>

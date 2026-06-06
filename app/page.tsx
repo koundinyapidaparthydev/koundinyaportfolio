@@ -7,6 +7,7 @@ import EducationSection from "@/components/sections/EducationSection";
 import Projects from "@/components/sections/Projects";
 import Contact from "@/components/sections/Contact";
 import { FadeInSection } from "@/components/FadeInSection";
+import { AssistantBot } from "@/components/AssistantBot";
 
 export default function Home() {
   const { personalInfo, education } = resumeData;
@@ -39,6 +40,8 @@ export default function Home() {
       <FadeInSection>
         <Contact />
       </FadeInSection>
+
+      <AssistantBot />
     </main>
   );
 }
