@@ -1,10 +1,11 @@
 /**
  * Country/region matching for job location strings (sheet column C).
  *
- * Empty locations are excluded from US/India filters and only appear when filter is "all".
+ * Only US, India, Dubai, and Singapore are supported. Jobs outside these
+ * regions are excluded even when the location filter is "all".
  */
 
-export type CountryLocationFilter = "all" | "us" | "in";
+export type CountryLocationFilter = "all" | "us" | "in" | "dubai" | "sg";
 
 export const COUNTRY_LOCATION_FILTERS: {
   id: CountryLocationFilter;
@@ -13,6 +14,8 @@ export const COUNTRY_LOCATION_FILTERS: {
   { id: "all", label: "All locations" },
   { id: "us", label: "🇺🇸 US" },
   { id: "in", label: "🇮🇳 India" },
+  { id: "dubai", label: "🇦🇪 Dubai" },
+  { id: "sg", label: "🇸🇬 Singapore" },
 ];
 
 /** US state / territory abbreviations for ", CA" style locations. */
@@ -51,6 +54,20 @@ const INDIA_PATTERNS: RegExp[] = [
   /\bremote[\s\-_]*india\b/i,
 ];
 
+const DUBAI_PATTERNS: RegExp[] = [
+  /\bdubai\b/i,
+  /\buae\b/i,
+  /\bunited\s+arab\s+emirates\b/i,
+  /\bremote[\s\-_]*(?:dubai|uae)\b/i,
+];
+
+const SINGAPORE_PATTERNS: RegExp[] = [
+  /\bsingapore\b/i,
+  /,\s*sg\b/i,
+  /\(\s*sg\s*\)/i,
+  /\bremote[\s\-_]*singapore\b/i,
+];
+
 function matchesAnyPattern(location: string, patterns: RegExp[]): boolean {
   return patterns.some((re) => re.test(location));
 }
@@ -67,21 +84,53 @@ export function isIndiaLocation(location: string): boolean {
   return matchesAnyPattern(trimmed, INDIA_PATTERNS);
 }
 
-/** Match a job location against a country filter. Empty location → false for us/in. */
+export function isDubaiLocation(location: string): boolean {
+  const trimmed = (location ?? "").trim();
+  if (!trimmed) return false;
+  return matchesAnyPattern(trimmed, DUBAI_PATTERNS);
+}
+
+export function isSingaporeLocation(location: string): boolean {
+  const trimmed = (location ?? "").trim();
+  if (!trimmed) return false;
+  return matchesAnyPattern(trimmed, SINGAPORE_PATTERNS);
+}
+
+/** True when location matches any supported region (US, India, Dubai, Singapore). */
+export function isSupportedLocation(location: string): boolean {
+  return (
+    isUnitedStatesLocation(location) ||
+    isIndiaLocation(location) ||
+    isDubaiLocation(location) ||
+    isSingaporeLocation(location)
+  );
+}
+
+/** Match a job location against a country filter. Empty / unsupported → false. */
 export function matchesLocation(
   location: string,
   filter: CountryLocationFilter
 ): boolean {
-  if (filter === "all") return true;
+  if (filter === "all") return isSupportedLocation(location);
   const trimmed = (location ?? "").trim();
   if (!trimmed) return false;
-  return filter === "us" ? isUnitedStatesLocation(trimmed) : isIndiaLocation(trimmed);
+  switch (filter) {
+    case "us":
+      return isUnitedStatesLocation(trimmed);
+    case "in":
+      return isIndiaLocation(trimmed);
+    case "dubai":
+      return isDubaiLocation(trimmed);
+    case "sg":
+      return isSingaporeLocation(trimmed);
+    default:
+      return false;
+  }
 }
 
 export function filterByCountryLocation<T extends { location: string }>(
   jobs: T[],
   filter: CountryLocationFilter
 ): T[] {
-  if (filter === "all") return jobs;
   return jobs.filter((j) => matchesLocation(j.location, filter));
 }

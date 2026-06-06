@@ -11,19 +11,25 @@ import type { Job } from "@/app/api/jobs/route";
 import {
   TIME_FILTERS,
   PLATFORM_FILTERS,
-  SORT_OPTIONS,
   COUNTRY_LOCATION_FILTERS,
+  DEFAULT_ALL_JOBS_SORT,
   applyAllJobsFilters,
   detectPlatformFromUrl,
   filterByTime,
   filterByCountryLocation,
   formatRelativeTime,
+  toggleSortColumn,
   uniqueCategories,
   type TimeFilter,
-  type SortMode,
+  type SortColumn,
+  type AllJobsSort,
   type PlatformFilter,
   type CountryLocationFilter,
 } from "@/lib/admin/allJobsFilters";
+import {
+  resolveCompanyLogo,
+  companyInitial,
+} from "@/lib/admin/companyLogos";
 
 async function fetchJobs(): Promise<Job[]> {
   const res = await fetch("/api/jobs");
@@ -66,6 +72,70 @@ const PLATFORM_BADGE: Record<string, string> = {
   "hiring-cafe": "bg-orange-500/15 text-orange-300 border-orange-500/20",
   other: "bg-slate-500/15 text-slate-400 border-slate-500/20",
 };
+
+const TABLE_COLUMNS: { id: SortColumn; label: string }[] = [
+  { id: "company", label: "Company" },
+  { id: "title", label: "Title" },
+  { id: "location", label: "Location" },
+  { id: "category", label: "Category" },
+  { id: "platform", label: "Platform" },
+  { id: "fetchedAt", label: "Fetched" },
+];
+
+function CompanyLogo({ company, url }: { company: string; url: string }) {
+  const logo = resolveCompanyLogo(company, url);
+  const [failed, setFailed] = useState(false);
+
+  if (logo && !failed) {
+    return (
+      <img
+        src={logo}
+        alt=""
+        className="h-5 w-5 shrink-0 rounded object-contain"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
+  return (
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white/10 text-[9px] font-bold text-slate-400">
+      {companyInitial(company)}
+    </span>
+  );
+}
+
+function SortableHeader({
+  label,
+  column,
+  sort,
+  onSort,
+}: {
+  label: string;
+  column: SortColumn;
+  sort: AllJobsSort;
+  onSort: (column: SortColumn) => void;
+}) {
+  const active = sort.column === column;
+  const indicator = active ? (sort.direction === "asc" ? " ↑" : " ↓") : "";
+
+  return (
+    <th className="px-3 py-2.5 text-left">
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className={[
+          "text-left text-[10px] font-semibold uppercase tracking-wider transition-colors",
+          active
+            ? "text-indigo-300"
+            : "text-slate-500 hover:text-slate-300",
+        ].join(" ")}
+      >
+        {label}
+        {indicator}
+      </button>
+    </th>
+  );
+}
 
 function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -232,7 +302,7 @@ export default function AllJobsTab() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("2d");
   const [platform, setPlatform] = useState<PlatformFilter>("all");
   const [countryLocation, setCountryLocation] = useState<CountryLocationFilter>("all");
-  const [sort, setSort] = useState<SortMode>("newest");
+  const [sort, setSort] = useState<AllJobsSort>(DEFAULT_ALL_JOBS_SORT);
   const [hasDescription, setHasDescription] = useState(false);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
 
@@ -313,17 +383,6 @@ export default function AllJobsTab() {
           placeholder="Search company, title, location, URL…"
           className="h-9 min-w-[200px] flex-1 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400/40 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:placeholder:text-slate-500"
         />
-        <select
-          value={sort}
-          onChange={(e) => setSort(e.target.value as SortMode)}
-          className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs text-slate-600 focus:border-indigo-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
-        >
-          {SORT_OPTIONS.map(({ id, label }) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </select>
         <select
           value={platform}
           onChange={(e) => setPlatform(e.target.value as PlatformFilter)}
@@ -468,16 +527,20 @@ export default function AllJobsTab() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur">
                   <tr className="border-b border-white/8">
-                    {["Company", "Title", "Location", "Category", "Platform", "Fetched"].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500"
-                        >
-                          {h}
-                        </th>
-                      )
-                    )}
+                    {TABLE_COLUMNS.map(({ id, label }) => (
+                      <SortableHeader
+                        key={id}
+                        label={label}
+                        column={id}
+                        sort={sort}
+                        onSort={(column) =>
+                          setSort((current) => toggleSortColumn(current, column))
+                        }
+                      />
+                    ))}
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      Apply
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -495,8 +558,13 @@ export default function AllJobsTab() {
                             : "hover:bg-white/3",
                         ].join(" ")}
                       >
-                        <td className="max-w-[8rem] truncate px-3 py-2.5 text-xs font-medium text-slate-300">
-                          {job.company}
+                        <td className="max-w-[10rem] px-3 py-2.5">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <CompanyLogo company={job.company} url={job.url} />
+                            <span className="truncate text-xs font-medium text-slate-300">
+                              {job.company}
+                            </span>
+                          </div>
                         </td>
                         <td className="max-w-[12rem] truncate px-3 py-2.5 text-xs text-slate-400">
                           {job.title}
@@ -521,6 +589,17 @@ export default function AllJobsTab() {
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[10px] text-slate-500">
                           {formatRelativeTime(job.fetchedAt)}
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-2.5">
+                          <a
+                            href={job.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="inline-flex rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-600 transition-all hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/20 dark:hover:text-slate-100"
+                          >
+                            Apply
+                          </a>
                         </td>
                       </tr>
                     );

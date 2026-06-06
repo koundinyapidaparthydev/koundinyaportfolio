@@ -15,7 +15,25 @@ export {
 } from "@/lib/admin/jobLocationMatch";
 
 export type TimeFilter = "30m" | "2h" | "12h" | "1d" | "2d" | "all";
-export type SortMode = "newest" | "company" | "title";
+export type SortColumn =
+  | "company"
+  | "title"
+  | "location"
+  | "category"
+  | "platform"
+  | "fetchedAt";
+export type SortDirection = "asc" | "desc";
+
+export interface AllJobsSort {
+  column: SortColumn;
+  direction: SortDirection;
+}
+
+export const DEFAULT_ALL_JOBS_SORT: AllJobsSort = {
+  column: "fetchedAt",
+  direction: "desc",
+};
+
 export type PlatformFilter =
   | "all"
   | "greenhouse"
@@ -68,12 +86,6 @@ export const PLATFORM_FILTERS: { id: PlatformFilter; label: string }[] = [
   { id: "apple", label: "Apple" },
   { id: "workable", label: "Workable" },
   { id: "other", label: "Other" },
-];
-
-export const SORT_OPTIONS: { id: SortMode; label: string }[] = [
-  { id: "newest", label: "Newest first" },
-  { id: "company", label: "Company A–Z" },
-  { id: "title", label: "Title A–Z" },
 ];
 
 const MIN_DESCRIPTION_CHARS = 30;
@@ -145,22 +157,57 @@ export function filterByHasDescription<T extends AllJobsRow>(
   return jobs.filter((j) => (j.description ?? "").trim().length >= MIN_DESCRIPTION_CHARS);
 }
 
-export function sortAllJobs<T extends AllJobsRow>(jobs: T[], mode: SortMode): T[] {
-  const arr = [...jobs];
-  switch (mode) {
-    case "company":
-      return arr.sort(
-        (a, b) =>
-          a.company.localeCompare(b.company) || a.title.localeCompare(b.title)
-      );
-    case "title":
-      return arr.sort((a, b) => a.title.localeCompare(b.title));
-    default:
-      return arr.sort(
-        (a, b) =>
-          new Date(b.fetchedAt).getTime() - new Date(a.fetchedAt).getTime()
-      );
+export function toggleSortColumn(
+  current: AllJobsSort,
+  column: SortColumn
+): AllJobsSort {
+  if (current.column === column) {
+    return {
+      column,
+      direction: current.direction === "asc" ? "desc" : "asc",
+    };
   }
+  return {
+    column,
+    direction: column === "fetchedAt" ? "desc" : "asc",
+  };
+}
+
+export function sortAllJobs<T extends AllJobsRow>(
+  jobs: T[],
+  sort: AllJobsSort = DEFAULT_ALL_JOBS_SORT
+): T[] {
+  const arr = [...jobs];
+  const dir = sort.direction === "asc" ? 1 : -1;
+
+  return arr.sort((a, b) => {
+    let cmp = 0;
+    switch (sort.column) {
+      case "company":
+        cmp =
+          a.company.localeCompare(b.company) || a.title.localeCompare(b.title);
+        break;
+      case "title":
+        cmp = a.title.localeCompare(b.title);
+        break;
+      case "location":
+        cmp = (a.location ?? "").localeCompare(b.location ?? "");
+        break;
+      case "category":
+        cmp = (a.category ?? "").localeCompare(b.category ?? "");
+        break;
+      case "platform":
+        cmp = detectPlatformFromUrl(a.url).localeCompare(
+          detectPlatformFromUrl(b.url)
+        );
+        break;
+      case "fetchedAt":
+        cmp =
+          new Date(a.fetchedAt).getTime() - new Date(b.fetchedAt).getTime();
+        break;
+    }
+    return cmp * dir;
+  });
 }
 
 export function applyAllJobsFilters<T extends AllJobsRow>(
@@ -172,7 +219,7 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
     platform: PlatformFilter;
     hasDescription: boolean;
     countryLocation: CountryLocationFilter;
-    sort: SortMode;
+    sort?: AllJobsSort;
     now?: number;
   }
 ): T[] {
@@ -183,7 +230,7 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
   result = filterByCountryLocation(result, opts.countryLocation);
   result = filterByPlatform(result, opts.platform);
   result = filterByHasDescription(result, opts.hasDescription);
-  return sortAllJobs(result, opts.sort);
+  return sortAllJobs(result, opts.sort ?? DEFAULT_ALL_JOBS_SORT);
 }
 
 export function uniqueCategories(jobs: AllJobsRow[]): string[] {

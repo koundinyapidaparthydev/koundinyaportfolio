@@ -1,20 +1,26 @@
 import {
   filterByCountryLocation,
+  isDubaiLocation,
   isIndiaLocation,
+  isSingaporeLocation,
+  isSupportedLocation,
   isUnitedStatesLocation,
   matchesLocation,
 } from "@/lib/admin/jobLocationMatch";
 
 describe("matchesLocation", () => {
-  it('returns true for every location when filter is "all"', () => {
-    expect(matchesLocation("", "all")).toBe(true);
-    expect(matchesLocation("Remote", "all")).toBe(true);
-    expect(matchesLocation("London, UK", "all")).toBe(true);
+  it('excludes empty and unsupported locations when filter is "all"', () => {
+    expect(matchesLocation("", "all")).toBe(false);
+    expect(matchesLocation("Remote", "all")).toBe(false);
+    expect(matchesLocation("London, UK", "all")).toBe(false);
+    expect(matchesLocation("San Francisco, CA", "all")).toBe(true);
   });
 
-  it("excludes empty locations for us/in filters", () => {
+  it("excludes empty locations for region filters", () => {
     expect(matchesLocation("", "us")).toBe(false);
     expect(matchesLocation("   ", "in")).toBe(false);
+    expect(matchesLocation("", "dubai")).toBe(false);
+    expect(matchesLocation("", "sg")).toBe(false);
   });
 
   describe("United States", () => {
@@ -78,18 +84,75 @@ describe("matchesLocation", () => {
       expect(matchesLocation("Remote", "in")).toBe(false);
     });
   });
+
+  describe("Dubai", () => {
+    const dubaiSamples = [
+      "Dubai",
+      "Dubai, UAE",
+      "United Arab Emirates",
+      "Remote - Dubai",
+      "Remote UAE",
+    ];
+
+    it.each(dubaiSamples)('matches Dubai: "%s"', (location) => {
+      expect(matchesLocation(location, "dubai")).toBe(true);
+      expect(isDubaiLocation(location)).toBe(true);
+    });
+
+    it("does not match non-Dubai locations", () => {
+      expect(matchesLocation("Singapore", "dubai")).toBe(false);
+      expect(matchesLocation("San Francisco, CA", "dubai")).toBe(false);
+    });
+  });
+
+  describe("Singapore", () => {
+    const sgSamples = [
+      "Singapore",
+      "Remote - Singapore",
+      "Singapore, SG",
+      "(SG)",
+    ];
+
+    it.each(sgSamples)('matches Singapore: "%s"', (location) => {
+      expect(matchesLocation(location, "sg")).toBe(true);
+      expect(isSingaporeLocation(location)).toBe(true);
+    });
+
+    it("does not match non-Singapore locations", () => {
+      expect(matchesLocation("Dubai", "sg")).toBe(false);
+      expect(matchesLocation("Bangalore, India", "sg")).toBe(false);
+    });
+  });
+});
+
+describe("isSupportedLocation", () => {
+  it("matches any of the four supported regions", () => {
+    expect(isSupportedLocation("San Francisco, CA")).toBe(true);
+    expect(isSupportedLocation("Bangalore, India")).toBe(true);
+    expect(isSupportedLocation("Dubai, UAE")).toBe(true);
+    expect(isSupportedLocation("Singapore")).toBe(true);
+    expect(isSupportedLocation("London, UK")).toBe(false);
+    expect(isSupportedLocation("")).toBe(false);
+  });
 });
 
 describe("filterByCountryLocation", () => {
   const jobs = [
     { location: "San Francisco, CA", title: "US role" },
     { location: "Bangalore, India", title: "IN role" },
+    { location: "Dubai, UAE", title: "Dubai role" },
+    { location: "Singapore", title: "SG role" },
     { location: "London, UK", title: "UK role" },
     { location: "", title: "Empty" },
   ];
 
-  it("returns all jobs when filter is all", () => {
-    expect(filterByCountryLocation(jobs, "all")).toHaveLength(4);
+  it("returns only supported-region jobs when filter is all", () => {
+    expect(filterByCountryLocation(jobs, "all").map((j) => j.title)).toEqual([
+      "US role",
+      "IN role",
+      "Dubai role",
+      "SG role",
+    ]);
   });
 
   it("filters to US jobs only", () => {
@@ -100,5 +163,15 @@ describe("filterByCountryLocation", () => {
   it("filters to India jobs only", () => {
     const result = filterByCountryLocation(jobs, "in");
     expect(result.map((j) => j.title)).toEqual(["IN role"]);
+  });
+
+  it("filters to Dubai jobs only", () => {
+    const result = filterByCountryLocation(jobs, "dubai");
+    expect(result.map((j) => j.title)).toEqual(["Dubai role"]);
+  });
+
+  it("filters to Singapore jobs only", () => {
+    const result = filterByCountryLocation(jobs, "sg");
+    expect(result.map((j) => j.title)).toEqual(["SG role"]);
   });
 });

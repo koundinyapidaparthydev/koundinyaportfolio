@@ -6,9 +6,11 @@ import {
   filterByPlatform,
   filterByHasDescription,
   sortAllJobs,
+  toggleSortColumn,
   uniqueCategories,
   formatRelativeTime,
   TIME_FILTERS,
+  DEFAULT_ALL_JOBS_SORT,
   type AllJobsRow,
 } from "@/lib/admin/allJobsFilters";
 
@@ -18,7 +20,7 @@ function job(overrides: Partial<AllJobsRow> = {}): AllJobsRow {
   return {
     company: "Acme",
     title: "Software Engineer",
-    location: "Remote",
+    location: "Remote, US",
     url: "https://job-boards.greenhouse.io/acme/jobs/1",
     category: "general",
     fetchedAt: new Date(NOW - 60 * 60_000).toISOString(),
@@ -101,23 +103,55 @@ describe("filterByHasDescription", () => {
   });
 });
 
+describe("toggleSortColumn", () => {
+  it("sets default direction when switching columns", () => {
+    expect(toggleSortColumn(DEFAULT_ALL_JOBS_SORT, "company")).toEqual({
+      column: "company",
+      direction: "asc",
+    });
+    expect(
+      toggleSortColumn({ column: "company", direction: "asc" }, "fetchedAt")
+    ).toEqual({
+      column: "fetchedAt",
+      direction: "desc",
+    });
+  });
+
+  it("toggles direction when clicking the same column", () => {
+    const current = { column: "title" as const, direction: "asc" as const };
+    expect(toggleSortColumn(current, "title")).toEqual({
+      column: "title",
+      direction: "desc",
+    });
+  });
+});
+
 describe("sortAllJobs", () => {
   it("sorts by company A-Z", () => {
     const jobs = [
       job({ company: "Zeta", title: "A" }),
       job({ company: "Alpha", title: "B" }),
     ];
-    const sorted = sortAllJobs(jobs, "company");
+    const sorted = sortAllJobs(jobs, { column: "company", direction: "asc" });
     expect(sorted[0].company).toBe("Alpha");
   });
 
-  it("sorts newest first by fetchedAt", () => {
+  it("sorts newest first by fetchedAt desc", () => {
     const jobs = [
       job({ fetchedAt: new Date(NOW - 3_600_000).toISOString(), title: "old" }),
       job({ fetchedAt: new Date(NOW - 60_000).toISOString(), title: "new" }),
     ];
-    const sorted = sortAllJobs(jobs, "newest");
+    const sorted = sortAllJobs(jobs, DEFAULT_ALL_JOBS_SORT);
     expect(sorted[0].title).toBe("new");
+  });
+
+  it("sorts by platform", () => {
+    const jobs = [
+      job({ url: "https://boards.greenhouse.io/foo", title: "gh" }),
+      job({ url: "https://jobs.ashbyhq.com/foo", title: "ashby" }),
+    ];
+    const sorted = sortAllJobs(jobs, { column: "platform", direction: "asc" });
+    expect(sorted[0].title).toBe("ashby");
   });
 });
 
@@ -146,7 +180,7 @@ describe("applyAllJobsFilters", () => {
       platform: "ashby",
       hasDescription: true,
       countryLocation: "all",
-      sort: "newest",
+      sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,
     });
     expect(result).toHaveLength(1);
@@ -166,10 +200,28 @@ describe("applyAllJobsFilters", () => {
       platform: "all",
       hasDescription: false,
       countryLocation: "us",
-      sort: "newest",
+      sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,
     });
     expect(usOnly.map((j) => j.company)).toEqual(["US Co"]);
+  });
+
+  it("excludes unsupported locations when country filter is all", () => {
+    const jobs = [
+      job({ location: "San Francisco, CA", company: "US Co" }),
+      job({ location: "London, UK", company: "UK Co" }),
+    ];
+    const result = applyAllJobsFilters(jobs, {
+      search: "",
+      category: "all",
+      timeFilter: "all",
+      platform: "all",
+      hasDescription: false,
+      countryLocation: "all",
+      sort: DEFAULT_ALL_JOBS_SORT,
+      now: NOW,
+    });
+    expect(result.map((j) => j.company)).toEqual(["US Co"]);
   });
 });
 
