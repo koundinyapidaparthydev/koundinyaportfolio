@@ -40,7 +40,7 @@ jobs:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: gemini-2.0-flash-lite
+          GEMINI_MODEL: gemini-3.1-flash-lite
           DESCRIPTION_BACKFILL_LIMIT: "15"
           DESCRIPTION_CONCURRENCY: "3"
           COMPANY_PAUSE_MS: "1500"

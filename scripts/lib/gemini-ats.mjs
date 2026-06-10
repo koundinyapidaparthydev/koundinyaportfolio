@@ -6,7 +6,7 @@
 import { calculateAtsScore } from "./ats-scoring.mjs";
 
 /** Cheapest generally-available Gemini model for short classification tasks. */
-export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.0-flash-lite";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
 
 export async function scoreJobWithGemini(jobTitle, jobDescription, resume) {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
