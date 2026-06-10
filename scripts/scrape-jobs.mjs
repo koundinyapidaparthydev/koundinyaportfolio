@@ -44,10 +44,17 @@ try {
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const DRY_RUN = process.env.DRY_RUN === "true";
-const COMPANY_FILTER = process.env.COMPANY?.trim() || null;
-const SCRAPE_ONLY = process.env.SCRAPE_ONLY === "true" || !!COMPANY_FILTER;
 const ENGINEERING_FILTER_OFF = process.env.ENGINEERING_FILTER === "off";
 const ENRICH_PLAYWRIGHT = process.env.ENRICH_PLAYWRIGHT === "true";
+
+/** Read at call time — run-company-pipeline reuses this module across companies. */
+function getCompanyFilter() {
+  return process.env.COMPANY?.trim() || null;
+}
+
+function isScrapeOnly() {
+  return process.env.SCRAPE_ONLY === "true" || !!getCompanyFilter();
+}
 
 const SHEET_NAME = "Jobs";
 // A–G: scraped by this script | H–M: legacy columns (left empty on insert)
@@ -1509,15 +1516,16 @@ function buildScrapeTaskDefs() {
 
 async function fetchAllJobs() {
   const allDefs = buildScrapeTaskDefs();
+  const companyFilter = getCompanyFilter();
   let defs = allDefs;
-  if (COMPANY_FILTER) {
-    defs = allDefs.filter((d) => d.name === COMPANY_FILTER);
+  if (companyFilter) {
+    defs = allDefs.filter((d) => d.name === companyFilter);
     if (defs.length === 0) {
-      throw new Error(`Unknown company: ${COMPANY_FILTER}`);
+      throw new Error(`Unknown company: ${companyFilter}`);
     }
     // Linear/Retool appear in both saas + ai-agentics — scrape once per company
     if (defs.length > 1) defs = [defs[0]];
-    console.log(`🔍  Fetching jobs for ${COMPANY_FILTER}...\n`);
+    console.log(`🔍  Fetching jobs for ${companyFilter}...\n`);
   } else {
     console.log("🔍  Fetching jobs from all companies...\n");
   }
@@ -1900,17 +1908,19 @@ async function runPlaywrightEnrich() {
 }
 
 async function main() {
-  if (DRY_RUN || SCRAPE_ONLY) console.log("🏃  DRY_RUN/SCRAPE_ONLY — no sheet writes or WhatsApp\n");
-  if (COMPANY_FILTER) console.log(`🎯  Single-company mode: ${COMPANY_FILTER}\n`);
+  const companyFilter = getCompanyFilter();
+  const scrapeOnly = isScrapeOnly();
+  if (DRY_RUN || scrapeOnly) console.log("🏃  DRY_RUN/SCRAPE_ONLY — no sheet writes or WhatsApp\n");
+  if (companyFilter) console.log(`🎯  Single-company mode: ${companyFilter}\n`);
 
   const { allJobs: jobs, rejected } = await fetchAllJobs();
 
-  if (SCRAPE_ONLY) {
+  if (scrapeOnly) {
     if (rejected > 0) {
-      console.error(`❌  ${COMPANY_FILTER ?? "scrape"}: ${rejected} source(s) failed`);
+      console.error(`❌  ${companyFilter ?? "scrape"}: ${rejected} source(s) failed`);
       process.exit(1);
     }
-    console.log(`✅  ${COMPANY_FILTER ?? "all companies"}: ${jobs.length} jobs fetched`);
+    console.log(`✅  ${companyFilter ?? "all companies"}: ${jobs.length} jobs fetched`);
     process.exit(0);
   }
 
