@@ -3,6 +3,7 @@
  * Requires GOOGLE_SHEET_ID and GOOGLE_SERVICE_ACCOUNT_JSON in the environment.
  */
 import { google } from "googleapis";
+import { wrapSheetsClient } from "./sheets-rate-limit.mjs";
 
 function sheetEnv() {
   const spreadsheetId = process.env.GOOGLE_SHEET_ID;
@@ -21,7 +22,7 @@ export async function getSheets() {
     credentials,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
-  return google.sheets({ version: "v4", auth });
+  return wrapSheetsClient(google.sheets({ version: "v4", auth }));
 }
 
 /**

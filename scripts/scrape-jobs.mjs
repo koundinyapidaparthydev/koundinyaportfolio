@@ -7,6 +7,8 @@
  *
  * Optional env:
  *   DRY_RUN=true              — fetch + log summary; no sheet writes or WhatsApp
+ *   COMPANY=<name>            — scrape one company only (implies SCRAPE_ONLY)
+ *   SCRAPE_ONLY=true          — fetch only; skip Google Sheets writes
  *   ENGINEERING_FILTER=off    — include all titles (skip keyword filter)
  *   ENGINEERING_KEYWORDS      — comma-separated override for title keywords
  *   WHATSAPP_*                — new-job notifications (see sendWhatsAppNotification)
@@ -24,8 +26,10 @@
  * Not scrapeable: Universal Studios (Cloudflare), Flywire (no public board)
  */
 
+import { pathToFileURL } from "url";
 import { loadEnvLocal } from "./lib/load-env.mjs";
 import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
+import { wrapSheetsClient } from "./lib/sheets-rate-limit.mjs";
 import { google } from "googleapis";
 
 loadEnvLocal();
@@ -40,6 +44,8 @@ try {
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
 const DRY_RUN = process.env.DRY_RUN === "true";
+const COMPANY_FILTER = process.env.COMPANY?.trim() || null;
+const SCRAPE_ONLY = process.env.SCRAPE_ONLY === "true" || !!COMPANY_FILTER;
 const ENGINEERING_FILTER_OFF = process.env.ENGINEERING_FILTER === "off";
 const ENRICH_PLAYWRIGHT = process.env.ENRICH_PLAYWRIGHT === "true";
 
@@ -48,6 +54,7 @@ const SHEET_NAME = "Jobs";
 const HEADERS = [
   "Company", "Title", "Location", "URL", "Category", "Fetched At", "Description",
   "Resume URL", "Cover Letter", "ATS Score", "Apply Status", "Applied At", "Notes",
+  "Posted At",
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -116,6 +123,67 @@ function detectPlatformFromUrl(url = "") {
 
 function now() {
   return new Date().toISOString();
+}
+
+/** Normalize ATS posted/created timestamps to ISO strings for column N. */
+function toIsoPosted(value) {
+  if (value == null || value === "") return "";
+  if (typeof value === "number") {
+    const ms = value < 1e12 ? value * 1000 : value;
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  }
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
+function looksLikeIsoTimestamp(s) {
+  if (!s || typeof s !== "string") return false;
+  return !Number.isNaN(Date.parse(s)) && s.length < 40;
+}
+
+/**
+ * Normalize in-memory scrape rows to
+ * [company, title, location, url, category, fetchedAt, postedAt, description].
+ */
+function normalizeScrapeRow(row) {
+  const company = row[0] ?? "";
+  const title = row[1] ?? "";
+  const location = row[2] ?? "";
+  const url = row[3] ?? "";
+  const category = row[4] ?? "";
+  const fetchedAt = row[5] ?? now();
+  let postedAt = "";
+  let description = "";
+
+  if (row.length === 7) {
+    if (looksLikeIsoTimestamp(row[6])) {
+      postedAt = toIsoPosted(row[6]);
+    } else {
+      description = row[6] ?? "";
+    }
+  } else if (row.length >= 8) {
+    postedAt = toIsoPosted(row[6]);
+    description = row[7] ?? "";
+  }
+
+  return [company, title, location, url, category, fetchedAt, postedAt, description];
+}
+
+/** Map in-memory row → 14-column sheet row (A–N). */
+function toSheetRow(row) {
+  const r = normalizeScrapeRow(row);
+  return [
+    r[0], r[1], r[2], r[3], r[4], r[5], r[7],
+    "", "", "", "", "", "",
+    r[6],
+  ];
+}
+
+function padRowTo14(row) {
+  const out = [...row];
+  while (out.length < 14) out.push("");
+  return out;
 }
 
 /** Pause between company fetches to avoid hammering servers */
@@ -329,7 +397,7 @@ const ASHBY_IDENTIFIERS = {
 /**
  * Fetch a plain-text job description for one row.
  * Returns an empty string if the ATS is not supported or the call fails.
- * @param {string[]} row — [company, title, location, url, category, fetchedAt]
+ * @param {string[]} row — [company, title, location, url, category, fetchedAt, postedAt?, description?]
  * @returns {Promise<string>}
  */
 async function fetchDescription(row) {
@@ -436,8 +504,9 @@ async function fetchDescription(row) {
  * @returns {Promise<string[][]>}
  */
 async function enrichWithDescriptions(jobs) {
-  const alreadyHaveDesc = jobs.filter((row) => row[6]?.length > 0);
-  const needsFetch = jobs.filter((row) => !row[6]?.length);
+  const normalized = jobs.map(normalizeScrapeRow);
+  const alreadyHaveDesc = normalized.filter((row) => row[7]?.length > 0);
+  const needsFetch = normalized.filter((row) => !row[7]?.length);
 
   if (needsFetch.length === 0) {
     console.log(`\n📝  All ${jobs.length} new jobs already have inline descriptions`);
@@ -447,9 +516,9 @@ async function enrichWithDescriptions(jobs) {
   console.log(`\n📝  Fetching descriptions for ${needsFetch.length} new jobs (5 concurrent)...`);
   const enriched = await mapConcurrent(needsFetch, 5, async (row) => {
     const desc = await fetchDescription(row);
-    return [...row, desc];
+    return [...row.slice(0, 7), desc];
   });
-  const withDesc = enriched.filter((r) => r[6]?.length > 0).length;
+  const withDesc = enriched.filter((r) => r[7]?.length > 0).length;
   console.log(`  ✓  Descriptions retrieved: ${withDesc}/${needsFetch.length}\n`);
   return [...alreadyHaveDesc, ...enriched];
 }
@@ -485,7 +554,7 @@ async function fetchGreenhouse(boardSlug, company, category, locationMapper = nu
       for (const j of filtered) {
         const mappedCompany = locationMapper(j.location?.name ?? "");
         if (!mappedCompany) continue; // skip unmatched locations
-        rows.push([mappedCompany, j.title, j.location?.name ?? "", j.absolute_url ?? "", category, now()]);
+        rows.push([mappedCompany, j.title, j.location?.name ?? "", j.absolute_url ?? "", category, now(), j.updated_at ?? ""]);
       }
       const groups = [...new Set(rows.map((r) => r[0]))];
       groups.forEach((co) => console.log(`  ✓  ${co}: ${rows.filter((r) => r[0] === co).length} engineering roles (Greenhouse)`));
@@ -500,6 +569,7 @@ async function fetchGreenhouse(boardSlug, company, category, locationMapper = nu
       j.absolute_url ?? "",
       category,
       now(),
+      j.updated_at ?? "",
     ]);
   } catch (e) {
     console.warn(`  ⚠  Greenhouse ${boardSlug}:`, e.message);
@@ -554,7 +624,8 @@ async function fetchDisney() {
       const descHtml  = extractTag(item, "description");
       const description = stripHtml(descHtml).slice(0, 2500);
 
-      rows.push(["Disney", title, location, url, "travel", now(), description]);
+      const pubDate = extractTag(item, "pubDate");
+      rows.push(["Disney", title, location, url, "travel", now(), pubDate, description]);
     }
 
     console.log(`  ✓  Disney: ${rows.length} US software engineering roles (iCIMS RSS)`);
@@ -609,6 +680,7 @@ async function fetchWorkday(host, tenant, site, company, category, searchText = 
       buildWorkdayJobUrl(host, site, j.externalPath),
       category,
       now(),
+      j.postedOn ?? j.postedDate ?? "",
     ]);
   } catch (e) {
     console.warn(`  ⚠  Workday ${host}:`, e.message);
@@ -641,6 +713,7 @@ async function fetchLever(companySlug, company, category) {
       j.hostedUrl ?? "",
       category,
       now(),
+      j.createdAt ?? "",
     ]);
   } catch (e) {
     console.warn(`  ⚠  Lever ${companySlug}:`, e.message);
@@ -671,6 +744,7 @@ async function fetchSmartRecruiters(companyId, company, category) {
       `https://jobs.smartrecruiters.com/${companyId}/${j.id}`,
       category,
       now(),
+      j.releasedDate ?? "",
     ]);
   } catch (e) {
     console.warn(`  ⚠  SmartRecruiters ${companyId}:`, e.message);
@@ -703,6 +777,7 @@ async function fetchAshby(identifier, company, category) {
       j.jobUrl ?? `https://jobs.ashbyhq.com/${identifier}/${j.id}`,
       category,
       now(),
+      j.publishedAt ?? j.updatedAt ?? "",
     ]);
   } catch (e) {
     console.warn(`  ⚠  Ashby ${identifier}:`, e.message);
@@ -735,6 +810,7 @@ async function fetchBreezyHR(slug, company, category) {
       j.url ?? `https://${slug}.breezy.hr/p/${j.friendly_id ?? j.id}`,
       category,
       now(),
+      j.published_date ?? j.created_at ?? "",
     ]);
   } catch (e) {
     console.warn(`  ⚠  BreezyHR ${slug}:`, e.message);
@@ -772,6 +848,7 @@ async function fetchWorkable(slug, company, category) {
       j.url ?? `https://apply.workable.com/${slug}/j/${j.shortcode}`,
       category,
       now(),
+      j.published ?? j.created_at ?? "",
     ]);
   } catch (e) {
     console.warn(`  ⚠  Workable ${slug}:`, e.message);
@@ -883,7 +960,7 @@ async function fetchHiringCafe(category = "hiring-cafe") {
       const skillsLine  = skills ? `Skills: ${skills}` : "";
       const description = [salaryLine, skillsLine, summary].filter(Boolean).join("\n").slice(0, 2500);
 
-      return [company, title, location, url, "hiring-cafe", now(), description];
+      return [company, title, location, url, "hiring-cafe", now(), item.posted_at ?? item.created_at ?? "", description];
     }
 
     // Try captured API items first
@@ -974,7 +1051,7 @@ async function fetchHiringCafe(category = "hiring-cafe") {
         const desc    = [salary ? `Salary: ${salary}` : "", cardText.slice(0, 1800)]
           .filter(Boolean).join("\n").slice(0, 2000);
 
-        results.push([company || "Hiring Cafe", title.slice(0, 100), fullLoc.slice(0, 150), jobUrl, "hiring-cafe", new Date().toISOString(), desc]);
+        results.push([company || "Hiring Cafe", title.slice(0, 100), fullLoc.slice(0, 150), jobUrl, "hiring-cafe", new Date().toISOString(), "", desc]);
       }
 
       return results;
@@ -1017,6 +1094,7 @@ async function fetchRecruitee(slug, company, category) {
       j.careers_url ?? `https://${slug}.recruitee.com/o/${j.slug}`,
       category,
       now(),
+      j.published_at ?? j.created_at ?? "",
     ]);
   } catch (e) {
     console.warn(`  ⚠  Recruitee ${slug}:`, e.message);
@@ -1058,6 +1136,7 @@ async function fetchAmazon(category = "general") {
       j.job_path ? `https://www.amazon.jobs${j.job_path}` : "",
       category,
       now(),
+      j.posted_date ?? j.create_date ?? "",
     ]).filter((r) => r[3]);
   } catch (e) {
     console.warn("  ⚠  Amazon:", e.message);
@@ -1099,6 +1178,7 @@ async function fetchGoogle(category = "general") {
       j.id ? `https://careers.google.com/jobs/results/${j.id}` : "",
       category,
       now(),
+      j.publish_time ?? j.updated ?? "",
     ]).filter((r) => r[3]);
   } catch (e) {
     console.warn("  ⚠  Google:", e.message);
@@ -1142,6 +1222,7 @@ async function fetchMeta(category = "general") {
       j.url ?? (j.id ? `https://www.metacareers.com/jobs/${j.id}` : ""),
       category,
       now(),
+      j.posted_date ?? j.created_time ?? "",
     ]).filter((r) => r[3]);
   } catch (e) {
     console.warn("  ⚠  Meta:", e.message);
@@ -1178,6 +1259,7 @@ async function fetchApple(category = "general") {
       j.id ? `https://jobs.apple.com/en-us/details/${j.id}` : "",
       category,
       now(),
+      j.postedDate ?? j.postDate ?? "",
     ]).filter((r) => r[3]);
   } catch (e) {
     console.warn("  ⚠  Apple:", e.message);
@@ -1238,101 +1320,87 @@ function printScrapeSummary(allJobs, { taskCount = 0, rejected = 0 } = {}) {
   console.log("═══════════════════════════════════════════════════════════\n");
 }
 
-async function fetchAllJobs() {
-  console.log("🔍  Fetching jobs from all companies...\n");
-
-  const tasks = [
+/** @returns {{ name: string, run: () => Promise<any[]> }[]} */
+function buildScrapeTaskDefs() {
+  return [
     // ── Greenhouse — Original ────────────────────────────────────────────
-    fetchGreenhouse("stubhubinc", "StubHub", "travel"),
-    fetchGreenhouse("axs", "AXS", "travel"),
-    fetchGreenhouse("lyft", "Lyft", "travel"),
-    fetchGreenhouse("airbnb", "Airbnb", "travel"),
-    fetchGreenhouse("clear", "CLEAR", "travel"),
-    fetchGreenhouse("uberfreight", "Uber Freight", "travel"),
+    { name: "StubHub", run: () => fetchGreenhouse("stubhubinc", "StubHub", "travel") },
+    { name: "AXS", run: () => fetchGreenhouse("axs", "AXS", "travel") },
+    { name: "Lyft", run: () => fetchGreenhouse("lyft", "Lyft", "travel") },
+    { name: "Airbnb", run: () => fetchGreenhouse("airbnb", "Airbnb", "travel") },
+    { name: "CLEAR", run: () => fetchGreenhouse("clear", "CLEAR", "travel") },
+    { name: "Uber Freight", run: () => fetchGreenhouse("uberfreight", "Uber Freight", "travel") },
 
     // ── Greenhouse — SeatGeek (split by location) ────────────────────────
-    fetchGreenhouse("seatgeek", "SeatGeek", "travel", (loc) => {
-      if (/Remote.*United States/i.test(loc)) return "SeatGeek (Remote)";
-      if (/New York/i.test(loc)) return "SeatGeek (NY)";
-      return null;
-    }),
+    {
+      name: "SeatGeek",
+      run: () => fetchGreenhouse("seatgeek", "SeatGeek", "travel", (loc) => {
+        if (/Remote.*United States/i.test(loc)) return "SeatGeek (Remote)";
+        if (/New York/i.test(loc)) return "SeatGeek (NY)";
+        return null;
+      }),
+    },
 
     // ── Greenhouse — New tech companies ──────────────────────────────────
-    fetchGreenhouse("coinbase", "Coinbase", "fintech"),
-    fetchGreenhouse("doordashglobal", "DoorDash", "general"),
-    fetchGreenhouse("reddit", "Reddit", "social"),
-    fetchGreenhouse("figma", "Figma", "general"),
-    fetchGreenhouse("discord", "Discord", "social"),
-    fetchGreenhouse("dropbox", "Dropbox", "saas"),
-    fetchGreenhouse("duolingo", "Duolingo", "edtech"),
-    fetchGreenhouse("brex", "Brex", "general"),
-    fetchAshby("plaid", "Plaid", "fintech"),     // migrated from GH 'plaid' (404) → Ashby (91 jobs)
-    fetchGreenhouse("roblox", "Roblox", "gaming"),
+    { name: "Coinbase", run: () => fetchGreenhouse("coinbase", "Coinbase", "fintech") },
+    { name: "DoorDash", run: () => fetchGreenhouse("doordashglobal", "DoorDash", "general") },
+    { name: "Reddit", run: () => fetchGreenhouse("reddit", "Reddit", "social") },
+    { name: "Figma", run: () => fetchGreenhouse("figma", "Figma", "general") },
+    { name: "Discord", run: () => fetchGreenhouse("discord", "Discord", "social") },
+    { name: "Dropbox", run: () => fetchGreenhouse("dropbox", "Dropbox", "saas") },
+    { name: "Duolingo", run: () => fetchGreenhouse("duolingo", "Duolingo", "edtech") },
+    { name: "Brex", run: () => fetchGreenhouse("brex", "Brex", "general") },
+    { name: "Plaid", run: () => fetchAshby("plaid", "Plaid", "fintech") },
+    { name: "Roblox", run: () => fetchGreenhouse("roblox", "Roblox", "gaming") },
 
     // ── Workday — Original ───────────────────────────────────────────────
-    fetchWorkday(
-      "livenation.wd503.myworkdayjobs.com",
-      "livenation",
-      "LNExternalSite",
-      "Live Nation",
-      "travel"
-    ),
-    fetchWorkday(
-      "sabre.wd1.myworkdayjobs.com",
-      "sabre",
-      "SabreJobs",
-      "Sabre",
-      "travel"
-    ),
-    fetchWorkday(
-      "nclh.wd108.myworkdayjobs.com",
-      "nclh",
-      "NCL_Shoreside_Careers",
-      "NCL",
-      "travel"
-    ),
-    fetchWorkday(
-      "seaworldentertainment.wd1.myworkdayjobs.com",
-      "seaworldentertainment",
-      "SEA",
-      "SeaWorld",
-      "travel"
-    ),
+    {
+      name: "Live Nation",
+      run: () => fetchWorkday("livenation.wd503.myworkdayjobs.com", "livenation", "LNExternalSite", "Live Nation", "travel"),
+    },
+    {
+      name: "Sabre",
+      run: () => fetchWorkday("sabre.wd1.myworkdayjobs.com", "sabre", "SabreJobs", "Sabre", "travel"),
+    },
+    {
+      name: "NCL",
+      run: () => fetchWorkday("nclh.wd108.myworkdayjobs.com", "nclh", "NCL_Shoreside_Careers", "NCL", "travel"),
+    },
+    {
+      name: "SeaWorld",
+      run: () => fetchWorkday("seaworldentertainment.wd1.myworkdayjobs.com", "seaworldentertainment", "SEA", "SeaWorld", "travel"),
+    },
 
     // ── Workday — New companies ───────────────────────────────────────────
-    fetchWorkday(
-      "expedia.wd5.myworkdayjobs.com",
-      "expedia",
-      "Expedia_Group_External",
-      "Expedia Group",
-      "travel"
-    ),
-    fetchWorkday(
-      "hilton.wd5.myworkdayjobs.com",
-      "hilton",
-      "HJobs",
-      "Hilton",
-      "travel"
-    ),
+    {
+      name: "Expedia Group",
+      run: () => fetchWorkday("expedia.wd5.myworkdayjobs.com", "expedia", "Expedia_Group_External", "Expedia Group", "travel"),
+    },
+    {
+      name: "Hilton",
+      run: () => fetchWorkday("hilton.wd5.myworkdayjobs.com", "hilton", "HJobs", "Hilton", "travel"),
+    },
 
     // ── Lever ────────────────────────────────────────────────────────────
-    fetchLever("yelp", "Yelp", "local"),
-    fetchLever("postman", "Postman", "saas"),
-    fetchLever("thumbtack", "Thumbtack", "marketplace"),
+    { name: "Yelp", run: () => fetchLever("yelp", "Yelp", "local") },
+    { name: "Postman", run: () => fetchLever("postman", "Postman", "saas") },
+    { name: "Thumbtack", run: () => fetchLever("thumbtack", "Thumbtack", "marketplace") },
 
     // ── Ashby ────────────────────────────────────────────────────────────
-    fetchAshby("linear", "Linear", "saas"),
-    fetchAshby("replit", "Replit", "devtools"),
-    fetchAshby("retool", "Retool", "saas"),
+    { name: "Linear", run: () => fetchAshby("linear", "Linear", "saas") },
+    { name: "Replit", run: () => fetchAshby("replit", "Replit", "devtools") },
+    { name: "Retool", run: () => fetchAshby("retool", "Retool", "saas") },
 
     // ── SmartRecruiters ───────────────────────────────────────────────────
-    fetchSmartRecruiters("RoyalCaribbeanGroup", "Royal Caribbean Group", "travel"),
+    { name: "Royal Caribbean Group", run: () => fetchSmartRecruiters("RoyalCaribbeanGroup", "Royal Caribbean Group", "travel") },
 
     // ── iCIMS RSS ────────────────────────────────────────────────────────
-    fetchDisney(),
+    { name: "Disney", run: () => fetchDisney() },
 
     // ── Booking.com — Custom REST API ─────────────────────────────────────
-    (async () => {
+    {
+      name: "Booking.com",
+      run: async () => {
       try {
         const res = await fetchWithTimeout(
           "https://jobs.booking.com/api/jobs?q=engineer&page=1&limit=50",
@@ -1354,154 +1422,107 @@ async function fetchAllJobs() {
             d.apply_url ?? d.url ?? `https://jobs.booking.com/booking/jobs/${d.slug ?? d.req_id}`,
             "travel",
             now(),
+            d.posted_date ?? d.published_date ?? d.created_at ?? "",
           ];
         });
       } catch (e) {
         console.warn("  ⚠  Booking.com:", e.message);
         return [];
       }
-    })(),
+      },
+    },
 
     // ── General Full Stack — Greenhouse ───────────────────────────────────
-    fetchGreenhouse("snapinc",    "Snap Inc.",  "general"),
-    fetchGreenhouse("stripe",     "Stripe",     "general"),
-    fetchGreenhouse("databricks", "Databricks", "general"),
-    fetchGreenhouse("twilio",     "Twilio",     "general"),
-    fetchGreenhouse("cloudflare", "Cloudflare", "general"),
-    fetchGreenhouse("datadog",    "Datadog",    "general"),
-    fetchGreenhouse("mongodb",    "MongoDB",    "general"),
-    fetchGreenhouse("riotgames",  "Riot Games", "general"),
-    fetchGreenhouse("vercel",     "Vercel",     "general"),
-    fetchGreenhouse("instacart",  "Instacart",  "general"),
-    fetchGreenhouse("pinterest",  "Pinterest",  "general"),
+    { name: "Snap Inc.", run: () => fetchGreenhouse("snapinc", "Snap Inc.", "general") },
+    { name: "Stripe", run: () => fetchGreenhouse("stripe", "Stripe", "general") },
+    { name: "Databricks", run: () => fetchGreenhouse("databricks", "Databricks", "general") },
+    { name: "Twilio", run: () => fetchGreenhouse("twilio", "Twilio", "general") },
+    { name: "Cloudflare", run: () => fetchGreenhouse("cloudflare", "Cloudflare", "general") },
+    { name: "Datadog", run: () => fetchGreenhouse("datadog", "Datadog", "general") },
+    { name: "MongoDB", run: () => fetchGreenhouse("mongodb", "MongoDB", "general") },
+    { name: "Riot Games", run: () => fetchGreenhouse("riotgames", "Riot Games", "general") },
+    { name: "Vercel", run: () => fetchGreenhouse("vercel", "Vercel", "general") },
+    { name: "Instacart", run: () => fetchGreenhouse("instacart", "Instacart", "general") },
+    { name: "Pinterest", run: () => fetchGreenhouse("pinterest", "Pinterest", "general") },
 
     // ── General Full Stack — Ashby ────────────────────────────────────────
-    fetchAshby("ramp",      "Ramp",      "general"),
-    fetchAshby("confluent", "Confluent", "general"),
-    fetchAshby("snowflake", "Snowflake", "general"),
+    { name: "Ramp", run: () => fetchAshby("ramp", "Ramp", "general") },
+    { name: "Confluent", run: () => fetchAshby("confluent", "Confluent", "general") },
+    { name: "Snowflake", run: () => fetchAshby("snowflake", "Snowflake", "general") },
 
     // ── General Full Stack — Workday ──────────────────────────────────────
-    fetchWorkday(
-      "adobe.wd5.myworkdayjobs.com",
-      "adobe",
-      "external_experienced",
-      "Adobe",
-      "general"
-    ),
-    fetchWorkday(
-      "intuit.wd1.myworkdayjobs.com",
-      "intuit",
-      "Intuit_Careers",
-      "Intuit",
-      "general"
-    ),
-    fetchWorkday(
-      "qualcomm.wd5.myworkdayjobs.com",
-      "qualcomm",
-      "External",
-      "Qualcomm",
-      "general"
-    ),
-    fetchWorkday(
-      "paypal.wd1.myworkdayjobs.com",
-      "paypal",
-      "jobs",
-      "PayPal",
-      "general"
-    ),
-    fetchWorkday(
-      "capitalone.wd12.myworkdayjobs.com",
-      "capitalone",
-      "Capital_One",
-      "Capital One",
-      "general"
-    ),
-    fetchWorkday(
-      "jpmc.wd5.myworkdayjobs.com",
-      "jpmc",
-      "technology",
-      "JPMorgan Chase",
-      "general"
-    ),
-    fetchWorkday(
-      "shopify.wd5.myworkdayjobs.com",
-      "shopify",
-      "Shopify",
-      "Shopify",
-      "general"
-    ),
-    fetchWorkday(
-      "zendesk.wd1.myworkdayjobs.com",
-      "zendesk",
-      "zendesk",
-      "Zendesk",
-      "general"
-    ),
+    { name: "Adobe", run: () => fetchWorkday("adobe.wd5.myworkdayjobs.com", "adobe", "external_experienced", "Adobe", "general") },
+    { name: "Intuit", run: () => fetchWorkday("intuit.wd1.myworkdayjobs.com", "intuit", "Intuit_Careers", "Intuit", "general") },
+    { name: "Qualcomm", run: () => fetchWorkday("qualcomm.wd5.myworkdayjobs.com", "qualcomm", "External", "Qualcomm", "general") },
+    { name: "PayPal", run: () => fetchWorkday("paypal.wd1.myworkdayjobs.com", "paypal", "jobs", "PayPal", "general") },
+    { name: "Capital One", run: () => fetchWorkday("capitalone.wd12.myworkdayjobs.com", "capitalone", "Capital_One", "Capital One", "general") },
+    { name: "JPMorgan Chase", run: () => fetchWorkday("jpmc.wd5.myworkdayjobs.com", "jpmc", "technology", "JPMorgan Chase", "general") },
+    { name: "Shopify", run: () => fetchWorkday("shopify.wd5.myworkdayjobs.com", "shopify", "Shopify", "Shopify", "general") },
+    { name: "Zendesk", run: () => fetchWorkday("zendesk.wd1.myworkdayjobs.com", "zendesk", "zendesk", "Zendesk", "general") },
 
     // ── General Full Stack — FAANG (custom adapters) ──────────────────────
-    fetchAmazon("general"),
-    fetchGoogle("general"),
-    fetchMeta("general"),
-    fetchApple("general"),
+    { name: "Amazon", run: () => fetchAmazon("general") },
+    { name: "Google", run: () => fetchGoogle("general") },
+    { name: "Meta", run: () => fetchMeta("general") },
+    { name: "Apple", run: () => fetchApple("general") },
 
     // ── AI Agentics — Greenhouse ─────────────────────────────────────────
-    fetchGreenhouse("anthropic",  "Anthropic",          "ai-agentics"),
-    fetchGreenhouse("workato",    "Workato",             "ai-agentics"),
-    fetchGreenhouse("celonis",    "Make (Celonis US)",   "ai-agentics"),
-    fetchGreenhouse("gleanwork",          "Glean",               "ai-agentics"),
-    fetchGreenhouse("moveworks",          "Moveworks",           "ai-agentics"),
-    fetchGreenhouse("weights_and_biases", "Weights & Biases",    "ai-agentics"), // 'wandb' returns 404
-    fetchGreenhouse("codeium",            "Codeium / Windsurf",  "ai-agentics"),
+    { name: "Anthropic", run: () => fetchGreenhouse("anthropic", "Anthropic", "ai-agentics") },
+    { name: "Workato", run: () => fetchGreenhouse("workato", "Workato", "ai-agentics") },
+    { name: "Make (Celonis US)", run: () => fetchGreenhouse("celonis", "Make (Celonis US)", "ai-agentics") },
+    { name: "Glean", run: () => fetchGreenhouse("gleanwork", "Glean", "ai-agentics") },
+    { name: "Moveworks", run: () => fetchGreenhouse("moveworks", "Moveworks", "ai-agentics") },
+    { name: "Weights & Biases", run: () => fetchGreenhouse("weights_and_biases", "Weights & Biases", "ai-agentics") },
+    { name: "Codeium / Windsurf", run: () => fetchGreenhouse("codeium", "Codeium / Windsurf", "ai-agentics") },
 
     // ── AI Agentics — Ashby ──────────────────────────────────────────────
-    fetchAshby("openai",     "OpenAI",          "ai-agentics"),
-    fetchAshby("cursor",     "Cursor",           "ai-agentics"),
-    fetchAshby("notion",     "Notion",           "ai-agentics"),
-    fetchAshby("zapier",     "Zapier",           "ai-agentics"),
-    fetchAshby("langchain",  "LangChain",        "ai-agentics"),
-    fetchAshby("cohere",     "Cohere",           "ai-agentics"),
-    fetchAshby("mistral",    "Mistral AI",       "ai-agentics"),
-    fetchAshby("hebbia-ai",  "Hebbia",           "ai-agentics"),
-    fetchAshby("harvey",     "Harvey AI",        "ai-agentics"),
-    fetchAshby("sierra",     "Sierra AI",        "ai-agentics"),
-    fetchAshby("ema",        "Ema",              "ai-agentics"),
-    fetchAshby("adept",      "Adept AI",         "ai-agentics"),
-    fetchAshby("cognition",  "Cognition AI",     "ai-agentics"),
-    fetchAshby("dust",       "Dust.tt",          "ai-agentics"),
-    fetchAshby("linear",     "Linear",           "ai-agentics"),
-    fetchAshby("retool",     "Retool",           "ai-agentics"),
-    fetchAshby("writer",     "Writer",           "ai-agentics"),
-    fetchAshby("runwayml",   "Runway ML",        "ai-agentics"),
-    fetchAshby("pathosai",   "Pathos AI",        "ai-agentics"),
-    fetchAshby("slack",      "Slack",            "ai-agentics"),
+    { name: "OpenAI", run: () => fetchAshby("openai", "OpenAI", "ai-agentics") },
+    { name: "Cursor", run: () => fetchAshby("cursor", "Cursor", "ai-agentics") },
+    { name: "Notion", run: () => fetchAshby("notion", "Notion", "ai-agentics") },
+    { name: "Zapier", run: () => fetchAshby("zapier", "Zapier", "ai-agentics") },
+    { name: "LangChain", run: () => fetchAshby("langchain", "LangChain", "ai-agentics") },
+    { name: "Cohere", run: () => fetchAshby("cohere", "Cohere", "ai-agentics") },
+    { name: "Mistral AI", run: () => fetchAshby("mistral", "Mistral AI", "ai-agentics") },
+    { name: "Hebbia", run: () => fetchAshby("hebbia-ai", "Hebbia", "ai-agentics") },
+    { name: "Harvey AI", run: () => fetchAshby("harvey", "Harvey AI", "ai-agentics") },
+    { name: "Sierra AI", run: () => fetchAshby("sierra", "Sierra AI", "ai-agentics") },
+    { name: "Ema", run: () => fetchAshby("ema", "Ema", "ai-agentics") },
+    { name: "Adept AI", run: () => fetchAshby("adept", "Adept AI", "ai-agentics") },
+    { name: "Cognition AI", run: () => fetchAshby("cognition", "Cognition AI", "ai-agentics") },
+    { name: "Dust.tt", run: () => fetchAshby("dust", "Dust.tt", "ai-agentics") },
+    { name: "Linear", run: () => fetchAshby("linear", "Linear", "ai-agentics") },
+    { name: "Retool", run: () => fetchAshby("retool", "Retool", "ai-agentics") },
+    { name: "Writer", run: () => fetchAshby("writer", "Writer", "ai-agentics") },
+    { name: "Runway ML", run: () => fetchAshby("runwayml", "Runway ML", "ai-agentics") },
+    { name: "Pathos AI", run: () => fetchAshby("pathosai", "Pathos AI", "ai-agentics") },
+    { name: "Slack", run: () => fetchAshby("slack", "Slack", "ai-agentics") },
 
     // ── AI Agentics — Workday ─────────────────────────────────────────────
-    fetchWorkday(
-      "salesforce.wd12.myworkdayjobs.com",
-      "salesforce",
-      "External_Career_Site",
-      "Salesforce",
-      "ai-agentics"
-    ),
-    fetchWorkday(
-      "microsoft.wd3.myworkdayjobs.com",
-      "microsoft",
-      "External",
-      "Microsoft",
-      "ai-agentics"
-    ),
-    fetchWorkday(
-      "servicenow.wd5.myworkdayjobs.com",
-      "servicenow",
-      "External",
-      "ServiceNow",
-      "ai-agentics"
-    ),
+    { name: "Salesforce", run: () => fetchWorkday("salesforce.wd12.myworkdayjobs.com", "salesforce", "External_Career_Site", "Salesforce", "ai-agentics") },
+    { name: "Microsoft", run: () => fetchWorkday("microsoft.wd3.myworkdayjobs.com", "microsoft", "External", "Microsoft", "ai-agentics") },
+    { name: "ServiceNow", run: () => fetchWorkday("servicenow.wd5.myworkdayjobs.com", "servicenow", "External", "ServiceNow", "ai-agentics") },
 
     // ── Hiring Cafe — easy-apply aggregator (Playwright) ─────────────────
-    fetchHiringCafe("hiring-cafe"),
+    { name: "Hiring Cafe", run: () => fetchHiringCafe("hiring-cafe") },
   ];
+}
 
+async function fetchAllJobs() {
+  const allDefs = buildScrapeTaskDefs();
+  let defs = allDefs;
+  if (COMPANY_FILTER) {
+    defs = allDefs.filter((d) => d.name === COMPANY_FILTER);
+    if (defs.length === 0) {
+      throw new Error(`Unknown company: ${COMPANY_FILTER}`);
+    }
+    // Linear/Retool appear in both saas + ai-agentics — scrape once per company
+    if (defs.length > 1) defs = [defs[0]];
+    console.log(`🔍  Fetching jobs for ${COMPANY_FILTER}...\n`);
+  } else {
+    console.log("🔍  Fetching jobs from all companies...\n");
+  }
+
+  const tasks = defs.map((d) => d.run());
   const results = await Promise.allSettled(tasks);
   const rejected = results.filter((r) => r.status === "rejected");
   for (const r of rejected) {
@@ -1509,10 +1530,11 @@ async function fetchAllJobs() {
   }
   const allJobs = results
     .filter((r) => r.status === "fulfilled")
-    .flatMap((r) => r.value);
+    .flatMap((r) => r.value)
+    .map(normalizeScrapeRow);
 
   printScrapeSummary(allJobs, { taskCount: tasks.length, rejected: rejected.length });
-  return allJobs;
+  return { allJobs, rejected: rejected.length, taskCount: tasks.length };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1525,7 +1547,7 @@ async function getSheets() {
     credentials,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
   });
-  return google.sheets({ version: "v4", auth });
+  return wrapSheetsClient(google.sheets({ version: "v4", auth }));
 }
 
 async function ensureSheetAndHeaders(sheets) {
@@ -1544,10 +1566,10 @@ async function ensureSheetAndHeaders(sheets) {
     console.log(`📄  Created sheet "${SHEET_NAME}"`);
   }
 
-  // Always sync headers (A–M, 13 columns)
+  // Always sync headers (A–N, 14 columns)
   await sheets.spreadsheets.values.update({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A1:M1`,
+    range: `${SHEET_NAME}!A1:N1`,
     valueInputOption: "RAW",
     requestBody: { values: [HEADERS] },
   });
@@ -1596,6 +1618,54 @@ async function refreshLastSeenAt(sheets, scrapedJobs) {
   return updateData.length;
 }
 
+/**
+ * Fill column N ("Posted At") for existing rows when the scraper has ATS posted dates
+ * and the sheet cell is still empty. Does not overwrite user-entered values.
+ */
+async function syncPostedAt(sheets, scrapedJobs) {
+  const postedByUrl = new Map();
+  for (const row of scrapedJobs) {
+    const normalized = normalizeScrapeRow(row);
+    const url = normalized[3];
+    const postedAt = normalized[6];
+    if (url && postedAt) postedByUrl.set(url, postedAt);
+  }
+  if (postedByUrl.size === 0) return 0;
+
+  const resp = await sheets.spreadsheets.values.get({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    range: `${SHEET_NAME}!D2:N`,
+  });
+  const urlRows = resp.data.values ?? [];
+  if (urlRows.length === 0) return 0;
+
+  const updateData = urlRows
+    .map((row, idx) => ({
+      url: row[0] ?? "",
+      postedAt: row[10] ?? "",
+      sheetRow: idx + 2,
+    }))
+    .filter(({ url, postedAt }) => url && !postedAt && postedByUrl.has(url))
+    .map(({ url, sheetRow }) => ({
+      range: `${SHEET_NAME}!N${sheetRow}`,
+      values: [[postedByUrl.get(url)]],
+    }));
+
+  if (updateData.length === 0) return 0;
+
+  if (DRY_RUN) {
+    console.log(`🏃  DRY_RUN: would backfill posted-at for ${updateData.length} existing jobs`);
+    return updateData.length;
+  }
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId: GOOGLE_SHEET_ID,
+    requestBody: { valueInputOption: "RAW", data: updateData },
+  });
+  console.log(`📅  Backfilled posted-at for ${updateData.length} existing jobs`);
+  return updateData.length;
+}
+
 async function writeNewJobs(sheets, newJobs) {
   // Fetch existing URLs to deduplicate
   const existingResp = await sheets.spreadsheets.values.get({
@@ -1623,19 +1693,15 @@ async function writeNewJobs(sheets, newJobs) {
   // Fetch descriptions only for the genuinely new jobs
   const enriched = await enrichWithDescriptions(deduped);
 
-  // Append A–G scraped fields; H–J empty, K blank until generate sets pending
-  const rows13 = enriched.map((row) => {
-    const base = row.slice(0, 7);
-    while (base.length < 7) base.push("");
-    return [...base, "", "", "", ""];
-  });
+  // Append A–G + N scraped fields; H–M empty, K blank until generate sets pending
+  const rows14 = enriched.map((row) => toSheetRow(row));
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A:M`,
+    range: `${SHEET_NAME}!A:N`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
-    requestBody: { values: rows13 },
+    requestBody: { values: rows14 },
   });
 
   console.log(`✅  Added ${enriched.length} new jobs to Google Sheets`);
@@ -1733,12 +1799,6 @@ async function sendWhatsAppNotification(newJobRows) {
  * Move rows older than 2 days from the Jobs sheet to an "Old Jobs" archive
  * sheet. Creates the archive sheet automatically if it does not yet exist.
  */
-function padRowTo13(row) {
-  const out = [...row];
-  while (out.length < 13) out.push("");
-  return out;
-}
-
 async function archiveOldJobs(sheets) {
   if (DRY_RUN) {
     console.log("🏃  DRY_RUN: skipping archive");
@@ -1750,9 +1810,9 @@ async function archiveOldJobs(sheets) {
   try {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A2:M`,
+      range: `${SHEET_NAME}!A2:N`,
     });
-    const dataRows = (resp.data.values ?? []).map(padRowTo13);
+    const dataRows = (resp.data.values ?? []).map(padRowTo14);
     if (dataRows.length === 0) return;
 
     const now = Date.now();
@@ -1773,7 +1833,7 @@ async function archiveOldJobs(sheets) {
       return;
     }
 
-    // Ensure archive sheet exists with full A–M headers
+    // Ensure archive sheet exists with full A–N headers
     const meta = await sheets.spreadsheets.get({ spreadsheetId: GOOGLE_SHEET_ID });
     const existing = (meta.data.sheets ?? []).map((s) => s.properties.title);
     if (!existing.includes(ARCHIVE_SHEET)) {
@@ -1785,17 +1845,17 @@ async function archiveOldJobs(sheets) {
       });
       await sheets.spreadsheets.values.update({
         spreadsheetId: GOOGLE_SHEET_ID,
-        range: `${ARCHIVE_SHEET}!A1:M1`,
+        range: `${ARCHIVE_SHEET}!A1:N1`,
         valueInputOption: "RAW",
         requestBody: { values: [HEADERS] },
       });
       console.log(`📄  Created archive sheet "${ARCHIVE_SHEET}"`);
     }
 
-    // Append full rows to archive (A–M)
+    // Append full rows to archive (A–N)
     await sheets.spreadsheets.values.append({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${ARCHIVE_SHEET}!A:M`,
+      range: `${ARCHIVE_SHEET}!A:N`,
       valueInputOption: "RAW",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: oldRows },
@@ -1804,7 +1864,7 @@ async function archiveOldJobs(sheets) {
     // Rewrite Jobs: headers + keep rows only; clear leftover data rows
     await sheets.spreadsheets.values.clear({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A2:M`,
+      range: `${SHEET_NAME}!A2:N`,
     });
     const jobsBody = keepRows.length > 0 ? [HEADERS, ...keepRows] : [HEADERS];
     await sheets.spreadsheets.values.update({
@@ -1840,12 +1900,25 @@ async function runPlaywrightEnrich() {
 }
 
 async function main() {
-  if (DRY_RUN) console.log("🏃  DRY_RUN mode — no sheet writes or WhatsApp\n");
+  if (DRY_RUN || SCRAPE_ONLY) console.log("🏃  DRY_RUN/SCRAPE_ONLY — no sheet writes or WhatsApp\n");
+  if (COMPANY_FILTER) console.log(`🎯  Single-company mode: ${COMPANY_FILTER}\n`);
 
-  const [jobs, sheets] = await Promise.all([fetchAllJobs(), getSheets()]);
+  const { allJobs: jobs, rejected } = await fetchAllJobs();
+
+  if (SCRAPE_ONLY) {
+    if (rejected > 0) {
+      console.error(`❌  ${COMPANY_FILTER ?? "scrape"}: ${rejected} source(s) failed`);
+      process.exit(1);
+    }
+    console.log(`✅  ${COMPANY_FILTER ?? "all companies"}: ${jobs.length} jobs fetched`);
+    process.exit(0);
+  }
+
+  const sheets = await getSheets();
   if (!DRY_RUN) {
     await ensureSheetAndHeaders(sheets);
     await refreshLastSeenAt(sheets, jobs);
+    await syncPostedAt(sheets, jobs);
     await archiveOldJobs(sheets);
     await migrateLegacyCompanyNames(sheets);
   }
@@ -1984,7 +2057,29 @@ async function backfillDescriptions(sheets) {
   console.log(`✅  Backfilled descriptions for ${updateData.length} rows`);
 }
 
-main().catch((err) => {
-  console.error("💥  Scraper crashed:", err);
-  process.exit(1);
-});
+export {
+  fetchAllJobs,
+  getSheets,
+  ensureSheetAndHeaders,
+  refreshLastSeenAt,
+  syncPostedAt,
+  writeNewJobs,
+  backfillDescriptions,
+  fetchDescription,
+  enrichWithDescriptions,
+  mapConcurrent,
+  normalizeScrapeRow,
+  toSheetRow,
+  buildScrapeTaskDefs,
+  SHEET_NAME,
+};
+
+const isCli =
+  process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isCli) {
+  main().catch((err) => {
+    console.error("💥  Scraper crashed:", err);
+    process.exit(1);
+  });
+}

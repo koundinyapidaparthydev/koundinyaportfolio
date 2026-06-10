@@ -21,6 +21,8 @@
     "scrape:dry": "DRY_RUN=true node scripts/scrape-jobs.mjs",
     "job:scrape": "node scripts/scrape-jobs.mjs",
     "job:scrape:dry": "DRY_RUN=true node scripts/scrape-jobs.mjs",
+    "job:pipeline": "node scripts/run-full-pipeline.mjs",
+    "job:pipeline:company": "node scripts/run-company-pipeline.mjs",
     "job:validate-env": "node scripts/validate-pipeline-env.mjs --stage=scrape",
     "job:diagnose": "node scripts/diagnose-sheet.mjs",
     "job:enrich-descriptions": "node scripts/enrich-descriptions.mjs",

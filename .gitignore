@@ -43,3 +43,9 @@ cypress.env.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python scraper runtime
+__pycache__/
+*.pyc
+run_log.txt
+.tmp/
