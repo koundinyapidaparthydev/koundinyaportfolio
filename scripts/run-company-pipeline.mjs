@@ -14,18 +14,11 @@ import { loadResume } from "./lib/resume-loader.mjs";
 import { scoreJobWithGemini } from "./lib/gemini-ats.mjs";
 
 loadEnvLocal();
-validatePipelineEnv("scrape");
 
-const COMPANY = process.env.COMPANY?.trim();
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const SHEET_NAME = "Jobs";
 const DESCRIPTION_BACKFILL_LIMIT = Number(process.env.DESCRIPTION_BACKFILL_LIMIT) || 15;
 const DESCRIPTION_CONCURRENCY = Number(process.env.DESCRIPTION_CONCURRENCY) || 3;
-
-if (!COMPANY) {
-  console.error("❌  COMPANY env var required");
-  process.exit(1);
-}
 
 /** Single sheet read: company rows with columns A–J. */
 async function loadCompanyJobRows(sheets, company) {
@@ -195,7 +188,13 @@ const isMain =
   process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 
 if (isMain) {
-  runCompanyPipeline(COMPANY)
+  validatePipelineEnv("scrape");
+  const company = process.env.COMPANY?.trim();
+  if (!company) {
+    console.error("❌  COMPANY env var required");
+    process.exit(1);
+  }
+  runCompanyPipeline(company)
     .then(() => process.exit(0))
     .catch(() => process.exit(1));
 }
