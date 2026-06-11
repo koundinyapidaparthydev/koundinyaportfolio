@@ -62,12 +62,19 @@ describe("All Jobs time filters", () => {
     expect(filterByTime(jobs, "30m", NOW)).toHaveLength(1);
   });
 
-  it("excludes jobs without a posted date from time windows", () => {
+  it("falls back to fetchedAt when postedAt is missing", () => {
     const jobs = [
       job({ postedAt: new Date(NOW - 10 * 60_000).toISOString() }),
-      job({ postedAt: "" }),
+      job({
+        postedAt: "",
+        fetchedAt: new Date(NOW - 15 * 60_000).toISOString(),
+      }),
+      job({
+        postedAt: "",
+        fetchedAt: new Date(NOW - 45 * 60_000).toISOString(),
+      }),
     ];
-    expect(filterByTime(jobs, "30m", NOW)).toHaveLength(1);
+    expect(filterByTime(jobs, "30m", NOW)).toHaveLength(2);
   });
 
   it("all time filter returns every job including those missing postedAt", () => {

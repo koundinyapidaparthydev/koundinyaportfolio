@@ -21,7 +21,8 @@ export type SortColumn =
   | "location"
   | "category"
   | "platform"
-  | "postedAt";
+  | "postedAt"
+  | "fetchedAt";
 export type SortDirection = "asc" | "desc";
 
 export interface AllJobsSort {
@@ -111,15 +112,19 @@ export function detectPlatformFromUrl(url = ""): PlatformFilter {
   return "other";
 }
 
-function postedTimestamp(iso: string): number | null {
+function isoTimestamp(iso: string): number | null {
   if (!iso?.trim()) return null;
   const t = new Date(iso).getTime();
   return Number.isNaN(t) ? null : t;
 }
 
+/** Prefer ATS post date; fall back to last-seen when post date is missing. */
+export function jobTimeTimestamp(job: AllJobsRow): number | null {
+  return isoTimestamp(job.postedAt) ?? isoTimestamp(job.fetchedAt);
+}
+
 /**
- * Jobs without a posted date are excluded from time-window filters (not "all").
- * They remain visible under "All time" and sort to the bottom when sorting by postedAt.
+ * Time-window filters use the ATS post date when available, otherwise last-seen.
  */
 export function filterByTime<T extends AllJobsRow>(
   jobs: T[],
@@ -130,9 +135,9 @@ export function filterByTime<T extends AllJobsRow>(
   const { ms } = TIME_FILTERS.find((f) => f.id === filter)!;
   if (ms == null) return jobs;
   return jobs.filter((j) => {
-    const posted = postedTimestamp(j.postedAt);
-    if (posted === null) return false;
-    return now - posted <= ms;
+    const ts = jobTimeTimestamp(j);
+    if (ts === null) return false;
+    return now - ts <= ms;
   });
 }
 
@@ -184,7 +189,7 @@ export function toggleSortColumn(
   }
   return {
     column,
-    direction: column === "postedAt" ? "desc" : "asc",
+    direction: column === "postedAt" || column === "fetchedAt" ? "desc" : "asc",
   };
 }
 
@@ -196,9 +201,15 @@ export function sortAllJobs<T extends AllJobsRow>(
   const dir = sort.direction === "asc" ? 1 : -1;
 
   return arr.sort((a, b) => {
-    if (sort.column === "postedAt") {
-      const aT = postedTimestamp(a.postedAt);
-      const bT = postedTimestamp(b.postedAt);
+    if (sort.column === "postedAt" || sort.column === "fetchedAt") {
+      const aT =
+        sort.column === "postedAt"
+          ? isoTimestamp(a.postedAt)
+          : isoTimestamp(a.fetchedAt);
+      const bT =
+        sort.column === "postedAt"
+          ? isoTimestamp(b.postedAt)
+          : isoTimestamp(b.fetchedAt);
       if (aT === null && bT === null) return 0;
       if (aT === null) return 1;
       if (bT === null) return -1;

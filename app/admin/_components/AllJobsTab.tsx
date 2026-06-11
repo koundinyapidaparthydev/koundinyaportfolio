@@ -81,7 +81,8 @@ const TABLE_COLUMNS: { id: SortColumn; label: string }[] = [
   { id: "location", label: "Location" },
   { id: "category", label: "Category" },
   { id: "platform", label: "Platform" },
-  { id: "postedAt", label: "Position open date" },
+  { id: "postedAt", label: "Posted" },
+  { id: "fetchedAt", label: "Fetched" },
 ];
 
 function CompanyLogo({ company, url }: { company: string; url: string }) {
@@ -188,7 +189,7 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
         <div className="space-y-2">
           <DetailRow
-            label="Position open date"
+            label="Posted"
             value={
               job.postedAt ? (
                 <>
@@ -580,8 +581,21 @@ export default function AllJobsTab() {
                             {plat}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500">
-                          {formatOpenDate(job.postedAt)}
+                        <td
+                          className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-300"
+                          title={
+                            job.postedAt
+                              ? formatAbsolute(job.postedAt)
+                              : "ATS post date not yet backfilled"
+                          }
+                        >
+                          {job.postedAt ? formatOpenDate(job.postedAt) : "—"}
+                        </td>
+                        <td
+                          className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500"
+                          title={job.fetchedAt ? formatAbsolute(job.fetchedAt) : undefined}
+                        >
+                          {job.fetchedAt ? formatRelativeTime(job.fetchedAt) : "—"}
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5">
                           <a

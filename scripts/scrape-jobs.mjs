@@ -561,7 +561,15 @@ async function fetchGreenhouse(boardSlug, company, category, locationMapper = nu
       for (const j of filtered) {
         const mappedCompany = locationMapper(j.location?.name ?? "");
         if (!mappedCompany) continue; // skip unmatched locations
-        rows.push([mappedCompany, j.title, j.location?.name ?? "", j.absolute_url ?? "", category, now(), j.updated_at ?? ""]);
+        rows.push([
+          mappedCompany,
+          j.title,
+          j.location?.name ?? "",
+          j.absolute_url ?? "",
+          category,
+          now(),
+          j.first_published ?? j.updated_at ?? "",
+        ]);
       }
       const groups = [...new Set(rows.map((r) => r[0]))];
       groups.forEach((co) => console.log(`  ✓  ${co}: ${rows.filter((r) => r[0] === co).length} engineering roles (Greenhouse)`));
@@ -576,7 +584,7 @@ async function fetchGreenhouse(boardSlug, company, category, locationMapper = nu
       j.absolute_url ?? "",
       category,
       now(),
-      j.updated_at ?? "",
+      j.first_published ?? j.updated_at ?? "",
     ]);
   } catch (e) {
     console.warn(`  ⚠  Greenhouse ${boardSlug}:`, e.message);
