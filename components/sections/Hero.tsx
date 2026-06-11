@@ -118,7 +118,7 @@ function OpenToWorkBadge() {
       initial={{ opacity: 0, scale: 0.8, y: -8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ delay: 0.3, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className="mb-8 inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-white"
+      className="glass-chip mb-8 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-indigo-700 dark:text-indigo-300"
     >
       <span className="relative flex h-2 w-2">
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -402,7 +402,7 @@ export default function Hero({ personalInfo }: HeroProps) {
               <button
                 onClick={scrollToProjects}
                 data-magnetic
-                className="group relative overflow-hidden rounded-lg bg-indigo-600 px-7 py-3 text-sm font-semibold text-white shadow-lg transition-all duration-300 hover:bg-indigo-500 hover:shadow-indigo-500/40 hover:shadow-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                className="glass-btn-primary group relative overflow-hidden px-7 py-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
               >
                 <span className="relative z-10">View my work</span>
                 <span
@@ -415,7 +415,7 @@ export default function Hero({ personalInfo }: HeroProps) {
                 href="/api/resume/pdf"
                 download
                 data-magnetic
-                className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-7 py-3 text-sm font-semibold text-slate-700 transition-all duration-300 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 dark:border-white/20 dark:bg-white/5 dark:text-slate-200 dark:backdrop-blur-sm dark:hover:bg-indigo-500/10 dark:hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
+                className="glass-btn flex items-center gap-2 px-7 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

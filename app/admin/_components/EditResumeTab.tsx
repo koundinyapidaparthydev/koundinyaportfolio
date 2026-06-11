@@ -39,6 +39,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useResume, useUpdateResume } from "@/hooks/useResume";
 import { useResumeHistoryStore, useCanUndo, useCanRedo } from "@/lib/store";
 import ResumePreview from "./ResumePreview";
+import { glass, glassCn } from "@/lib/glass";
 import type {
   Resume,
   PersonalInfo,
@@ -454,7 +455,7 @@ function ExperienceEntry({
   const [open, setOpen] = useState(true);
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/3 p-5 space-y-4">
+    <div className="glass-panel space-y-4 p-5">
       <div className="flex items-center gap-2">
         {dragHandleProps && <DragHandle {...dragHandleProps} />}
         <button
@@ -666,7 +667,7 @@ function ProjectEntry({
   const [open, setOpen] = useState(true);
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/3 p-5 space-y-4">
+    <div className="glass-panel space-y-4 p-5">
       <div className="flex items-center gap-2">
         {dragHandleProps && <DragHandle {...dragHandleProps} />}
         <button
@@ -920,7 +921,7 @@ function EducationEntry({
   onRemove: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/3 p-5 space-y-4">
+    <div className="glass-panel space-y-4 p-5">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold text-slate-300">
           Education {index + 1}
@@ -1337,12 +1338,12 @@ export default function EditResumeTab() {
         <button
           type="button"
           onClick={() => setShowPreview((p) => !p)}
-          className={[
-            "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
+          className={glassCn(
+            "flex items-center gap-1.5",
             showPreview
-              ? "border-indigo-500/40 bg-indigo-500/15 text-indigo-300"
-              : "border-white/10 bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white",
-          ].join(" ")}
+              ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+              : glass.pill
+          )}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24"
             fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"

@@ -105,7 +105,7 @@ export default function About() {
                     delay: 0.3 + i * 0.1,
                     ease: "easeOut",
                   }}
-                  className="rounded-2xl border border-gray-200 bg-gray-50 p-5 text-center backdrop-blur-sm dark:border-white/8 dark:bg-white/4"
+                  className="glass-panel p-5 text-center"
                 >
                   <p className="text-2xl font-bold text-indigo-400">{value}</p>
                   <p className="mt-1 text-xs text-gray-500 dark:text-slate-500">{label}</p>

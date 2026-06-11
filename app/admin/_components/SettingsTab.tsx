@@ -1,5 +1,7 @@
 "use client";
 
+import { glass } from "@/lib/glass";
+
 /**
  * SettingsTab — change the admin password.
  * Calls PATCH /api/auth/password with current + new password.
@@ -73,8 +75,7 @@ export default function SettingsTab() {
     }
   };
 
-  const inputCls =
-    "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-slate-600 outline-none transition-colors focus:border-indigo-500/70";
+  const inputCls = "glass-input text-white placeholder:text-slate-600";
   const labelCls = "mb-1.5 block text-xs font-medium text-slate-500";
   const errorCls = "mt-1.5 text-xs text-red-400";
 
@@ -88,7 +89,7 @@ export default function SettingsTab() {
       </div>
 
       {/* ── Change password ── */}
-      <div className="max-w-md rounded-2xl border border-white/8 bg-white/3 p-6">
+      <div className={`max-w-md ${glass.panel} p-6`}>
         <p className="mb-5 text-sm font-semibold text-slate-300">
           Change admin password
         </p>
@@ -150,7 +151,7 @@ export default function SettingsTab() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full rounded-xl bg-indigo-600 py-3 text-sm font-semibold text-white transition-all hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+            className="glass-btn-primary w-full py-3 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isSubmitting ? "Updating…" : "Update password"}
           </button>
@@ -158,7 +159,7 @@ export default function SettingsTab() {
       </div>
 
       {/* ── Info card ── */}
-      <div className="max-w-md rounded-2xl border border-white/8 bg-white/3 p-5">
+      <div className={`max-w-md ${glass.panel} p-5`}>
         <p className="mb-3 text-sm font-semibold text-slate-300">Account</p>
         <div className="space-y-2 text-sm text-slate-500">
           <div className="flex items-center justify-between">

@@ -79,11 +79,11 @@ export default function RootLayout({
           {children}
 
           {/* ── Footer ── */}
-          <footer className="border-t border-slate-200 bg-white py-10 px-6 dark:border-slate-800 dark:bg-[#0a0a0a]">
+          <footer className="glass-footer py-10 px-6">
             <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 sm:flex-row sm:justify-between">
               {/* Brand */}
               <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
+                <span className="glass-toggle flex h-8 w-8 items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300">
                   KP
                 </span>
                 <span className="text-sm text-slate-500 dark:text-slate-400">

@@ -17,7 +17,7 @@ export default function EducationSection({ education }: EducationSectionProps) {
           {education.map((edu) => (
             <div
               key={edu.id}
-              className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-white/8 dark:bg-[#111]"
+              className="glass-panel p-6"
             >
               <div className="mb-2 flex items-start justify-between gap-2">
                 <h3 className="text-base font-bold text-slate-900">{edu.institution}</h3>

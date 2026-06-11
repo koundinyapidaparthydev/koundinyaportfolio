@@ -39,13 +39,13 @@ export default function NotFound() {
       <div className="flex flex-wrap items-center justify-center gap-4">
         <Link
           href="/"
-          className="rounded-lg bg-indigo-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+          className="glass-btn-primary px-6 py-3 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
         >
           Back to home
         </Link>
         <Link
           href="/#contact"
-          className="rounded-lg border border-white/10 px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-white/5 dark:border-white/10"
+          className="glass-btn px-6 py-3 text-sm font-medium"
         >
           Contact me
         </Link>

@@ -1,23 +1,26 @@
 "use client";
 
 /**
- * ThemeToggle — Sun / Moon icon button that switches next-themes theme.
- * Rendered in the Navbar. Uses 'useTheme' which requires a client component.
+ * ThemeToggle — Apple glass orb that switches next-themes theme.
  */
 
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { glass } from "@/lib/glass";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
+export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
-  // Avoid hydration mismatch: render nothing on the server
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   if (!mounted) {
     return (
-      <div className="h-9 w-9 rounded-md" aria-hidden="true" />
+      <div
+        className={cn(glass.toggle, "opacity-0", className)}
+        aria-hidden="true"
+      />
     );
   }
 
@@ -27,13 +30,23 @@ export function ThemeToggle() {
     <button
       onClick={() => setTheme(isDark ? "light" : "dark")}
       aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="flex h-9 w-9 items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
-    >
-      {isDark ? (
-        <Sun className="h-4 w-4" />
-      ) : (
-        <Moon className="h-4 w-4" />
+      className={cn(
+        glass.toggle,
+        "text-slate-600 dark:text-slate-300",
+        className
       )}
+    >
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-br from-white/40 via-transparent to-transparent dark:from-white/10"
+      />
+      <span className="relative transition-transform duration-300">
+        {isDark ? (
+          <Sun className="h-4 w-4 text-amber-400 drop-shadow-sm" />
+        ) : (
+          <Moon className="h-4 w-4 text-indigo-500 drop-shadow-sm" />
+        )}
+      </span>
     </button>
   );
 }

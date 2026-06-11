@@ -90,7 +90,11 @@ export default function AdminThemeProvider({
         className={[
           theme === "dark" ? "dark" : "",
           "min-h-[calc(100vh-4rem)]",
-          mounted ? (theme === "dark" ? "bg-[#080808]" : "bg-slate-50") : "bg-[#080808]",
+          mounted
+            ? theme === "dark"
+              ? "bg-[#080808]"
+              : "bg-slate-100/80"
+            : "bg-[#080808]",
         ].join(" ")}
       >
         {children}

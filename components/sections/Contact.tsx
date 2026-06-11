@@ -208,8 +208,7 @@ function ContactForm() {
     }
   };
 
-  const inputCls =
-    "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition-colors focus:border-indigo-500/70 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-slate-600";
+  const inputCls = "glass-input";
   const errorCls = "mt-1.5 text-xs text-red-400";
 
   return (
@@ -271,7 +270,7 @@ function ContactForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className="group flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-500 hover:shadow-indigo-500/40 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+        className="glass-btn-primary group flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
       >
         {isSubmitting ? (
           <>
@@ -375,7 +374,7 @@ export default function Contact() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={inView ? { opacity: 1, x: 0 } : {}}
                 transition={{ duration: 0.45, delay: 0.15 + i * 0.08, ease: "easeOut" }}
-                className="group flex items-center gap-4 rounded-2xl border border-gray-200 bg-white p-4 transition-all duration-200 hover:border-indigo-300 hover:bg-indigo-50 dark:border-white/8 dark:bg-white/3 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/8"
+                className="glass-panel group flex items-center gap-4 p-4 transition-all duration-200 hover:border-indigo-300/50 dark:hover:border-indigo-500/40"
               >
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-400 transition-colors group-hover:bg-indigo-500/25 group-hover:text-indigo-300">
                   {icon}
@@ -409,7 +408,7 @@ export default function Contact() {
             initial={{ opacity: 0, x: 30 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-            className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm dark:border-white/8 dark:bg-white/3 dark:shadow-none"
+            className="glass-strong p-8"
           >
             <p className="mb-6 text-sm font-semibold uppercase tracking-widest text-slate-600">
               Send a message

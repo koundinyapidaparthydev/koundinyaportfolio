@@ -1,5 +1,7 @@
 "use client";
 
+import { glass, glassCn } from "@/lib/glass";
+
 /**
  * AdminSidebar — vertical nav for the admin dashboard.
  *
@@ -159,12 +161,12 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
               key={id}
               type="button"
               onClick={() => onSelect(id)}
-              className={[
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-200 border",
+              className={glassCn(
+                "flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-all duration-300",
                 active
-                  ? "bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-100 dark:border-indigo-500/20 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 border-transparent hover:border-slate-100 dark:hover:border-transparent",
-              ].join(" ")}
+                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.btnGhost
+              )}
             >
               <span
                 className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500 transition-colors"}
@@ -182,7 +184,7 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
             href="/"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-3 rounded-xl border dark:border-white/8 border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-500 transition-all dark:hover:border-indigo-500/30 hover:border-indigo-200 dark:hover:text-indigo-300 hover:text-indigo-600 hover:bg-indigo-50/30 dark:hover:bg-transparent"
+            className={glassCn(glass.btn, "flex items-center gap-3 px-3 py-2.5 text-sm font-semibold")}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -213,12 +215,12 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
               key={id}
               type="button"
               onClick={() => onSelect(id)}
-              className={[
-                "flex shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-all border",
+              className={glassCn(
+                "flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-all duration-300",
                 active
-                  ? "bg-indigo-50/80 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border-indigo-100 dark:border-indigo-500/20 shadow-sm"
-                  : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-white/5 border-transparent",
-              ].join(" ")}
+                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.pill
+              )}
             >
               <span className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}>
                 {icon}
@@ -231,7 +233,7 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
           href="/"
           target="_blank"
           rel="noopener noreferrer"
-          className="ml-2 flex shrink-0 items-center gap-2 rounded-xl border dark:border-white/8 border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-indigo-50/30 dark:hover:bg-transparent"
+          className={glassCn(glass.btn, "ml-2 flex shrink-0 items-center gap-2 px-3 py-2 text-xs font-semibold")}
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

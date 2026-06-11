@@ -18,6 +18,7 @@ import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useProjects } from "@/lib/store";
 import { TiltCard } from "@/components/TiltCard";
 import type { Project } from "@/types/resume";
+import { glass, glassCn } from "@/lib/glass";
 
 // ─── Tech pill colour map ─────────────────────────────────────────────────────
 
@@ -130,7 +131,7 @@ function ProjectCard({ project, index }: ProjectCardProps) {
       transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
       style={{ breakInside: "avoid" }}
     >
-      <TiltCard className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-gray-50 shadow-lg transition-all duration-300 hover:border-indigo-500/40 hover:shadow-indigo-500/10 hover:shadow-2xl dark:border-white/8 dark:bg-[#111]">
+      <TiltCard className="glass-card group relative flex flex-col overflow-hidden transition-all duration-300 hover:border-indigo-500/40">
       {/* Hover glow */}
         <div
           aria-hidden="true"
@@ -202,7 +203,7 @@ function ProjectCard({ project, index }: ProjectCardProps) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Open ${project.name} live site`}
-              className="flex items-center gap-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-300 transition-all hover:border-indigo-400/50 hover:bg-indigo-500/20 hover:text-indigo-200"
+              className="glass-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-300"
             >
               <ExternalLinkIcon className="h-3.5 w-3.5" />
               {project.website.text}
@@ -214,7 +215,7 @@ function ProjectCard({ project, index }: ProjectCardProps) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Open ${project.name} on GitHub`}
-              className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-600 transition-all hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-white/20 dark:hover:bg-white/10 dark:hover:text-white"
+              className="glass-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"
             >
               <GitHubIcon className="h-3.5 w-3.5" />
               GitHub
@@ -285,12 +286,12 @@ export default function Projects() {
             <button
               key={tech}
               onClick={() => setActiveTech(tech)}
-              className={[
-                "rounded-full px-3.5 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400",
+              className={glassCn(
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400",
                 activeTech === tech
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/30"
-                  : "border border-gray-200 bg-gray-100 text-gray-600 hover:border-gray-300 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-white/20 dark:hover:text-white",
-              ].join(" ")}
+                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.pill
+              )}
             >
               {tech}
             </button>

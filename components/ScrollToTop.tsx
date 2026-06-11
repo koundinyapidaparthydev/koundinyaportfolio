@@ -1,15 +1,10 @@
 "use client";
 
-/**
- * ScrollToTop — floating button that appears once the user scrolls
- * past 400 px and smooth-scrolls back to the top on click.
- */
-
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronUp } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { glass, glassCn } from "@/lib/glass";
 
 export function ScrollToTop() {
   const pathname = usePathname();
@@ -38,8 +33,9 @@ export function ScrollToTop() {
           transition={{ duration: 0.25, ease: "easeOut" }}
           onClick={scrollToTop}
           aria-label="Scroll to top"
-          className={cn(
-            "fixed right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 transition-colors hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400",
+          className={glassCn(
+            glass.toggle,
+            "fixed right-6 z-40 h-11 w-11 text-indigo-600 dark:text-indigo-300",
             isHome ? "bottom-[5.5rem]" : "bottom-6"
           )}
         >

@@ -1,5 +1,7 @@
 "use client";
 
+import { glass, glassCn } from "@/lib/glass";
+
 /**
  * OverviewTab — rich visitor analytics dashboard.
  * Fetches data from GET /api/visitors (admin-only).
@@ -29,12 +31,10 @@ function StatCard({
 }) {
   return (
     <div
-      className={[
-        "rounded-2xl border p-5 transition-colors",
-        accent
-          ? "border-indigo-500/30 bg-indigo-500/10"
-          : "border-white/8 bg-white/3",
-      ].join(" ")}
+      className={glassCn(
+        "glass-panel p-5 transition-colors",
+        accent && "border-indigo-500/30 bg-indigo-500/10"
+      )}
     >
       <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
         {label}
@@ -73,7 +73,7 @@ function BreakdownBar({
   total: number;
 }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
+    <div className={glassCn(glass.panel, "p-5")}>
       <SectionHeading>{title}</SectionHeading>
       {total === 0 ? (
         <p className="text-xs text-slate-600">No data yet.</p>
@@ -283,7 +283,7 @@ export default function OverviewTab() {
       </div>
 
       {/* ── 7-day traffic chart ── */}
-      <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
+      <div className={glassCn(glass.panel, "p-5")}>
         <SectionHeading>Traffic — Last 7 Days</SectionHeading>
         <div className="flex items-end gap-2" style={{ height: 100 }}>
           {last7Days.map(({ label, count }) => {
@@ -337,7 +337,7 @@ export default function OverviewTab() {
       {/* ── Top pages + Top referrers side by side ── */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Top pages */}
-        <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
+        <div className={glassCn(glass.panel, "p-5")}>
           <SectionHeading>Top Pages</SectionHeading>
           {pageEntries.length === 0 ? (
             <p className="text-xs text-slate-600">No data yet.</p>
@@ -367,7 +367,7 @@ export default function OverviewTab() {
         </div>
 
         {/* Top referrers */}
-        <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
+        <div className={glassCn(glass.panel, "p-5")}>
           <SectionHeading>Top Referrers</SectionHeading>
           {referrerEntries.length === 0 ? (
             <p className="text-xs text-slate-600">No data yet.</p>
@@ -399,7 +399,7 @@ export default function OverviewTab() {
 
       {/* ── Geographic distribution ── */}
       {countryEntries.length > 0 && (
-        <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
+        <div className={glassCn(glass.panel, "p-5")}>
           <SectionHeading>Geographic Distribution (Top 5 Countries)</SectionHeading>
           <div className="flex flex-wrap gap-3">
             {countryEntries.map(([country, count]) => (
@@ -419,7 +419,7 @@ export default function OverviewTab() {
 
       {/* ── Recent Activity ── */}
       {recentActivity.length > 0 && (
-        <div className="rounded-2xl border border-white/8 bg-white/3 p-5">
+        <div className={glassCn(glass.panel, "p-5")}>
           <SectionHeading>Recent Activity (last 10)</SectionHeading>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-xs">

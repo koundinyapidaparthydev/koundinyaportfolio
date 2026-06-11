@@ -113,9 +113,9 @@ export function AssistantBot() {
                 : { opacity: 0, y: 12, scale: 0.95, transformOrigin: "bottom right" }
             }
             transition={prefersReducedMotion ? { duration: 0.15 } : panelSpring}
-            className="pointer-events-auto w-[min(18rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-slate-200/80 bg-white/95 shadow-2xl shadow-indigo-500/10 backdrop-blur-md dark:border-slate-700/80 dark:bg-slate-900/95 dark:shadow-black/40"
+            className="glass-strong pointer-events-auto w-[min(18rem,calc(100vw-3rem))] overflow-hidden"
           >
-            <div className="flex items-start justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--glass-border)] px-4 py-3">
               <div className="flex items-center gap-2.5">
                 <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#d97757]/15 text-[#c96442] ring-1 ring-[#d97757]/25 dark:bg-[#d97757]/20 dark:text-[#e8a88a]">
                   <ClaudeIcon className="h-4 w-4" />
@@ -133,7 +133,7 @@ export function AssistantBot() {
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Close assistant"
-                className="rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                className="glass-btn-ghost rounded-lg p-1"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -147,7 +147,7 @@ export function AssistantBot() {
               <button
                 type="button"
                 onClick={scrollToContact}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+                className="glass-btn-primary inline-flex w-full items-center justify-center gap-2 px-3 py-2.5 text-sm font-medium focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
               >
                 <MessageCircle className="h-4 w-4" />
                 Get in touch
@@ -229,12 +229,11 @@ export function AssistantBot() {
                     : undefined
               }
               className={cn(
-                "relative flex h-14 w-14 items-center justify-center rounded-full",
-                "bg-gradient-to-br from-[#e8a88a] via-[#d97757] to-[#c96442]",
-                "text-white shadow-lg shadow-[#d97757]/35 ring-2 ring-white/70",
+                "glass-toggle relative flex h-14 w-14 items-center justify-center",
+                "bg-gradient-to-br from-[#e8a88a]/90 via-[#d97757]/85 to-[#c96442]/90",
+                "text-white shadow-lg shadow-[#d97757]/35",
                 "transition-shadow hover:shadow-xl hover:shadow-[#d97757]/45",
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d97757]",
-                "dark:ring-slate-900/80"
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d97757]"
               )}
             >
               <ClaudeIcon className="h-7 w-7 drop-shadow-sm" />

@@ -2,7 +2,7 @@
  * __tests__/components/ui/Navbar.test.tsx
  *
  * Unit tests for the Navbar component covering:
- *  - Photo avatar (image + aria-label)
+ *  - KP brand logo + aria-label
  *  - Nav link labels (Home, About, Skills, Projects)
  *  - Admin vs guest state (Dashboard+Logout vs lock icon)
  *  - Logout calls signOut with correct callbackUrl
@@ -119,14 +119,14 @@ describe("Navbar", () => {
     asGuest();
   });
 
-  // ── Avatar ────────────────────────────────────────────────────────────────
+  // ── Brand logo ────────────────────────────────────────────────────────────
 
-  it("renders the photo avatar image with correct alt text", () => {
+  it("renders the KP brand logo", () => {
     render(<Navbar />);
-    expect(screen.getByAltText("Koundinya Pidaparthy")).toBeTruthy();
+    expect(screen.getByText("KP")).toBeTruthy();
   });
 
-  it("avatar button has 'Go to top' aria-label", () => {
+  it("brand button has 'Go to top' aria-label", () => {
     render(<Navbar />);
     expect(screen.getByRole("button", { name: /go to top/i })).toBeTruthy();
   });

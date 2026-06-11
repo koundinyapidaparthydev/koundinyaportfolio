@@ -57,7 +57,7 @@ export default function AdminPage() {
     <div className="min-h-[calc(100vh-4rem)] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         {/* ── Page header ── */}
-        <header className="mb-8 flex items-start justify-between gap-4">
+        <header className="glass-panel mb-8 flex items-start justify-between gap-4 p-5">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Dashboard</h1>
             {session?.user && (

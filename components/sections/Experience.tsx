@@ -58,10 +58,10 @@ function TimelineCard({ exp, side, index }: TimelineCardProps) {
         <TiltCard>
           <div
             className={[
-              "group relative overflow-hidden rounded-2xl border bg-gray-50 p-6 shadow-lg transition-shadow duration-300 hover:shadow-xl dark:bg-[#111]",
+              "glass-card group relative overflow-hidden p-6",
               isCurrent
                 ? "border-emerald-500/30 hover:border-emerald-500/50"
-                : "border-white/8 hover:border-white/15",
+                : "hover:border-white/20",
             ].join(" ")}
           >
             {/* Aurora left border accent bar */}
@@ -165,7 +165,7 @@ function TimelineCard({ exp, side, index }: TimelineCardProps) {
               {exp.technologies.map((tech) => (
                 <span
                   key={tech}
-                  className="rounded-full border border-gray-200 bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-gray-500 dark:border-white/10 dark:bg-white/5 dark:text-slate-400"
+                  className="glass-chip px-2.5 py-0.5 text-[11px] font-medium text-muted-foreground"
                 >
                   {tech}
                 </span>
@@ -211,7 +211,7 @@ function EducationCard({ edu, index }: EducationCardProps) {
       initial={{ opacity: 0, y: 30 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
-      className="rounded-2xl border border-gray-200 bg-gray-50 p-6 shadow-lg transition-shadow hover:shadow-xl dark:border-white/8 dark:bg-[#111]"
+      className="glass-card p-6"
     >
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>

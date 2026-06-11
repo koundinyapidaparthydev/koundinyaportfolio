@@ -15,6 +15,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useSkills } from "@/lib/store";
 import { TiltCard } from "@/components/TiltCard";
+import { glass, glassCn } from "@/lib/glass";
 
 // ─── Proficiency map ──────────────────────────────────────────────────────────
 // Approximate proficiency (0–100) per skill name.
@@ -179,7 +180,7 @@ function SkillBadge({ skill, categoryTitle, index }: SkillBadgeProps) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 6, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute bottom-full left-1/2 z-20 mb-2 w-36 -translate-x-1/2 rounded-lg border border-white/10 bg-slate-900 p-3 shadow-xl"
+            className="glass-strong absolute bottom-full left-1/2 z-20 mb-2 w-36 -translate-x-1/2 p-3"
             role="tooltip"
           >
             <p className="mb-2 text-center text-[11px] font-semibold text-white">
@@ -223,7 +224,7 @@ function BentoCell({ category, colSpan, index }: BentoCellProps) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96 }}
         transition={{ duration: 0.35, delay: index * 0.06, ease: "easeOut" }}
-        className="h-full rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:border-indigo-300/60 hover:shadow-lg dark:border-indigo-500/20 dark:bg-indigo-950/50 dark:hover:border-indigo-400/40 dark:hover:shadow-indigo-500/10 dark:hover:shadow-xl"
+        className="glass-card h-full p-5 hover:border-indigo-300/40 dark:hover:border-indigo-400/30"
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">
@@ -319,12 +320,12 @@ export default function Skills() {
               role="tab"
               aria-selected={activeTab === tab}
               onClick={() => setActiveTab(tab)}
-              className={[
-                "rounded-full px-4 py-1.5 text-xs font-medium transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400",
+              className={glassCn(
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400",
                 activeTab === tab
-                  ? "bg-indigo-600 text-white shadow-md shadow-indigo-500/30"
-                  : "border border-gray-200 bg-gray-100 text-gray-600 hover:border-gray-300 hover:text-gray-900 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-white/20 dark:hover:text-white",
-              ].join(" ")}
+                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.pill
+              )}
             >
               {tab}
             </button>

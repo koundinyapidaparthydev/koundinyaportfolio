@@ -64,7 +64,7 @@ function LoginForm() {
   };
 
   return (
-    <Card className="border-slate-700 bg-slate-800/80 shadow-2xl backdrop-blur-sm">
+    <Card className="glass-strong border-0 shadow-2xl">
       <CardHeader>
         <CardTitle className="text-center text-2xl font-bold text-white">
           Welcome back
@@ -113,7 +113,7 @@ function LoginForm() {
               autoComplete="email"
               placeholder="you@example.com"
               aria-invalid={!!errors.email}
-              className="border-slate-600 bg-slate-700/50 text-white placeholder:text-slate-500 focus-visible:border-indigo-500 focus-visible:ring-indigo-500/30"
+              className="glass-input text-white placeholder:text-slate-500"
               {...register("email")}
             />
             {errors.email && (
@@ -131,7 +131,7 @@ function LoginForm() {
               autoComplete="current-password"
               placeholder="••••••••"
               aria-invalid={!!errors.password}
-              className="border-slate-600 bg-slate-700/50 text-white placeholder:text-slate-500 focus-visible:border-indigo-500 focus-visible:ring-indigo-500/30"
+              className="glass-input text-white placeholder:text-slate-500"
               {...register("password")}
             />
             {errors.password && (
@@ -146,7 +146,7 @@ function LoginForm() {
           type="submit"
           form="login-form"
           disabled={isSubmitting}
-          className="w-full gap-2 bg-indigo-600 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+          className="glass-btn-primary w-full gap-2 py-2.5 text-sm font-semibold disabled:opacity-60"
         >
           {isSubmitting ? (
             <>
