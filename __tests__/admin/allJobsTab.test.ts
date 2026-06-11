@@ -9,6 +9,7 @@ import {
   toggleSortColumn,
   uniqueCategories,
   formatRelativeTime,
+  formatOpenDate,
   TIME_FILTERS,
   DEFAULT_ALL_JOBS_SORT,
   type AllJobsRow,
@@ -24,6 +25,7 @@ function job(overrides: Partial<AllJobsRow> = {}): AllJobsRow {
     url: "https://job-boards.greenhouse.io/acme/jobs/1",
     category: "general",
     fetchedAt: new Date(NOW - 60 * 60_000).toISOString(),
+    postedAt: new Date(NOW - 60 * 60_000).toISOString(),
     description: "A".repeat(40),
     ...overrides,
   };
@@ -52,19 +54,38 @@ describe("All Jobs time filters", () => {
     expect(TIME_FILTERS[TIME_FILTERS.length - 1].id).toBe("all");
   });
 
-  it("30m filter keeps jobs seen within 30 minutes", () => {
+  it("30m filter keeps jobs posted within 30 minutes", () => {
     const jobs = [
-      job({ fetchedAt: new Date(NOW - 20 * 60_000).toISOString() }),
-      job({ fetchedAt: new Date(NOW - 45 * 60_000).toISOString() }),
+      job({ postedAt: new Date(NOW - 20 * 60_000).toISOString() }),
+      job({ postedAt: new Date(NOW - 45 * 60_000).toISOString() }),
     ];
     expect(filterByTime(jobs, "30m", NOW)).toHaveLength(1);
   });
 
-  it("all time filter returns every job", () => {
+  it("excludes jobs without a posted date from time windows", () => {
     const jobs = [
-      job({ fetchedAt: new Date(NOW - 7 * 24 * 3_600_000).toISOString() }),
+      job({ postedAt: new Date(NOW - 10 * 60_000).toISOString() }),
+      job({ postedAt: "" }),
     ];
-    expect(filterByTime(jobs, "all", NOW)).toHaveLength(1);
+    expect(filterByTime(jobs, "30m", NOW)).toHaveLength(1);
+  });
+
+  it("all time filter returns every job including those missing postedAt", () => {
+    const jobs = [
+      job({ postedAt: new Date(NOW - 7 * 24 * 3_600_000).toISOString() }),
+      job({ postedAt: "" }),
+    ];
+    expect(filterByTime(jobs, "all", NOW)).toHaveLength(2);
+  });
+
+  it("does not filter by fetchedAt when postedAt differs", () => {
+    const jobs = [
+      job({
+        postedAt: new Date(NOW - 7 * 24 * 3_600_000).toISOString(),
+        fetchedAt: new Date(NOW - 10 * 60_000).toISOString(),
+      }),
+    ];
+    expect(filterByTime(jobs, "30m", NOW)).toHaveLength(0);
   });
 });
 
@@ -110,9 +131,9 @@ describe("toggleSortColumn", () => {
       direction: "asc",
     });
     expect(
-      toggleSortColumn({ column: "company", direction: "asc" }, "fetchedAt")
+      toggleSortColumn({ column: "company", direction: "asc" }, "postedAt")
     ).toEqual({
-      column: "fetchedAt",
+      column: "postedAt",
       direction: "desc",
     });
   });
@@ -136,13 +157,23 @@ describe("sortAllJobs", () => {
     expect(sorted[0].company).toBe("Alpha");
   });
 
-  it("sorts newest first by fetchedAt desc", () => {
+  it("sorts newest first by postedAt desc", () => {
     const jobs = [
-      job({ fetchedAt: new Date(NOW - 3_600_000).toISOString(), title: "old" }),
-      job({ fetchedAt: new Date(NOW - 60_000).toISOString(), title: "new" }),
+      job({ postedAt: new Date(NOW - 3_600_000).toISOString(), title: "old" }),
+      job({ postedAt: new Date(NOW - 60_000).toISOString(), title: "new" }),
     ];
     const sorted = sortAllJobs(jobs, DEFAULT_ALL_JOBS_SORT);
     expect(sorted[0].title).toBe("new");
+  });
+
+  it("sorts jobs without postedAt to the bottom", () => {
+    const jobs = [
+      job({ postedAt: "", title: "missing" }),
+      job({ postedAt: new Date(NOW - 3_600_000).toISOString(), title: "dated" }),
+    ];
+    const sorted = sortAllJobs(jobs, DEFAULT_ALL_JOBS_SORT);
+    expect(sorted[0].title).toBe("dated");
+    expect(sorted[1].title).toBe("missing");
   });
 
   it("sorts by platform", () => {
@@ -163,14 +194,14 @@ describe("applyAllJobsFilters", () => {
         category: "ai-agentic",
         url: "https://jobs.ashbyhq.com/openai",
         description: "x".repeat(40),
-        fetchedAt: new Date(NOW - 10 * 60_000).toISOString(),
+        postedAt: new Date(NOW - 10 * 60_000).toISOString(),
       }),
       job({
         company: "Lyft",
         category: "travel",
         url: "https://www.lyft.com/jobs/1",
         description: "",
-        fetchedAt: new Date(NOW - 10 * 60_000).toISOString(),
+        postedAt: new Date(NOW - 10 * 60_000).toISOString(),
       }),
     ];
     const result = applyAllJobsFilters(jobs, {
@@ -244,5 +275,19 @@ describe("formatRelativeTime", () => {
 
   it("formats hours ago", () => {
     expect(formatRelativeTime(new Date(NOW - 3 * 3_600_000).toISOString(), NOW)).toBe("3h ago");
+  });
+
+  it('returns em dash for empty dates', () => {
+    expect(formatRelativeTime("", NOW)).toBe("—");
+  });
+});
+
+describe("formatOpenDate", () => {
+  it("formats ISO timestamps as a medium locale date", () => {
+    expect(formatOpenDate("2026-06-01T15:30:00.000Z")).toBe("Jun 1, 2026");
+  });
+
+  it('returns em dash for empty dates', () => {
+    expect(formatOpenDate("")).toBe("—");
   });
 });

@@ -13,6 +13,8 @@ export interface Job {
   url: string;
   category: string;
   fetchedAt: string;
+  /** ATS position posted date (sheet column N). */
+  postedAt: string;
   description: string;
   resumeUrl?: string;
   coverLetter?: string;
@@ -43,7 +45,7 @@ export async function GET() {
     const sheets = google.sheets({ version: "v4", auth });
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `${SHEET_NAME}!A:M`,
+      range: `${SHEET_NAME}!A:N`,
     });
 
     const rows = response.data.values ?? [];
@@ -58,6 +60,7 @@ export async function GET() {
       url: row[3] ?? "",
       category: row[4] ?? "",
       fetchedAt: row[5] ?? "",
+      postedAt: row[13] ?? "",
       description: row[6] ?? "",
       resumeUrl: row[7] ?? "",
       coverLetter: row[8] ?? "",

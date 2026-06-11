@@ -18,6 +18,7 @@ import {
   filterByTime,
   filterByCountryLocation,
   formatRelativeTime,
+  formatOpenDate,
   toggleSortColumn,
   uniqueCategories,
   type TimeFilter,
@@ -26,6 +27,7 @@ import {
   type PlatformFilter,
   type CountryLocationFilter,
 } from "@/lib/admin/allJobsFilters";
+import { glass, glassCn } from "@/lib/glass";
 import {
   resolveCompanyLogo,
   companyInitial,
@@ -79,7 +81,7 @@ const TABLE_COLUMNS: { id: SortColumn; label: string }[] = [
   { id: "location", label: "Location" },
   { id: "category", label: "Category" },
   { id: "platform", label: "Platform" },
-  { id: "fetchedAt", label: "Fetched" },
+  { id: "postedAt", label: "Position open date" },
 ];
 
 function CompanyLogo({ company, url }: { company: string; url: string }) {
@@ -162,7 +164,7 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
   }, [job.url]);
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-white/8 bg-white/[0.03]">
+    <div className="glass-panel flex h-full flex-col">
       <div className="flex items-start justify-between gap-2 border-b border-white/8 px-4 py-3">
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
@@ -186,14 +188,31 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
         <div className="space-y-2">
           <DetailRow
-            label="Fetched"
+            label="Position open date"
             value={
-              <>
-                {formatRelativeTime(job.fetchedAt, now)}{" "}
-                <span className="text-slate-500">({formatAbsolute(job.fetchedAt)})</span>
-              </>
+              job.postedAt ? (
+                <>
+                  {formatOpenDate(job.postedAt)}{" "}
+                  <span className="text-slate-500">
+                    ({formatRelativeTime(job.postedAt, now)})
+                  </span>
+                </>
+              ) : (
+                "—"
+              )
             }
           />
+          {job.fetchedAt && (
+            <DetailRow
+              label="Last seen"
+              value={
+                <>
+                  {formatRelativeTime(job.fetchedAt, now)}{" "}
+                  <span className="text-slate-500">({formatAbsolute(job.fetchedAt)})</span>
+                </>
+              }
+            />
+          )}
           <DetailRow label="Category" value={categoryLabel(job.category)} />
           <DetailRow label="Location" value={job.location} />
           <DetailRow
@@ -381,7 +400,7 @@ export default function AllJobsTab() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search company, title, location, URL…"
-          className="h-9 min-w-[200px] flex-1 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400/40 dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:placeholder:text-slate-500"
+          className="glass-input h-9 min-w-[200px] flex-1 px-3 text-xs"
         />
         <select
           value={platform}
@@ -406,16 +425,11 @@ export default function AllJobsTab() {
       </div>
 
       {/* Category tabs */}
-      <div className="flex flex-wrap gap-1 rounded-xl border border-slate-200/50 bg-slate-100 p-1 dark:border-transparent dark:bg-white/5">
+      <div className={glass.tabGroup}>
         <button
           type="button"
           onClick={() => setCategory("all")}
-          className={[
-            "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
-            category === "all"
-              ? "bg-white text-indigo-600 shadow-sm dark:bg-indigo-500/20 dark:text-indigo-300"
-              : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200",
-          ].join(" ")}
+          className={category === "all" ? glass.tabActive : glass.tab}
         >
           All categories
         </button>
@@ -424,12 +438,7 @@ export default function AllJobsTab() {
             key={cat}
             type="button"
             onClick={() => setCategory(cat)}
-            className={[
-              "rounded-lg px-3 py-1.5 text-xs font-semibold transition-all",
-              category === cat
-                ? "bg-white text-indigo-600 shadow-sm dark:bg-indigo-500/20 dark:text-indigo-300"
-                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200",
-            ].join(" ")}
+            className={category === cat ? glass.tabActive : glass.tab}
           >
             {categoryLabel(cat)}
           </button>
@@ -448,23 +457,15 @@ export default function AllJobsTab() {
               key={id}
               type="button"
               onClick={() => setCountryLocation(id)}
-              className={[
-                "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold shadow-sm transition-all duration-200",
+              className={glassCn(
                 countryLocation === id
-                  ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:text-slate-200",
-              ].join(" ")}
+                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.pill
+              )}
             >
               {label}
               {count > 0 && (
-                <span
-                  className={[
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                    countryLocation === id
-                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200"
-                      : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-400",
-                  ].join(" ")}
-                >
+                <span className={glass.pillBadge}>
                   {count}
                 </span>
               )}
@@ -476,7 +477,7 @@ export default function AllJobsTab() {
       {/* Time filter pills */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-          Fetched within:
+          Posted within:
         </span>
         {TIME_FILTERS.map(({ id, label }) => {
           const count = filterByTime(jobs, id).length;
@@ -485,23 +486,15 @@ export default function AllJobsTab() {
               key={id}
               type="button"
               onClick={() => setTimeFilter(id)}
-              className={[
-                "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold shadow-sm transition-all duration-200",
+              className={glassCn(
                 timeFilter === id
-                  ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:text-slate-200",
-              ].join(" ")}
+                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.pill
+              )}
             >
               {label}
               {count > 0 && (
-                <span
-                  className={[
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                    timeFilter === id
-                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200"
-                      : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-400",
-                  ].join(" ")}
-                >
+                <span className={glass.pillBadge}>
                   {count}
                 </span>
               )}
@@ -515,7 +508,7 @@ export default function AllJobsTab() {
         {/* Job list */}
         <div className="min-w-0 flex-1">
           {filtered.length === 0 ? (
-            <div className="rounded-2xl border border-white/8 bg-white/3 py-16 text-center">
+            <div className="glass-panel py-16 text-center">
               <p className="text-sm text-slate-600">
                 {jobs.length === 0
                   ? "No jobs in sheet — run the scraper or configure Google Sheets."
@@ -523,9 +516,9 @@ export default function AllJobsTab() {
               </p>
             </div>
           ) : (
-            <div className="max-h-[calc(100vh-22rem)] overflow-auto rounded-2xl border border-white/8">
+            <div className="glass-table max-h-[calc(100vh-22rem)] overflow-auto">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 z-10 bg-slate-900/95 backdrop-blur">
+                <thead className="glass-table-head sticky top-0 z-10">
                   <tr className="border-b border-white/8">
                     {TABLE_COLUMNS.map(({ id, label }) => (
                       <SortableHeader
@@ -587,8 +580,8 @@ export default function AllJobsTab() {
                             {plat}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-2.5 font-mono text-[10px] text-slate-500">
-                          {formatRelativeTime(job.fetchedAt)}
+                        <td className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500">
+                          {formatOpenDate(job.postedAt)}
                         </td>
                         <td className="whitespace-nowrap px-3 py-2.5">
                           <a

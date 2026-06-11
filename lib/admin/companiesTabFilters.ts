@@ -5,7 +5,6 @@
 import {
   NEW_JOB_WINDOW_MS,
   TIME_FILTERS,
-  filterByTime as filterJobsByTime,
   type TimeFilter,
 } from "@/lib/admin/allJobsFilters";
 
@@ -28,7 +27,7 @@ export const COMPANIES_TIME_FILTERS = TIME_FILTERS.filter(
 
 export type CompanyCategory = "travel" | "ai-agentic" | "general" | "hiring-cafe";
 
-export type CompanySortMode = "name" | "jobCount" | "category";
+export type CompanySortMode = "name" | "jobCount" | "category" | "maxAts";
 
 export type RoleSortMode = "newest" | "ats" | "title";
 
@@ -68,6 +67,7 @@ export const CATEGORY_BADGE: Record<
 };
 
 export interface CompanyJobRow {
+  rowIndex?: number;
   company: string;
   title: string;
   location: string;
@@ -75,14 +75,30 @@ export interface CompanyJobRow {
   category: string;
   fetchedAt: string;
   description: string;
+  atsScore?: string;
+  applyStatus?: string;
+  appliedAt?: string;
 }
 
+function fetchedTimestamp(iso: string): number | null {
+  if (!iso?.trim()) return null;
+  const t = new Date(iso).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+/** Companies tab time windows use last-seen (`fetchedAt`), not ATS posted date. */
 export function filterJobsByCompaniesTime(
   jobs: CompanyJobRow[],
   filter: CompaniesTimeFilter,
   now = Date.now()
 ): CompanyJobRow[] {
-  return filterJobsByTime(jobs, filter, now);
+  const { ms } = TIME_FILTERS.find((f) => f.id === filter)!;
+  if (ms == null) return jobs;
+  return jobs.filter((j) => {
+    const fetched = fetchedTimestamp(j.fetchedAt);
+    if (fetched === null) return false;
+    return now - fetched <= ms;
+  });
 }
 
 export function filterCompaniesBySearch<T extends { name: string }>(
@@ -105,10 +121,18 @@ export function filterCompaniesByCategories<T extends { category: CompanyCategor
 export function sortCompanies<T extends { name: string; category: CompanyCategory }>(
   companies: T[],
   mode: CompanySortMode,
-  jobCounts: Record<string, number>
+  jobCounts: Record<string, number>,
+  maxAtsByCompany: Record<string, number> = {}
 ): T[] {
   const arr = [...companies];
   switch (mode) {
+    case "maxAts":
+      return arr.sort(
+        (a, b) =>
+          (maxAtsByCompany[b.name] ?? 0) - (maxAtsByCompany[a.name] ?? 0) ||
+          (jobCounts[b.name] ?? 0) - (jobCounts[a.name] ?? 0) ||
+          a.name.localeCompare(b.name)
+      );
     case "jobCount":
       return arr.sort(
         (a, b) =>
@@ -123,6 +147,19 @@ export function sortCompanies<T extends { name: string; category: CompanyCategor
     default:
       return arr.sort((a, b) => a.name.localeCompare(b.name));
   }
+}
+
+/** Highest ATS score per company from a job list and score map. */
+export function buildMaxAtsByCompany(
+  jobs: CompanyJobRow[],
+  scores: Map<string, number>
+): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const j of jobs) {
+    const score = scores.get(j.url) ?? 0;
+    if (score > (out[j.company] ?? 0)) out[j.company] = score;
+  }
+  return out;
 }
 
 export function filterRolesBySearch(jobs: CompanyJobRow[], q: string): CompanyJobRow[] {

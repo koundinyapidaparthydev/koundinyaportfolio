@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { calculateAtsScore } from "@/lib/atsScoring";
 import type { Resume } from "@/types/resume";
 import type { AtsResult } from "@/lib/atsScoring";
+import { glass, glassCn } from "@/lib/glass";
 import {
   CATEGORY_BADGE,
   CATEGORY_OPTIONS,
@@ -16,6 +17,7 @@ import {
   filterByCountryLocation,
   filterRolesByLocation,
   filterRolesBySearch,
+  buildMaxAtsByCompany,
   sortCompanies,
   sortRoles,
   toggleCategoryFilter,
@@ -205,6 +207,7 @@ function CompanyCard({
   category,
   jobCount,
   newCount,
+  maxAts,
   isSelected,
   onSelect,
 }: {
@@ -212,6 +215,7 @@ function CompanyCard({
   category: CompanyCategory;
   jobCount: number;
   newCount: number;
+  maxAts?: number;
   isSelected: boolean;
   onSelect: () => void;
 }) {
@@ -304,6 +308,19 @@ function CompanyCard({
           )}
         </div>
         <div className="ml-1 flex shrink-0 items-center gap-1">
+          {maxAts != null && maxAts > 0 && (
+            <span
+              className={[
+                "rounded-full border px-1.5 py-0.5 text-[10px] font-bold",
+                maxAts >= 70
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-300"
+                  : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-300",
+              ].join(" ")}
+              title="Best ATS match in this company"
+            >
+              {maxAts}% ATS
+            </span>
+          )}
           {newCount > 0 && (
             <span className="rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400">
               +{newCount} new
@@ -417,6 +434,328 @@ function AtsInsightPanel({ ats, job }: { ats: AtsResult; job: Job }) {
   );
 }
 
+function isJobApplied(job: Job): boolean {
+  return job.applyStatus?.trim().toLowerCase() === "applied";
+}
+
+function jobAtsScore(
+  job: Job,
+  scores: Map<string, number>,
+  resume: Resume | null
+): number | null {
+  const cached = scores.get(job.url);
+  if (cached != null) return cached;
+  if (resume && job.description) return calculateAtsScore(job.description, resume).score;
+  return null;
+}
+
+function CompanyJobsModal({
+  companyLabel,
+  isHiringCafe,
+  rawJobs,
+  filteredJobs,
+  loading,
+  error,
+  timeFilterLabel,
+  roleSearch,
+  onRoleSearchChange,
+  locationFilter,
+  onLocationFilterChange,
+  sortBy,
+  onSortByChange,
+  hideApplied,
+  onHideAppliedChange,
+  expandedJob,
+  onExpandedJobChange,
+  resume,
+  atsScores,
+  generating,
+  onGenerate,
+  onToggleApplied,
+  onClose,
+  onResetRoleFilters,
+}: {
+  companyLabel: string;
+  isHiringCafe: boolean;
+  rawJobs: Job[];
+  filteredJobs: Job[];
+  loading: boolean;
+  error: string | null;
+  timeFilterLabel: string;
+  roleSearch: string;
+  onRoleSearchChange: (v: string) => void;
+  locationFilter: LocationFilter;
+  onLocationFilterChange: (v: LocationFilter) => void;
+  sortBy: RoleSortMode;
+  onSortByChange: (v: RoleSortMode) => void;
+  hideApplied: boolean;
+  onHideAppliedChange: (v: boolean) => void;
+  expandedJob: string | null;
+  onExpandedJobChange: (url: string | null) => void;
+  resume: Resume | null;
+  atsScores: Map<string, number>;
+  generating: Record<string, "resume" | "cover">;
+  onGenerate: (job: Job, type: "resume" | "cover") => void;
+  onToggleApplied: (job: Job, applied: boolean) => void;
+  onClose: () => void;
+  onResetRoleFilters: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const appliedCount = rawJobs.filter(isJobApplied).length;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="company-jobs-modal-title"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+        aria-label="Close"
+        onClick={onClose}
+      />
+      <div className="relative z-10 flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-slate-900 sm:rounded-2xl">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-white/10">
+          <div className="min-w-0">
+            <h3 id="company-jobs-modal-title" className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
+              {companyLabel}
+            </h3>
+            <p className="mt-0.5 text-xs text-slate-500">
+              {rawJobs.length === 0
+                ? `No roles in the ${timeFilterLabel}`
+                : `${rawJobs.length} ${rawJobs.length === 1 ? "role" : "roles"} · ${timeFilterLabel}`}
+              {appliedCount > 0 && ` · ${appliedCount} applied`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 dark:hover:bg-white/10 dark:hover:text-slate-200"
+            aria-label="Close"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {isHiringCafe && rawJobs.length > 0 && (
+          <div className="border-b border-amber-200/60 bg-amber-50/50 px-5 py-2.5 dark:border-amber-500/20 dark:bg-amber-500/[0.06]">
+            <p className="text-[11px] text-amber-800 dark:text-amber-300">
+              ☕ Easy-apply roles from{" "}
+              <a href={HIRING_CAFE_VIRTUAL.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-950 dark:hover:text-amber-200">
+                hiring.cafe
+              </a>
+            </p>
+          </div>
+        )}
+
+        {rawJobs.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-5 py-3 dark:border-white/5">
+            <div className="relative min-w-[140px] flex-1">
+              <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input
+                type="text"
+                value={roleSearch}
+                onChange={(e) => onRoleSearchChange(e.target.value)}
+                placeholder={isHiringCafe ? "Search roles or companies…" : "Search roles…"}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-7 pr-3 text-xs text-slate-700 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 dark:border-white/8 dark:bg-white/5 dark:text-slate-300"
+              />
+            </div>
+            <div className="flex gap-1">
+              {(["all", "remote", "onsite"] as LocationFilter[]).map((loc) => (
+                <button
+                  key={loc}
+                  type="button"
+                  onClick={() => onLocationFilterChange(loc)}
+                  className={[
+                    "rounded-full border px-2.5 py-1 text-[10px] font-semibold shadow-sm transition-all duration-200",
+                    locationFilter === loc
+                      ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
+                      : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:text-slate-200",
+                  ].join(" ")}
+                >
+                  {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
+                </button>
+              ))}
+            </div>
+            <select
+              value={sortBy}
+              onChange={(e) => onSortByChange(e.target.value as RoleSortMode)}
+              className="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[10px] text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 dark:border-white/8 dark:bg-white/5 dark:text-slate-400"
+            >
+              <option value="ats">Highest ATS</option>
+              <option value="newest">Newest first</option>
+              <option value="title">Title A–Z</option>
+            </select>
+            <label className="flex cursor-pointer items-center gap-1.5 text-[10px] text-slate-500">
+              <input
+                type="checkbox"
+                checked={hideApplied}
+                onChange={(e) => onHideAppliedChange(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              Hide applied
+            </label>
+          </div>
+        )}
+
+        <div className="min-h-0 flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-16 text-sm text-slate-600">Loading jobs…</div>
+          ) : rawJobs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-16 text-slate-600">
+              <p className="text-sm">
+                {error ? "Configure Google Sheets to see live jobs" : `No roles in the ${timeFilterLabel} — try a wider window`}
+              </p>
+            </div>
+          ) : filteredJobs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-600">
+              <p className="text-sm">No roles match your filters</p>
+              <button type="button" onClick={onResetRoleFilters} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
+                Clear filters
+              </button>
+            </div>
+          ) : (
+            <ul className="divide-y divide-slate-100 dark:divide-white/5">
+              {filteredJobs.map((job) => {
+                const isNew = job.fetchedAt && Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
+                const isExpanded = expandedJob === job.url;
+                const atsVal = jobAtsScore(job, atsScores, resume);
+                const ats =
+                  atsVal != null && resume && job.description
+                    ? { ...calculateAtsScore(job.description, resume), score: atsVal }
+                    : null;
+                const salary = isHiringCafe ? extractSalary(job.description ?? "") : "";
+                const resumeKey = `${job.url}:resume`;
+                const coverKey = `${job.url}:cover`;
+                const genResume = !!generating[resumeKey];
+                const genCover = !!generating[coverKey];
+                const applied = isJobApplied(job);
+                return (
+                  <li
+                    key={job.url}
+                    className={[
+                      "px-5 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.03]",
+                      isExpanded ? "bg-slate-50/80 dark:bg-white/[0.02]" : "",
+                      applied ? "opacity-75" : "",
+                    ].join(" ")}
+                  >
+                    <div className={isHiringCafe ? "flex items-start gap-2" : "flex items-center gap-2"}>
+                      <label
+                        className="flex shrink-0 cursor-pointer items-center"
+                        title={applied ? "Mark as not applied" : "Mark as applied"}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={applied}
+                          onChange={(e) => onToggleApplied(job, e.target.checked)}
+                          className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 dark:border-white/20"
+                        />
+                      </label>
+                      {ats && (
+                        <div className={isHiringCafe ? "mt-0.5 shrink-0" : "shrink-0"} title={`ATS score: ${ats.score}%`}>
+                          <AtsRing score={ats.score} size={36} />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className={["truncate text-sm font-medium text-slate-800 dark:text-slate-200", applied ? "line-through" : ""].join(" ")}>
+                            {job.title}
+                          </p>
+                          {applied && (
+                            <span className="shrink-0 rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-300">
+                              ✓ Applied
+                            </span>
+                          )}
+                          {isHiringCafe && (
+                            <span className="shrink-0 rounded-full border border-amber-100 bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400">
+                              ⚡ Easy Apply
+                            </span>
+                          )}
+                          {isNew && !applied && (
+                            <span className="shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400">
+                              NEW
+                            </span>
+                          )}
+                          {ats && ats.score >= 70 && !applied && (
+                            <span className="shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/15 dark:text-emerald-300">
+                              ✓ Strong fit
+                            </span>
+                          )}
+                        </div>
+                        {(job.location || (isHiringCafe && job.company)) && (
+                          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                            {isHiringCafe && job.company && job.company !== "Hiring Cafe" && (
+                              <span className="rounded bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-400">{job.company}</span>
+                            )}
+                            {job.location && <p className="truncate text-xs text-slate-500">{job.location}</p>}
+                            {salary && (
+                              <span className="rounded border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">{salary}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {job.fetchedAt && (
+                        <span className="hidden shrink-0 text-[10px] text-slate-500 sm:block">{timeAgo(job.fetchedAt)}</span>
+                      )}
+                      {job.description && (
+                        <button type="button" title="Generate tailored resume PDF" disabled={genResume || genCover} onClick={() => onGenerate(job, "resume")}
+                          className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:hover:border-indigo-500/30 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300">
+                          {genResume ? "…" : "📄 CV"}
+                        </button>
+                      )}
+                      {job.description && (
+                        <button type="button" title="Generate cover letter PDF" disabled={genResume || genCover} onClick={() => onGenerate(job, "cover")}
+                          className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:hover:border-violet-500/30 dark:hover:bg-violet-500/10 dark:hover:text-violet-300">
+                          {genCover ? "…" : "✉ CL"}
+                        </button>
+                      )}
+                      {job.description && (
+                        <button type="button" onClick={() => onExpandedJobChange(isExpanded ? null : job.url)}
+                          className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-slate-200"
+                          aria-label={isExpanded ? "Hide details" : "Show details"}>
+                          {isExpanded ? "▲" : "▼"}
+                        </button>
+                      )}
+                      <a href={job.url} target="_blank" rel="noopener noreferrer"
+                        className={[
+                          "shrink-0 rounded-lg border px-3 py-1 text-xs font-medium transition-all",
+                          isHiringCafe
+                            ? "border-amber-200 bg-amber-50 font-semibold text-amber-700 hover:border-amber-300 hover:bg-amber-100/60 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
+                            : "border-slate-200 bg-white text-slate-600 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/20 dark:hover:text-slate-100",
+                        ].join(" ")}>
+                        Apply
+                      </a>
+                    </div>
+                    {isExpanded && ats && <AtsInsightPanel ats={ats} job={job} />}
+                    {isExpanded && !ats && job.description && (
+                      <div className="mt-3 border-t border-slate-200 pt-3 dark:border-white/5">
+                        <div className="max-h-60 overflow-y-auto whitespace-pre-wrap pr-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{job.description}</div>
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CompaniesTab({
   onViewAllJobs,
 }: {
@@ -424,8 +763,9 @@ export default function CompaniesTab({
 }) {
   const [categoryFilters, setCategoryFilters] = useState<Set<CompanyCategory>>(new Set());
   const [companySearch, setCompanySearch] = useState("");
-  const [companySort, setCompanySort] = useState<CompanySortMode>("name");
+  const [companySort, setCompanySort] = useState<CompanySortMode>("maxAts");
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [hideApplied, setHideApplied] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
@@ -439,19 +779,24 @@ export default function CompaniesTab({
     { running: false, done: 0, total: 0, errors: 0 }
   );
   const [roleSearch, setRoleSearch] = useState("");
-  const [sortBy, setSortBy] = useState<RoleSortMode>("newest");
+  const [sortBy, setSortBy] = useState<RoleSortMode>("ats");
   const [locationFilter, setLocationFilter] = useState<LocationFilter>("all");
   const [archiving, setArchiving] = useState(false);
   const [archiveResult, setArchiveResult] = useState<{ archived: number; kept: number } | null>(null);
 
-  // Pre-compute ATS scores for all jobs with descriptions (keyed by URL)
-  const atsScores = new Map<string, number>(
-    resume
-      ? jobs
-          .filter((j) => j.description)
-          .map((j) => [j.url, calculateAtsScore(j.description, resume).score])
-      : []
-  );
+  // ATS scores: prefer sheet column J, fallback to client-side keyword match
+  const atsScores = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const j of jobs) {
+      const sheetScore = j.atsScore?.trim();
+      if (sheetScore && !Number.isNaN(Number(sheetScore))) {
+        map.set(j.url, Number(sheetScore));
+      } else if (resume && j.description) {
+        map.set(j.url, calculateAtsScore(j.description, resume).score);
+      }
+    }
+    return map;
+  }, [jobs, resume]);
 
   const fetchJobs = useCallback(async () => {
     setLoading(true);
@@ -556,6 +901,10 @@ export default function CompaniesTab({
   }, {});
   const hiringCafeJobCount = filteredJobs.filter((j) => j.category === "hiring-cafe").length;
   const hiringCafeNewCount = newJobs.filter((j) => j.category === "hiring-cafe").length;
+  const maxAtsByCompany = useMemo(
+    () => buildMaxAtsByCompany(filteredJobs, atsScores),
+    [filteredJobs, atsScores]
+  );
 
   const visibleCompanies = useMemo(() => {
     let list = filterCompaniesByCategories(ALL_COMPANIES, categoryFilters);
@@ -571,8 +920,12 @@ export default function CompaniesTab({
     };
 
     const cards: CompanyWithCategory[] = showHiringCafe ? [...list, HIRING_CAFE_VIRTUAL] : list;
-    return sortCompanies(cards, companySort, counts);
-  }, [categoryFilters, companySearch, companySort, jobCountsByCompany, hiringCafeJobCount]);
+    const atsCounts = {
+      ...maxAtsByCompany,
+      [HIRING_CAFE_VIRTUAL.name]: maxAtsByCompany[HIRING_CAFE_VIRTUAL.name] ?? 0,
+    };
+    return sortCompanies(cards, companySort, counts, atsCounts);
+  }, [categoryFilters, companySearch, companySort, jobCountsByCompany, hiringCafeJobCount, maxAtsByCompany]);
 
   const isHiringCafeSelected = selectedCompany === HIRING_CAFE_KEY;
   const selectedCompanyLabel = isHiringCafeSelected
@@ -586,7 +939,9 @@ export default function CompaniesTab({
       : [];
 
   const selectedJobs = sortRoles(
-    filterRolesByLocation(filterRolesBySearch(rawSelectedJobs, roleSearch), locationFilter),
+    filterRolesByLocation(filterRolesBySearch(rawSelectedJobs, roleSearch), locationFilter).filter(
+      (j) => !hideApplied || !isJobApplied(j)
+    ),
     sortBy,
     atsScores
   );
@@ -594,18 +949,48 @@ export default function CompaniesTab({
 
   const resetRoleFilters = useCallback(() => {
     setRoleSearch("");
-    setSortBy("newest");
+    setSortBy("ats");
     setLocationFilter("all");
+    setHideApplied(false);
   }, []);
 
-  const selectCompany = useCallback(
+  const openCompany = useCallback(
     (key: string) => {
-      setSelectedCompany((prev) => (prev === key ? null : key));
+      setSelectedCompany(key);
       setExpandedJob(null);
       resetRoleFilters();
     },
     [resetRoleFilters]
   );
+
+  const closeCompany = useCallback(() => {
+    setSelectedCompany(null);
+    setExpandedJob(null);
+  }, []);
+
+  const handleToggleApplied = useCallback(async (job: Job, applied: boolean) => {
+    if (!job.rowIndex) {
+      alert("Cannot update — job row index missing. Refresh and try again.");
+      return;
+    }
+    const prev = { ...job };
+    const applyStatus = applied ? "applied" : "";
+    const appliedAt = applied ? new Date().toISOString() : "";
+    setJobs((list) =>
+      list.map((j) => (j.url === job.url ? { ...j, applyStatus, appliedAt } : j))
+    );
+    try {
+      const res = await fetch("/api/jobs/apply-status", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIndex: job.rowIndex, applyStatus, appliedAt }),
+      });
+      if (!res.ok) throw new Error("Update failed");
+    } catch {
+      setJobs((list) => list.map((j) => (j.url === job.url ? prev : j)));
+      alert("Failed to save apply status. Try again.");
+    }
+  }, []);
 
   const timeFilterLabel =
     COMPANIES_TIME_FILTERS.find((f) => f.id === timeFilter)?.label.toLowerCase() ?? "";
@@ -662,7 +1047,7 @@ export default function CompaniesTab({
   }, [topMatches, bulkState.running]);
 
   return (
-    <section className="rounded-2xl border dark:border-white/8 border-slate-200 dark:bg-white/[0.03] bg-white p-6 shadow-sm">
+    <section className="glass-panel p-6">
       {/* Header */}
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
@@ -814,8 +1199,9 @@ export default function CompaniesTab({
           onChange={(e) => setCompanySort(e.target.value as CompanySortMode)}
           className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs text-slate-600 focus:border-indigo-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
         >
-          <option value="name">Sort: Name A–Z</option>
+          <option value="maxAts">Sort: Highest ATS</option>
           <option value="jobCount">Sort: Most roles</option>
+          <option value="name">Sort: Name A–Z</option>
           <option value="category">Sort: Category</option>
         </select>
       </div>
@@ -825,12 +1211,11 @@ export default function CompaniesTab({
         <button
           type="button"
           onClick={() => setCategoryFilters(new Set())}
-          className={[
-            "rounded-full border px-3 py-1 text-[11px] font-semibold transition-all",
+          className={glassCn(
             categoryFilters.size === 0
-              ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
-              : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:text-slate-200",
-          ].join(" ")}
+              ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+              : glass.pill
+          )}
         >
           All categories
         </button>
@@ -841,12 +1226,11 @@ export default function CompaniesTab({
               key={id}
               type="button"
               onClick={() => setCategoryFilters((prev) => toggleCategoryFilter(prev, id))}
-              className={[
-                "rounded-full border px-3 py-1 text-[11px] font-semibold transition-all",
+              className={glassCn(
                 active
-                  ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:text-slate-200",
-              ].join(" ")}
+                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.pill
+              )}
             >
               {label}
             </button>
@@ -869,23 +1253,15 @@ export default function CompaniesTab({
               key={id}
               type="button"
               onClick={() => setCountryLocation(id)}
-              className={[
-                "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold shadow-sm transition-all duration-200",
+              className={glassCn(
                 countryLocation === id
-                  ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
-                  : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:text-slate-200",
-              ].join(" ")}
+                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.pill
+              )}
             >
               {label}
               {count > 0 && (
-                <span
-                  className={[
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                    countryLocation === id
-                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200"
-                      : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-400",
-                  ].join(" ")}
-                >
+                <span className={glass.pillBadge}>
                   {count}
                 </span>
               )}
@@ -907,24 +1283,21 @@ export default function CompaniesTab({
               key={id}
               type="button"
               onClick={() => setTimeFilter(id)}
-              className={[
-                "flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold shadow-sm transition-all duration-200",
+              className={glassCn(
                 timeFilter === id
-                  ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
-                  : "bg-white text-slate-500 hover:border-slate-300 hover:text-slate-800 dark:border-white/10 dark:bg-white/5 dark:hover:border-white/20 dark:hover:text-slate-200",
-              ].join(" ")}
+                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.pill
+              )}
             >
               {label}
               {count > 0 && (
                 <span
-                  className={[
-                    "rounded-full px-1.5 py-0.5 text-[10px] font-bold",
-                    timeFilter === id
-                      ? "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/30 dark:text-indigo-200"
-                      : id === "30m" && count > 0
-                        ? "border border-emerald-100 bg-emerald-50 text-emerald-600 dark:border-transparent dark:bg-emerald-500/20 dark:text-emerald-400"
-                        : "bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-400",
-                  ].join(" ")}
+                  className={glassCn(
+                    glass.pillBadge,
+                    timeFilter !== id &&
+                      id === "30m" &&
+                      "border-emerald-200/80 bg-emerald-500/10 text-emerald-600 dark:border-emerald-500/30 dark:text-emerald-400"
+                  )}
                 >
                   {count}
                 </span>
@@ -966,209 +1339,42 @@ export default function CompaniesTab({
                 category={company.category}
                 jobCount={jobCount}
                 newCount={newCount}
+                maxAts={company.isVirtual ? maxAtsByCompany[HIRING_CAFE_VIRTUAL.name] : maxAtsByCompany[company.name]}
                 isSelected={selectedCompany === key}
-                onSelect={() => selectCompany(key)}
+                onSelect={() => openCompany(key)}
               />
             );
           })}
         </div>
       )}
 
-      {selectedCompany && (
-        <div className="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-white/10 dark:bg-white/[0.03]">
-          <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3 dark:border-white/8">
-            <div>
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                {selectedCompanyLabel}
-              </h3>
-              <p className="mt-0.5 text-xs text-slate-500">
-                {rawSelectedJobs.length === 0
-                  ? `No new roles in the ${timeFilterLabel}`
-                  : `${rawSelectedJobs.length} engineering ${rawSelectedJobs.length === 1 ? "role" : "roles"} · ${timeFilterLabel}`}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setSelectedCompany(null)}
-              className="p-1 text-slate-600 transition-colors hover:text-slate-300"
-              aria-label="Close"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
-          </div>
-
-          {isHiringCafeSelected && rawSelectedJobs.length > 0 && (
-            <div className="border-b border-amber-200/60 bg-amber-50/50 px-5 py-2.5 dark:border-amber-500/20 dark:bg-amber-500/[0.06]">
-              <p className="text-[11px] text-amber-800 dark:text-amber-300">
-                ☕ Easy-apply roles from{" "}
-                <a href={HIRING_CAFE_VIRTUAL.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-950 dark:hover:text-amber-200">
-                  hiring.cafe
-                </a>{" "}
-                — simple application forms only
-              </p>
-            </div>
-          )}
-
-          {rawSelectedJobs.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-5 py-2.5 dark:border-white/5">
-              <div className="relative min-w-[160px] flex-1">
-                <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                </svg>
-                <input
-                  type="text"
-                  value={roleSearch}
-                  onChange={(e) => setRoleSearch(e.target.value)}
-                  placeholder={isHiringCafeSelected ? "Search roles or companies…" : "Search roles…"}
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-7 pr-3 text-xs text-slate-700 placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 dark:border-white/8 dark:bg-white/5 dark:text-slate-300"
-                />
-              </div>
-              <div className="flex gap-1">
-                {(["all", "remote", "onsite"] as LocationFilter[]).map((loc) => (
-                  <button
-                    key={loc}
-                    type="button"
-                    onClick={() => setLocationFilter(loc)}
-                    className={[
-                      "rounded-full border px-2.5 py-1 text-[10px] font-semibold shadow-sm transition-all duration-200",
-                      locationFilter === loc
-                        ? "border-indigo-200 bg-indigo-50 text-indigo-600 dark:border-indigo-500/40 dark:bg-indigo-500/20 dark:text-indigo-300"
-                        : "border-slate-200 bg-white text-slate-500 hover:border-slate-300 dark:border-white/10 dark:bg-white/5 dark:hover:text-slate-200",
-                    ].join(" ")}
-                  >
-                    {loc === "all" ? "All" : loc === "remote" ? "🏠 Remote" : "🏢 Onsite"}
-                  </button>
-                ))}
-              </div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as RoleSortMode)}
-                className="cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[10px] text-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 dark:border-white/8 dark:bg-white/5 dark:text-slate-400"
-              >
-                <option value="newest">Newest first</option>
-                <option value="ats">Highest ATS</option>
-                <option value="title">Title A–Z</option>
-              </select>
-              {selectedJobs.length !== rawSelectedJobs.length && (
-                <span className="text-[10px] text-slate-500">{selectedJobs.length}/{rawSelectedJobs.length} shown</span>
-              )}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="flex items-center justify-center py-10 text-sm text-slate-600">Loading jobs…</div>
-          ) : rawSelectedJobs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-10 text-slate-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 opacity-30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-              <p className="text-sm">
-                {error ? "Configure Google Sheets to see live jobs" : `No new roles in the ${timeFilterLabel} — try a wider window`}
-              </p>
-            </div>
-          ) : selectedJobs.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-2 py-8 text-slate-600">
-              <p className="text-sm">No roles match your filters</p>
-              <button type="button" onClick={resetRoleFilters} className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                Clear filters
-              </button>
-            </div>
-          ) : (
-            <ul className="max-h-[520px] divide-y divide-slate-100 overflow-y-auto dark:divide-white/5">
-              {selectedJobs.map((job, i) => {
-                const isNew = job.fetchedAt && Date.now() - new Date(job.fetchedAt).getTime() <= NEW_JOB_WINDOW_MS;
-                const isExpanded = expandedJob === job.url;
-                const ats = resume && job.description ? calculateAtsScore(job.description, resume) : null;
-                const salary = isHiringCafeSelected ? extractSalary(job.description ?? "") : "";
-                const resumeKey = `${job.url}:resume`;
-                const coverKey = `${job.url}:cover`;
-                const genResume = !!generating[resumeKey];
-                const genCover = !!generating[coverKey];
-                return (
-                  <li key={i} className={["px-5 py-3 transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.03]", isExpanded ? "bg-slate-50/80 dark:bg-white/[0.02]" : ""].join(" ")}>
-                    <div className={isHiringCafeSelected ? "flex items-start gap-2" : "flex items-center gap-2"}>
-                      {ats && (
-                        <div className={isHiringCafeSelected ? "mt-0.5 shrink-0" : "shrink-0"} title={`ATS score: ${ats.score}%`}>
-                          <AtsRing score={ats.score} size={36} />
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{job.title}</p>
-                          {isHiringCafeSelected && (
-                            <span className="shrink-0 rounded-full border border-amber-100 bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400">
-                              ⚡ Easy Apply
-                            </span>
-                          )}
-                          {isNew && (
-                            <span className="shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:border-emerald-500/30 dark:bg-emerald-500/20 dark:text-emerald-400">
-                              NEW
-                            </span>
-                          )}
-                          {ats && ats.score >= 70 && (
-                            <span className="shrink-0 rounded-full border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-700 dark:border-emerald-500/25 dark:bg-emerald-500/15 dark:text-emerald-300">
-                              ✓ Strong fit
-                            </span>
-                          )}
-                        </div>
-                        {(job.location || (isHiringCafeSelected && job.company)) && (
-                          <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                            {isHiringCafeSelected && job.company && job.company !== "Hiring Cafe" && (
-                              <span className="rounded bg-slate-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 dark:text-slate-400">{job.company}</span>
-                            )}
-                            {job.location && <p className="truncate text-xs text-slate-500">{job.location}</p>}
-                            {salary && (
-                              <span className="rounded border border-emerald-100 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-400">{salary}</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {job.fetchedAt && (
-                        <span className="hidden shrink-0 text-[10px] text-slate-500 sm:block">{timeAgo(job.fetchedAt)}</span>
-                      )}
-                      {job.description && (
-                        <button type="button" title="Generate tailored resume PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "resume")}
-                          className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 transition-all hover:border-indigo-200 hover:bg-indigo-50 hover:text-indigo-600 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:hover:border-indigo-500/30 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300">
-                          {genResume ? "…" : "📄 CV"}
-                        </button>
-                      )}
-                      {job.description && (
-                        <button type="button" title="Generate cover letter PDF" disabled={genResume || genCover} onClick={() => handleGenerate(job, "cover")}
-                          className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 disabled:opacity-40 dark:border-white/10 dark:bg-white/5 dark:hover:border-violet-500/30 dark:hover:bg-violet-500/10 dark:hover:text-violet-300">
-                          {genCover ? "…" : "✉ CL"}
-                        </button>
-                      )}
-                      {job.description && (
-                        <button type="button" onClick={() => setExpandedJob(isExpanded ? null : job.url)}
-                          className="shrink-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[10px] text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-600 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10 dark:hover:text-slate-200"
-                          aria-label={isExpanded ? "Hide details" : "Show details"}>
-                          {isExpanded ? "▲" : "▼"}
-                        </button>
-                      )}
-                      <a href={job.url} target="_blank" rel="noopener noreferrer"
-                        className={[
-                          "shrink-0 rounded-lg border px-3 py-1 text-xs font-medium transition-all",
-                          isHiringCafeSelected
-                            ? "border-amber-200 bg-amber-50 font-semibold text-amber-700 hover:border-amber-300 hover:bg-amber-100/60 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-400 dark:hover:bg-amber-500/20"
-                            : "border-slate-200 bg-white text-slate-600 hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/20 dark:hover:text-slate-100",
-                        ].join(" ")}>
-                        Apply
-                      </a>
-                    </div>
-                    {isExpanded && ats && <AtsInsightPanel ats={ats} job={job} />}
-                    {isExpanded && !ats && job.description && (
-                      <div className="mt-3 border-t border-slate-200 pt-3 dark:border-white/5">
-                        <div className="max-h-60 overflow-y-auto whitespace-pre-wrap pr-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{job.description}</div>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
+      {selectedCompany && selectedCompanyLabel && (
+        <CompanyJobsModal
+          companyLabel={selectedCompanyLabel}
+          isHiringCafe={isHiringCafeSelected}
+          rawJobs={rawSelectedJobs}
+          filteredJobs={selectedJobs}
+          loading={loading}
+          error={error}
+          timeFilterLabel={timeFilterLabel}
+          roleSearch={roleSearch}
+          onRoleSearchChange={setRoleSearch}
+          locationFilter={locationFilter}
+          onLocationFilterChange={setLocationFilter}
+          sortBy={sortBy}
+          onSortByChange={setSortBy}
+          hideApplied={hideApplied}
+          onHideAppliedChange={setHideApplied}
+          expandedJob={expandedJob}
+          onExpandedJobChange={setExpandedJob}
+          resume={resume}
+          atsScores={atsScores}
+          generating={generating}
+          onGenerate={handleGenerate}
+          onToggleApplied={handleToggleApplied}
+          onClose={closeCompany}
+          onResetRoleFilters={resetRoleFilters}
+        />
       )}
     </section>
   );

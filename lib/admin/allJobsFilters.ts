@@ -21,7 +21,7 @@ export type SortColumn =
   | "location"
   | "category"
   | "platform"
-  | "fetchedAt";
+  | "postedAt";
 export type SortDirection = "asc" | "desc";
 
 export interface AllJobsSort {
@@ -30,7 +30,7 @@ export interface AllJobsSort {
 }
 
 export const DEFAULT_ALL_JOBS_SORT: AllJobsSort = {
-  column: "fetchedAt",
+  column: "postedAt",
   direction: "desc",
 };
 
@@ -56,7 +56,10 @@ export interface AllJobsRow {
   location: string;
   url: string;
   category: string;
+  /** Scrape-time / last-seen timestamp (sheet column F). */
   fetchedAt: string;
+  /** ATS position posted date (sheet column N). */
+  postedAt: string;
   description: string;
 }
 
@@ -108,6 +111,16 @@ export function detectPlatformFromUrl(url = ""): PlatformFilter {
   return "other";
 }
 
+function postedTimestamp(iso: string): number | null {
+  if (!iso?.trim()) return null;
+  const t = new Date(iso).getTime();
+  return Number.isNaN(t) ? null : t;
+}
+
+/**
+ * Jobs without a posted date are excluded from time-window filters (not "all").
+ * They remain visible under "All time" and sort to the bottom when sorting by postedAt.
+ */
 export function filterByTime<T extends AllJobsRow>(
   jobs: T[],
   filter: TimeFilter,
@@ -116,9 +129,11 @@ export function filterByTime<T extends AllJobsRow>(
   if (filter === "all") return jobs;
   const { ms } = TIME_FILTERS.find((f) => f.id === filter)!;
   if (ms == null) return jobs;
-  return jobs.filter(
-    (j) => j.fetchedAt && now - new Date(j.fetchedAt).getTime() <= ms
-  );
+  return jobs.filter((j) => {
+    const posted = postedTimestamp(j.postedAt);
+    if (posted === null) return false;
+    return now - posted <= ms;
+  });
 }
 
 export function filterBySearch<T extends AllJobsRow>(jobs: T[], q: string): T[] {
@@ -169,7 +184,7 @@ export function toggleSortColumn(
   }
   return {
     column,
-    direction: column === "fetchedAt" ? "desc" : "asc",
+    direction: column === "postedAt" ? "desc" : "asc",
   };
 }
 
@@ -181,6 +196,15 @@ export function sortAllJobs<T extends AllJobsRow>(
   const dir = sort.direction === "asc" ? 1 : -1;
 
   return arr.sort((a, b) => {
+    if (sort.column === "postedAt") {
+      const aT = postedTimestamp(a.postedAt);
+      const bT = postedTimestamp(b.postedAt);
+      if (aT === null && bT === null) return 0;
+      if (aT === null) return 1;
+      if (bT === null) return -1;
+      return (aT - bT) * dir;
+    }
+
     let cmp = 0;
     switch (sort.column) {
       case "company":
@@ -200,10 +224,6 @@ export function sortAllJobs<T extends AllJobsRow>(
         cmp = detectPlatformFromUrl(a.url).localeCompare(
           detectPlatformFromUrl(b.url)
         );
-        break;
-      case "fetchedAt":
-        cmp =
-          new Date(a.fetchedAt).getTime() - new Date(b.fetchedAt).getTime();
         break;
     }
     return cmp * dir;
@@ -254,4 +274,14 @@ export function formatRelativeTime(iso: string, now = Date.now()): string {
   if (hr < 48) return `${hr}h ago`;
   const days = Math.floor(hr / 24);
   return `${days}d ago`;
+}
+
+/** Absolute calendar date for ATS position open date (sheet column N). */
+export function formatOpenDate(iso: string): string {
+  if (!iso) return "—";
+  try {
+    return new Date(iso).toLocaleDateString("en-US", { dateStyle: "medium" });
+  } catch {
+    return iso;
+  }
 }

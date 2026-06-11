@@ -1,6 +1,7 @@
 import {
   COMPANIES_TIME_FILTERS,
   buildLastSeenUpdates,
+  buildMaxAtsByCompany,
   filterCompaniesByCategories,
   filterCompaniesBySearch,
   filterJobsByCompaniesTime,
@@ -93,11 +94,34 @@ describe("CompaniesTab company filters", () => {
     expect(sorted.map((c) => c.name)).toEqual(["OpenAI", "Airbnb", "Google"]);
   });
 
+  it("sorts companies by max ATS descending", () => {
+    const counts = { Airbnb: 2, OpenAI: 5, Google: 1 };
+    const maxAts = { Airbnb: 60, OpenAI: 92, Google: 75 };
+    const sorted = sortCompanies(companies, "maxAts", counts, maxAts);
+    expect(sorted.map((c) => c.name)).toEqual(["OpenAI", "Google", "Airbnb"]);
+  });
+
   it("toggles category filters on and off", () => {
     let filters = toggleCategoryFilter(new Set(), "travel");
     expect([...filters]).toEqual(["travel"]);
     filters = toggleCategoryFilter(filters, "travel");
     expect([...filters]).toEqual([]);
+  });
+});
+
+describe("buildMaxAtsByCompany", () => {
+  it("returns highest score per company", () => {
+    const jobs: CompanyJobRow[] = [
+      { company: "Stripe", title: "A", location: "", url: "https://a", category: "g", fetchedAt: "", description: "" },
+      { company: "Stripe", title: "B", location: "", url: "https://b", category: "g", fetchedAt: "", description: "" },
+      { company: "Figma", title: "C", location: "", url: "https://c", category: "g", fetchedAt: "", description: "" },
+    ];
+    const scores = new Map([
+      ["https://a", 80],
+      ["https://b", 95],
+      ["https://c", 70],
+    ]);
+    expect(buildMaxAtsByCompany(jobs, scores)).toEqual({ Stripe: 95, Figma: 70 });
   });
 });
 
