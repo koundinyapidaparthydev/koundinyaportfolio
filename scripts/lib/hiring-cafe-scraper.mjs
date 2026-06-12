@@ -14,6 +14,47 @@ import { isUsHcJob } from "./job-location-match.mjs";
 const MAX_PAGINATION_ROUNDS = 40;
 const STABLE_ROUNDS_TO_STOP = 3;
 const SCROLL_PAUSE_MS = 1_500;
+const INITIAL_PAGE_WAIT_MS = 6_000;
+const HC_PAGE_LOAD_RETRIES = 3;
+
+const HC_USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
+  "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36";
+
+async function createHcBrowserContext(browser) {
+  const context = await browser.newContext({
+    userAgent: HC_USER_AGENT,
+    viewport: { width: 1440, height: 900 },
+    locale: "en-US",
+    extraHTTPHeaders: { "Accept-Language": "en-US,en;q=0.9" },
+  });
+  await context.addInitScript(() => {
+    Object.defineProperty(navigator, "webdriver", { get: () => false });
+  });
+  return context;
+}
+
+async function waitForHcResults(page) {
+  for (let attempt = 1; attempt <= HC_PAGE_LOAD_RETRIES; attempt++) {
+    const title = await page.title();
+    const jobLinks = await page
+      .locator('a[href*="/job/"]')
+      .count()
+      .catch(() => 0);
+
+    if (!/security checkpoint/i.test(title) && jobLinks > 0) {
+      return true;
+    }
+
+    if (attempt < HC_PAGE_LOAD_RETRIES) {
+      console.log(`  ⏳  HC page not ready (attempt ${attempt}/${HC_PAGE_LOAD_RETRIES}) — retrying…`);
+      await page.waitForTimeout(2_000 * attempt);
+      await page.reload({ waitUntil: "domcontentloaded", timeout: 60_000 }).catch(() => {});
+      await page.waitForTimeout(INITIAL_PAGE_WAIT_MS);
+    }
+  }
+  return false;
+}
 
 /**
  * Scrape all engineering jobs from Hiring Cafe (department-based search).
@@ -24,7 +65,10 @@ const SCROLL_PAUSE_MS = 1_500;
  */
 export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
   const { chromium } = await import("playwright");
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    args: ["--disable-blink-features=AutomationControlled"],
+  });
 
   const stats = {
     fetched: 0,
@@ -35,12 +79,7 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
   };
 
   try {
-    const context = await browser.newContext({
-      userAgent:
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      viewport: { width: 1280, height: 900 },
-    });
+    const context = await createHcBrowserContext(browser);
     const page = await context.newPage();
 
     const capturedItems = [];
@@ -63,7 +102,12 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
     console.log(`  🔗  Hiring Cafe: ${searchUrl.slice(0, 80)}…`);
 
     await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
-    await page.waitForTimeout(4_000);
+    await page.waitForTimeout(INITIAL_PAGE_WAIT_MS);
+
+    const pageReady = await waitForHcResults(page);
+    if (!pageReady) {
+      console.log("  ⚠️  Hiring Cafe blocked or empty — no job cards loaded");
+    }
 
     const fetchedAt = new Date().toISOString();
     const itemMap = new Map();
