@@ -1303,7 +1303,7 @@ export default function EditResumeTab() {
   );
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-0 flex-1 flex-col space-y-3">
       <AdminPageHeader
         title="Edit Resume"
         subtitle="Auto-saved every 500 ms · Cmd+Z to undo"
@@ -1399,11 +1399,11 @@ export default function EditResumeTab() {
 
       {/* ── Main layout (form + optional live preview) ── */}
       {showPreview ? (
-        <div className="flex h-[calc(100vh-14rem)] gap-4 overflow-hidden">
+        <div className="flex min-h-0 flex-1 gap-4 overflow-hidden lg:min-h-[calc(100vh-11rem)]">
           {/* Left: edit form */}
-          <div className="w-1/2 overflow-y-auto pr-1">{formContent}</div>
+          <div className="min-h-0 w-full overflow-y-auto pr-1 lg:w-1/2">{formContent}</div>
           {/* Right: live preview */}
-          <div className="w-1/2 overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
+          <div className="hidden min-h-0 w-1/2 overflow-hidden rounded-2xl border border-white/10 shadow-2xl lg:block">
             {previewResume ? (
               <ResumePreview resume={previewResume} />
             ) : (

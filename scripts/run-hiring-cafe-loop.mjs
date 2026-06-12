@@ -1,14 +1,26 @@
 #!/usr/bin/env node
 /**
- * Run the Hiring Cafe pipeline every 10 minutes (local alternative to GHA cron).
+ * Local 10-minute loop — **disabled by default**.
  *
- *   npm run job:pipeline:loop
+ * Production scheduling: `.github/workflows/scrape-jobs.yml` (GHA cron every 10 min).
  *
- * Stop with Ctrl+C.
+ * One-off local test:
+ *   npm run job:pipeline
+ *
+ * Force local loop (dev only):
+ *   ALLOW_LOCAL_PIPELINE_LOOP=1 npm run job:pipeline:loop
  */
 
 import { spawn } from "child_process";
 import { HC_PIPELINE_INTERVAL_MS } from "./lib/hiring-cafe-sheet-sync.mjs";
+
+if (process.env.ALLOW_LOCAL_PIPELINE_LOOP !== "1") {
+  console.error("\n❌  Local pipeline loop is disabled.");
+  console.error("   Production uses GitHub Actions: .github/workflows/scrape-jobs.yml");
+  console.error("   One-off test: npm run job:pipeline");
+  console.error("   Dev loop only: ALLOW_LOCAL_PIPELINE_LOOP=1 npm run job:pipeline:loop\n");
+  process.exit(1);
+}
 
 const INTERVAL_SEC = HC_PIPELINE_INTERVAL_MS / 1000;
 
@@ -26,7 +38,9 @@ function runOnce() {
 }
 
 async function main() {
-  console.log(`\n🔁  HC pipeline loop — every ${INTERVAL_SEC}s (${INTERVAL_SEC / 60} min)\n`);
+  console.log(
+    `\n🔁  LOCAL HC pipeline loop (dev only) — every ${INTERVAL_SEC}s (${INTERVAL_SEC / 60} min)\n`
+  );
 
   for (;;) {
     const started = new Date().toISOString();

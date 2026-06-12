@@ -26,13 +26,13 @@ flowchart LR
 | Stage | Script | npm command |
 |-------|--------|-------------|
 | **HC pipeline** (default) | `scripts/run-hiring-cafe-pipeline.mjs` | `npm run job:pipeline` |
-| **Local 10-min loop** | `scripts/run-hiring-cafe-loop.mjs` | `npm run job:pipeline:loop` |
+| **Local 10-min loop** | `scripts/run-hiring-cafe-loop.mjs` | Disabled by default — use GHA. Dev: `ALLOW_LOCAL_PIPELINE_LOOP=1 npm run job:pipeline:loop` |
 | **Purge legacy rows** | `scripts/purge-jobs-sheet.mjs` | `npm run job:purge` |
 | **Diagnose sheet** | `scripts/diagnose-sheet.mjs` | `npm run job:diagnose` |
 | **Env check** | `scripts/validate-pipeline-env.mjs` | `npm run job:validate-env` |
 | **Legacy multi-portal** (manual only) | `scripts/run-full-pipeline.mjs` | `ALLOW_LEGACY_SCRAPE=1 npm run job:pipeline:companies` |
 
-**GitHub Actions:** `.github/workflows/scrape-jobs.yml` runs the HC pipeline every 10 minutes, 24/7.
+**GitHub Actions:** `.github/workflows/scrape-jobs.yml` — **sole production scheduler** (every 10 min, 24/7). Do not run `job:pipeline:loop` locally unless debugging.
 
 ---
 

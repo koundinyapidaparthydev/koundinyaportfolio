@@ -53,22 +53,47 @@ export default function AdminPage() {
     }
   }, [queryClient]);
 
-  return (
-    <div className="relative flex min-h-screen flex-col pt-24">
-      <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
-        <AdminTopBar activeTab={activeTab} onRefresh={handleRefresh} refreshing={refreshing} />
+  const fullBleed = activeTab === "edit-resume";
 
-        {session?.user?.email && (
+  return (
+    <div
+      className={[
+        "relative flex min-h-screen flex-col",
+        fullBleed ? "pt-20" : "pt-24",
+      ].join(" ")}
+    >
+      <div
+        className={[
+          "mx-auto flex w-full flex-1 flex-col",
+          fullBleed
+            ? "max-w-none px-3 py-2 sm:px-4 lg:px-5"
+            : "max-w-7xl px-4 py-6 sm:px-6 lg:px-8",
+        ].join(" ")}
+      >
+        {!fullBleed && (
+          <AdminTopBar activeTab={activeTab} onRefresh={handleRefresh} refreshing={refreshing} />
+        )}
+
+        {session?.user?.email && !fullBleed && (
           <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-            Signed in as <span className="text-slate-600 dark:text-slate-300">{session.user.email}</span>
+            Signed in as{" "}
+            <span className="text-slate-600 dark:text-slate-300">{session.user.email}</span>
           </p>
         )}
 
-        <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
+        <div
+          className={[
+            "flex flex-1 flex-col gap-6 lg:flex-row lg:gap-8",
+            fullBleed && "min-h-0 gap-4 lg:gap-5",
+          ].join(" ")}
+        >
           <AdminSidebar activeTab={activeTab} onSelect={setActiveTab} />
 
-          <main className="min-w-0 flex-1">
-            <AdminTabPanel tabKey={activeTab}>
+          <main className={["min-w-0 flex-1", fullBleed && "flex min-h-0 flex-col"].join(" ")}>
+            <AdminTabPanel
+              tabKey={activeTab}
+              className={fullBleed ? "flex min-h-0 flex-1 flex-col" : undefined}
+            >
               {activeTab === "overview" && <OverviewTab />}
               {activeTab === "all-jobs" && <AllJobsTab />}
               {activeTab === "edit-resume" && <EditResumeTab />}

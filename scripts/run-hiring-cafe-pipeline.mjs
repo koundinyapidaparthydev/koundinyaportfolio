@@ -11,11 +11,8 @@
  *   6. Archive Jobs tab rows older than 12h → Old Jobs
  *   7. Log to Scrape Log + optional WhatsApp for new discoveries
  *
- * Local loop (every 10 min):
- *   while true; do
- *     node scripts/run-hiring-cafe-pipeline.mjs
- *     sleep 600
- *   done
+ * Local loop (dev only — production uses GHA):
+ *   ALLOW_LOCAL_PIPELINE_LOOP=1 npm run job:pipeline:loop
  *
  * Dry run:
  *   DRY_RUN=true node scripts/run-hiring-cafe-pipeline.mjs
