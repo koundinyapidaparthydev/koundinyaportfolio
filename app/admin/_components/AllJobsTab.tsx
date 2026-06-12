@@ -2,7 +2,7 @@
 
 /**
  * AllJobsTab — Hiring Cafe job board with search, location, and time filters.
- * Data from GET /api/jobs (Google Sheet columns A–N).
+ * Data from GET /api/jobs (Google Sheet columns A–Q).
  */
 
 import { useState, useMemo, useCallback } from "react";
@@ -14,6 +14,7 @@ import {
   DEFAULT_ALL_JOBS_SORT,
   DEFAULT_TIME_FILTER,
   DEFAULT_COUNTRY_LOCATION,
+  DEFAULT_ATS_MIN_SCORE,
   applyAllJobsFilters,
   detectPlatformFromUrl,
   filterByTime,
@@ -63,6 +64,7 @@ const TABLE_COLUMNS: { id: SortColumn; label: string }[] = [
   { id: "company", label: "Company" },
   { id: "title", label: "Title" },
   { id: "location", label: "Location" },
+  { id: "atsScore", label: "ATS" },
   { id: "postedAt", label: "Posted" },
   { id: "fetchedAt", label: "Discovered" },
 ];
@@ -209,7 +211,27 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
           />
           {job.applyStatus && <DetailRow label="Apply status" value={job.applyStatus} />}
           {job.appliedAt && <DetailRow label="Applied at" value={formatAbsolute(job.appliedAt)} />}
-          {job.atsScore && <DetailRow label="ATS score" value={job.atsScore} />}
+          {job.atsScore && (
+            <DetailRow
+              label="ATS score"
+              value={
+                <span
+                  className={
+                    Number(job.atsScore) >= DEFAULT_ATS_MIN_SCORE
+                      ? "font-semibold text-emerald-400"
+                      : undefined
+                  }
+                >
+                  {job.atsScore}%
+                </span>
+              }
+            />
+          )}
+          {job.atsMatchSummary && <DetailRow label="ATS summary" value={job.atsMatchSummary} />}
+          {job.keyGaps && <DetailRow label="Key gaps" value={job.keyGaps} />}
+          {job.recommendedKeywords && (
+            <DetailRow label="Keywords" value={job.recommendedKeywords} />
+          )}
         </div>
 
         <div>
@@ -329,6 +351,7 @@ export default function AllJobsTab() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(DEFAULT_TIME_FILTER);
   const [sort, setSort] = useState<AllJobsSort>(DEFAULT_ALL_JOBS_SORT);
   const [hasDescription, setHasDescription] = useState(false);
+  const [atsFriendly, setAtsFriendly] = useState(true);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
 
   const {
@@ -351,10 +374,11 @@ export default function AllJobsTab() {
         search,
         timeFilter,
         hasDescription,
+        atsFriendly,
         countryLocation: DEFAULT_COUNTRY_LOCATION,
         sort,
       }),
-    [jobs, search, timeFilter, hasDescription, sort]
+    [jobs, search, timeFilter, hasDescription, atsFriendly, sort]
   );
 
   const selectedJob = useMemo(
@@ -414,6 +438,15 @@ export default function AllJobsTab() {
             className="rounded border-white/20 bg-white/5 text-indigo-500 focus:ring-indigo-500/30"
           />
           Has description
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-xs text-emerald-300/90">
+          <input
+            type="checkbox"
+            checked={atsFriendly}
+            onChange={(e) => setAtsFriendly(e.target.checked)}
+            className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30"
+          />
+          ATS-friendly (≥{DEFAULT_ATS_MIN_SCORE}%)
         </label>
       </div>
 
@@ -513,6 +546,21 @@ export default function AllJobsTab() {
                           </td>
                           <td className="max-w-[8rem] truncate px-3 py-2.5 text-xs text-slate-500">
                             {job.location || "—"}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5 text-xs font-semibold">
+                            {job.atsScore ? (
+                              <span
+                                className={
+                                  Number(job.atsScore) >= DEFAULT_ATS_MIN_SCORE
+                                    ? "text-emerald-400"
+                                    : "text-slate-400"
+                                }
+                              >
+                                {job.atsScore}%
+                              </span>
+                            ) : (
+                              "—"
+                            )}
                           </td>
                           <td
                             className="whitespace-nowrap px-3 py-2.5 text-xs font-medium text-slate-300"

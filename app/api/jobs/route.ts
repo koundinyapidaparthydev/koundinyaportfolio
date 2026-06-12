@@ -23,6 +23,9 @@ export interface Job {
   applyStatus?: string;
   appliedAt?: string;
   notes?: string;
+  atsMatchSummary?: string;
+  keyGaps?: string;
+  recommendedKeywords?: string;
 }
 
 export async function GET(req: NextRequest) {
@@ -47,7 +50,7 @@ export async function GET(req: NextRequest) {
     const sheets = google.sheets({ version: "v4", auth });
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `${SHEET_NAME}!A:N`,
+      range: `${SHEET_NAME}!A:Q`,
     });
 
     const rows = response.data.values ?? [];
@@ -70,6 +73,9 @@ export async function GET(req: NextRequest) {
       applyStatus: row[10] ?? "",
       appliedAt: row[11] ?? "",
       notes: row[12] ?? "",
+      atsMatchSummary: row[14] ?? "",
+      keyGaps: row[15] ?? "",
+      recommendedKeywords: row[16] ?? "",
     }));
 
     const jobs = includeLegacy ? allJobs : allJobs.filter(isHiringCafeJob);

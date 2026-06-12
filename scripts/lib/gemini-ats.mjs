@@ -12,7 +12,15 @@ export async function scoreJobWithGemini(jobTitle, jobDescription, resume) {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
   const fallback = () => {
     const local = calculateAtsScore(jobDescription, resume);
-    return { ...local, source: "local-keywords" };
+    const matched = local.matched?.slice(0, 8).join(", ") || "—";
+    const missing = local.missing?.slice(0, 8).join(", ") || "—";
+    return {
+      ...local,
+      matchSummary: `Keyword match ${local.score}% — strong overlap on ${matched}.`,
+      keyGaps: missing,
+      recommendedKeywords: (local.missing ?? []).slice(0, 12).join(", "),
+      source: "local-keywords",
+    };
   };
 
   if (!apiKey || !jobDescription?.trim()) return fallback();
@@ -27,12 +35,20 @@ export async function scoreJobWithGemini(jobTitle, jobDescription, resume) {
     projects: (resume.projects ?? []).map((p) => ({ name: p.name, stack: p.stack })),
   });
 
-  const prompt = `You are an ATS matcher. Score how well this resume matches the job (0-100 integer only).
-Return JSON: {"score": number, "label": "high"|"medium"|"low", "matched": string[], "missing": string[]}
-high >= 65, medium >= 35, low < 35. No resume generation. Score only.
+  const prompt = `You are an ATS matcher. Score how well this resume matches the job (0-100 integer).
+Return JSON: {
+  "score": number,
+  "label": "high"|"medium"|"low",
+  "matched": string[],
+  "missing": string[],
+  "matchSummary": "1-2 sentences on fit",
+  "keyGaps": string[],
+  "recommendedKeywords": string[]
+}
+high >= 65, medium >= 35, low < 35. recommendedKeywords = top terms to add to resume for this role.
 
 Job title: ${jobTitle}
-Job description (truncated): ${jobDescription.slice(0, 3000)}
+Job description (truncated): ${jobDescription.slice(0, 6000)}
 Resume summary: ${resumeSummary.slice(0, 2500)}`;
 
   try {
@@ -42,9 +58,9 @@ Resume summary: ${resumeSummary.slice(0, 2500)}`;
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 256, responseMimeType: "application/json" },
+        generationConfig: { temperature: 0.1, maxOutputTokens: 512, responseMimeType: "application/json" },
       }),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(25000),
     });
 
     if (!res.ok) {
@@ -57,11 +73,25 @@ Resume summary: ${resumeSummary.slice(0, 2500)}`;
     const parsed = JSON.parse(text);
     const score = Math.min(100, Math.max(0, Number(parsed.score) || 0));
     const label = score >= 65 ? "high" : score >= 35 ? "medium" : "low";
+    const matched = Array.isArray(parsed.matched) ? parsed.matched.slice(0, 20) : [];
+    const missing = Array.isArray(parsed.missing) ? parsed.missing.slice(0, 20) : [];
+    const keyGaps = Array.isArray(parsed.keyGaps)
+      ? parsed.keyGaps.slice(0, 12).join(", ")
+      : missing.slice(0, 8).join(", ");
+    const recommendedKeywords = Array.isArray(parsed.recommendedKeywords)
+      ? parsed.recommendedKeywords.slice(0, 12).join(", ")
+      : missing.slice(0, 10).join(", ");
+
     return {
       score,
       label: parsed.label ?? label,
-      matched: Array.isArray(parsed.matched) ? parsed.matched.slice(0, 20) : [],
-      missing: Array.isArray(parsed.missing) ? parsed.missing.slice(0, 20) : [],
+      matched,
+      missing,
+      matchSummary:
+        parsed.matchSummary ??
+        `Score ${score}/100 — matched: ${matched.slice(0, 6).join(", ") || "—"}.`,
+      keyGaps,
+      recommendedKeywords,
       source: "gemini",
     };
   } catch (err) {

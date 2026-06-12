@@ -59,11 +59,11 @@ function isScrapeOnly() {
 }
 
 const SHEET_NAME = "Jobs";
-// A–G: scraped by this script | H–M: legacy columns (left empty on insert)
+// A–G: scraped | H–M: legacy apply columns | N: posted | O–Q: ATS analysis
 const HEADERS = [
   "Company", "Title", "Location", "URL", "Category", "Fetched At", "Description",
   "Resume URL", "Cover Letter", "ATS Score", "Apply Status", "Applied At", "Notes",
-  "Posted At",
+  "Posted At", "ATS Match Summary", "Key Gaps", "Recommended Keywords",
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -179,19 +179,20 @@ function normalizeScrapeRow(row) {
   return [company, title, location, url, category, fetchedAt, postedAt, description];
 }
 
-/** Map in-memory row → 14-column sheet row (A–N). */
+/** Map in-memory row → 17-column sheet row (A–Q). */
 function toSheetRow(row) {
   const r = normalizeScrapeRow(row);
   return [
     r[0], r[1], r[2], r[3], r[4], r[5], r[7],
     "", "", "", "", "", "",
     r[6],
+    "", "", "",
   ];
 }
 
-function padRowTo14(row) {
+function padRowTo17(row) {
   const out = [...row];
-  while (out.length < 14) out.push("");
+  while (out.length < 17) out.push("");
   return out;
 }
 
@@ -1384,10 +1385,10 @@ async function ensureSheetAndHeaders(sheets) {
     console.log(`📄  Created sheet "${SHEET_NAME}"`);
   }
 
-  // Always sync headers (A–N, 14 columns)
+  // Always sync headers (A–Q, 17 columns)
   await sheets.spreadsheets.values.update({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A1:N1`,
+    range: `${SHEET_NAME}!A1:Q1`,
     valueInputOption: "RAW",
     requestBody: { values: [HEADERS] },
   });
@@ -1516,7 +1517,7 @@ async function writeNewJobs(sheets, newJobs) {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A:N`,
+    range: `${SHEET_NAME}!A:Q`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values: rows14 },
@@ -1627,9 +1628,9 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
   try {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A2:N`,
+      range: `${SHEET_NAME}!A2:Q`,
     });
-    const dataRows = (resp.data.values ?? []).map(padRowTo14);
+    const dataRows = (resp.data.values ?? []).map(padRowTo17);
     if (dataRows.length === 0) return;
 
     const now = Date.now();
@@ -1662,7 +1663,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
       });
       await sheets.spreadsheets.values.update({
         spreadsheetId: GOOGLE_SHEET_ID,
-        range: `${ARCHIVE_SHEET}!A1:N1`,
+        range: `${ARCHIVE_SHEET}!A1:Q1`,
         valueInputOption: "RAW",
         requestBody: { values: [HEADERS] },
       });
@@ -1672,7 +1673,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
     // Append full rows to archive (A–N)
     await sheets.spreadsheets.values.append({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${ARCHIVE_SHEET}!A:N`,
+      range: `${ARCHIVE_SHEET}!A:Q`,
       valueInputOption: "RAW",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: oldRows },
@@ -1681,7 +1682,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
     // Rewrite Jobs: headers + keep rows only; clear leftover data rows
     await sheets.spreadsheets.values.clear({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A2:N`,
+      range: `${SHEET_NAME}!A2:Q`,
     });
     const jobsBody = keepRows.length > 0 ? [HEADERS, ...keepRows] : [HEADERS];
     await sheets.spreadsheets.values.update({

@@ -46,6 +46,9 @@ flowchart LR
 | Dedup | HC job id + company/title vs `Jobs` + `Old Jobs`; sheet compact each run |
 | Refresh | Existing rows get column F updated every scrape (last discovered) |
 | Schedule | GHA every 10 min; admin filters include 10m / 20m / 30m windows |
+| Pagination | Pages 1–5 each run via HC `&page=` param (0-based) |
+| Descriptions | Full text from HC job detail API (`job_information.description`) |
+| ATS | Gemini scores resume vs description → columns J, O–Q |
 
 Config lives in `scripts/lib/hiring-cafe.mjs`.
 
@@ -55,9 +58,12 @@ Config lives in `scripts/lib/hiring-cafe.mjs`.
 
 | Col | Field | Set by |
 |-----|-------|--------|
-| A–G | Company, Title, Location, URL, Category, Fetched At, Description | Scraper |
-| H–M | Resume URL, Cover Letter, ATS Score, Apply Status, Applied At, Notes | Legacy (left empty on new rows) |
+| A–G | Company, Title, Location, URL, Category, Fetched At, Description | Scraper (full description from HC Job Description tab) |
+| H–M | Resume URL, Cover Letter, ATS Score, Apply Status, Applied At, Notes | Pipeline / legacy |
 | N | Posted At | Scraper (HC API / relative DOM times) |
+| O | ATS Match Summary | Gemini ATS analysis |
+| P | Key Gaps | Gemini ATS analysis |
+| Q | Recommended Keywords | Gemini ATS analysis |
 
 ---
 

@@ -30,6 +30,10 @@ export const HC_DATE_FETCHED_PAST_DAYS = 2;
 /** Apply-now window: Jobs tab keeps discoveries from the last 6 hours. */
 export const APPLY_NOW_WINDOW_MS = 6 * 60 * 60 * 1000;
 
+/** Scrape search result pages 1–5 each pipeline run (HC `&page=` is 0-based). */
+export const HC_MAX_PAGES = 5;
+
+const HC_SHORT_JOB_ID_RE = /^[a-z0-9]{16}$/i;
 const HC_JOB_URL_RE = /hiring\.cafe\/job\/([a-z0-9]{8,})/i;
 
 export function buildHiringCafeSearchState(overrides = {}) {
@@ -44,6 +48,95 @@ export function buildHiringCafeSearchState(overrides = {}) {
 export function buildHiringCafeSearchUrl(overrides = {}) {
   const state = encodeURIComponent(JSON.stringify(buildHiringCafeSearchState(overrides)));
   return `https://hiring.cafe/?searchState=${state}`;
+}
+
+/**
+ * HC paginates via `&page=` query param (0-based). Page 1 has no param; page 2 → &page=1.
+ * @param {number} pageIndex 0-based page index (0 = first page)
+ */
+export function buildHiringCafePageUrl(pageIndex = 0, overrides = {}) {
+  const base = buildHiringCafeSearchUrl(overrides);
+  return pageIndex > 0 ? `${base}&page=${pageIndex}` : base;
+}
+
+/** Sheet column count (A–Q). */
+export const HC_SHEET_COLUMN_COUNT = 17;
+
+export const HC_SHEET_HEADERS = [
+  "Company",
+  "Title",
+  "Location",
+  "URL",
+  "Category",
+  "Fetched At",
+  "Description",
+  "Resume URL",
+  "Cover Letter",
+  "ATS Score",
+  "Apply Status",
+  "Applied At",
+  "Notes",
+  "Posted At",
+  "ATS Match Summary",
+  "Key Gaps",
+  "Recommended Keywords",
+];
+
+/** 16-char slug used in hiring.cafe/job/{id} URLs (stored as requisition_id in SSR hits). */
+export function getHcShortJobId(itemOrUrl) {
+  if (typeof itemOrUrl === "string") {
+    const m = itemOrUrl.match(HC_JOB_URL_RE);
+    if (m?.[1] && HC_SHORT_JOB_ID_RE.test(m[1])) return m[1];
+    return "";
+  }
+  const item = itemOrUrl ?? {};
+  const req = String(item.requisition_id ?? "").trim();
+  if (HC_SHORT_JOB_ID_RE.test(req)) return req;
+  const fromUrl = getHcJobId(item);
+  return HC_SHORT_JOB_ID_RE.test(fromUrl) ? fromUrl : "";
+}
+
+export function getHcJobPageUrl(itemOrShortId) {
+  const id = typeof itemOrShortId === "string" ? itemOrShortId : getHcShortJobId(itemOrShortId);
+  return id ? `https://hiring.cafe/job/${id}` : "";
+}
+
+export function stripHtml(html = "") {
+  return String(html)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Extract plain-text job description from HC job detail payload. */
+export function extractFullDescriptionFromJobPayload(jobPayload) {
+  const job = jobPayload?.job ?? jobPayload ?? {};
+  const info = job.job_information ?? {};
+  const v5 = job.v5_processed_job_data ?? {};
+  const v7 = job.v7_processed_job_data ?? {};
+
+  const html =
+    info.description ??
+    info.job_description ??
+    v5.job_description ??
+    v5.full_job_description ??
+    v7.job_description ??
+    "";
+  const plain = stripHtml(html);
+  if (plain.length >= 120) return plain.slice(0, 12_000);
+
+  const summary =
+    v5.requirements_summary ??
+    v7.experience_requirements?.requirements_summary ??
+    info.requirements_summary ??
+    "";
+  return [plain, summary].filter(Boolean).join("\n\n").slice(0, 12_000);
 }
 
 function toIsoPosted(value) {
@@ -202,16 +295,18 @@ export function parseHcItemToRow(item, fetchedAt = new Date().toISOString()) {
   const url = getHcApplyUrl(item);
   if (!title || !url) return null;
 
+  const fullFromItem = extractFullDescriptionFromJobPayload(item);
   const summary =
-    v5.requirements_summary ??
-    v7.experience_requirements?.requirements_summary ??
-    item.description ??
-    item.summary ??
-    info.description ??
+    fullFromItem ||
+    v5.requirements_summary ||
+    v7.experience_requirements?.requirements_summary ||
+    item.description ||
+    item.summary ||
+    stripHtml(info.description ?? "") ||
     "";
   const salaryLine = salary ? `Salary: ${salary}` : "";
   const skillsLine = skills ? `Skills: ${skills}` : "";
-  const description = [salaryLine, skillsLine, summary].filter(Boolean).join("\n").slice(0, 2500);
+  const description = [salaryLine, skillsLine, summary].filter(Boolean).join("\n").slice(0, 12_000);
 
   const postedAt = resolvePostedAt(
     item.posted_at ??

@@ -8,12 +8,15 @@ import {
   APPLY_NOW_WINDOW_MS,
   HC_DEPARTMENTS,
   HC_LOCATIONS,
+  HC_MAX_PAGES,
   HC_US_LOCATION,
+  buildHiringCafePageUrl,
   buildHiringCafeSearchState,
   buildHiringCafeSearchUrl,
   dedupeHcRows,
   getHcApplyUrl,
   getHcJobId,
+  getHcShortJobId,
   getJobDedupKey,
   parseHcItemToRow,
   partitionRowsByFetchedAt,
@@ -21,6 +24,7 @@ import {
   parseRelativePostedTime,
   extractRelativePostedFromText,
   resolvePostedAt,
+  stripHtml,
 } from "../../scripts/lib/hiring-cafe.mjs";
 import { isUsHcJob } from "../../scripts/lib/job-location-match.mjs";
 
@@ -49,6 +53,34 @@ describe("buildHiringCafeSearchState", () => {
     const state = buildHiringCafeSearchState({ locations: HC_LOCATIONS });
     expect(state.locations).toEqual(HC_LOCATIONS);
     expect(state.locations[0]).toEqual(HC_US_LOCATION);
+  });
+});
+
+describe("buildHiringCafePageUrl", () => {
+  it("uses 0-based &page= query param (page 2 → &page=1)", () => {
+    expect(buildHiringCafePageUrl(0)).toBe(buildHiringCafeSearchUrl());
+    expect(buildHiringCafePageUrl(1)).toContain("&page=1");
+    expect(buildHiringCafePageUrl(4)).toContain("&page=4");
+  });
+
+  it("scrapes five pages each run", () => {
+    expect(HC_MAX_PAGES).toBe(5);
+  });
+});
+
+describe("getHcShortJobId", () => {
+  it("reads 16-char requisition_id from SSR hits", () => {
+    expect(getHcShortJobId({ requisition_id: "3ejkkjfmjm8093so" })).toBe("3ejkkjfmjm8093so");
+  });
+
+  it("extracts short id from hiring.cafe job URLs", () => {
+    expect(getHcShortJobId("https://hiring.cafe/job/okl809iskbftkno2")).toBe("okl809iskbftkno2");
+  });
+});
+
+describe("stripHtml", () => {
+  it("converts basic HTML to plain text", () => {
+    expect(stripHtml("<p>Hello <strong>world</strong></p>")).toBe("Hello world");
   });
 });
 

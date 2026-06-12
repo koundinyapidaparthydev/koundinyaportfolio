@@ -7,9 +7,9 @@ import { getJobDedupKey } from "./hiring-cafe.mjs";
 /** Matches GHA cron and local loop interval. */
 export const HC_PIPELINE_INTERVAL_MS = 10 * 60 * 1000;
 
-function padRow14(row) {
+function padRow17(row) {
   const out = [...(row ?? [])];
-  while (out.length < 14) out.push("");
+  while (out.length < 17) out.push("");
   return out;
 }
 
@@ -33,7 +33,7 @@ export async function loadSheetDedupSets(sheets, spreadsheetId, sheetName) {
   const keys = new Set();
   const roleKeys = new Set();
   for (const row of res.data.values ?? []) {
-    const padded = padRow14(row);
+    const padded = padRow17(row);
     const key = getJobDedupKey(padded);
     const role = getRoleDedupKey(padded);
     if (key) keys.add(key);
@@ -96,13 +96,13 @@ export async function refreshDiscoveredAt(
 export async function compactJobsSheet(sheets, spreadsheetId, sheetName) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!A2:N`,
+    range: `${sheetName}!A2:Q`,
   });
   const rows = res.data.values ?? [];
   if (rows.length === 0) return 0;
 
   const withMeta = rows.map((row, idx) => {
-    const padded = padRow14(row);
+    const padded = padRow17(row);
     const fetchedMs = Date.parse(padded[5] ?? "") || 0;
     return {
       padded,
@@ -133,12 +133,12 @@ export async function compactJobsSheet(sheets, spreadsheetId, sheetName) {
 
   await sheets.spreadsheets.values.clear({
     spreadsheetId,
-    range: `${sheetName}!A2:N`,
+    range: `${sheetName}!A2:Q`,
   });
   if (keep.length > 0) {
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `${sheetName}!A2:N`,
+      range: `${sheetName}!A2:Q`,
       valueInputOption: "RAW",
       requestBody: { values: keep },
     });

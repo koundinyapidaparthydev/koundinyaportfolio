@@ -1,18 +1,20 @@
 /**
- * Playwright scraper for hiring.cafe — department search with full pagination.
+ * Playwright scraper for hiring.cafe — pages 1–5 + full job descriptions.
+ * Prefers HTTP fetch (faster); falls back to Playwright when HC blocks fetch.
  */
 
 import {
-  buildHiringCafeSearchUrl,
+  HC_MAX_PAGES,
+  buildHiringCafePageUrl,
   dedupeHcRows,
   extractHcItemsFromPayload,
+  getHcShortJobId,
   parseHcItemToRow,
   parseRelativePostedTime,
 } from "./hiring-cafe.mjs";
+import { scrapeHiringCafeViaFetch } from "./hiring-cafe-fetch.mjs";
 import { isUsHcJob } from "./job-location-match.mjs";
 
-const MAX_PAGINATION_ROUNDS = 40;
-const STABLE_ROUNDS_TO_STOP = 3;
 const SCROLL_PAUSE_MS = 1_500;
 const INITIAL_PAGE_WAIT_MS = 6_000;
 const HC_PAGE_LOAD_RETRIES = 3;
@@ -56,14 +58,7 @@ async function waitForHcResults(page) {
   return false;
 }
 
-/**
- * Scrape all engineering jobs from Hiring Cafe (department-based search).
- * Paginates via scroll + "Load more" until no new listings appear.
- *
- * @param {(title: string) => boolean} isEngineeringRole
- * @returns {Promise<string[][]>} normalized scrape rows
- */
-export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
+async function scrapeHiringCafeViaPlaywright(isEngineeringRole) {
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({
     headless: true,
@@ -71,17 +66,19 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
   });
 
   const stats = {
+    pagesFetched: 0,
     fetched: 0,
     afterEngineeringFilter: 0,
     afterUsFilter: 0,
     written: 0,
     skippedNonUs: 0,
+    descriptionsEnriched: 0,
+    mode: "playwright",
   };
 
   try {
     const context = await createHcBrowserContext(browser);
     const page = await context.newPage();
-
     const capturedItems = [];
 
     page.on("response", async (response) => {
@@ -97,17 +94,6 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
         /* ignore */
       }
     });
-
-    const searchUrl = buildHiringCafeSearchUrl();
-    console.log(`  🔗  Hiring Cafe: ${searchUrl.slice(0, 80)}…`);
-
-    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
-    await page.waitForTimeout(INITIAL_PAGE_WAIT_MS);
-
-    const pageReady = await waitForHcResults(page);
-    if (!pageReady) {
-      console.log("  ⚠️  Hiring Cafe blocked or empty — no job cards loaded");
-    }
 
     const fetchedAt = new Date().toISOString();
     const itemMap = new Map();
@@ -126,10 +112,10 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
         const key = row[3];
         if (!key) continue;
         const existing = itemMap.get(key);
-        if (!existing) {
-          itemMap.set(key, row);
-        } else if (!existing[6] && row[6]) {
-          existing[6] = row[6];
+        if (!existing) itemMap.set(key, row);
+        else {
+          if (!existing[6] && row[6]) existing[6] = row[6];
+          if ((row[7] ?? "").length > (existing[7] ?? "").length) existing[7] = row[7];
         }
       }
     }
@@ -207,14 +193,7 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
           const relativePosted =
             cardText.match(/\b(?:just now|\d+\s*m|\d+\s*h|\d+\s*d)\b/i)?.[0]?.trim() ?? "";
 
-          results.push({
-            company: company || "Hiring Cafe",
-            title,
-            location: fullLoc,
-            url: jobUrl,
-            desc,
-            relativePosted,
-          });
+          results.push({ company, title, location: fullLoc, url: jobUrl, desc, relativePosted });
         }
         return results;
       });
@@ -238,7 +217,7 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
         }
 
         stats.afterUsFilter++;
-        const row = [
+        itemMap.set(url, [
           company,
           title.slice(0, 100),
           location.slice(0, 150),
@@ -247,14 +226,12 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
           fetchedAt,
           postedAt,
           desc,
-        ];
-        itemMap.set(url, row);
+        ]);
       }
     }
 
     async function collectAllSources() {
       ingestRawItems(capturedItems);
-
       const nextData = await page.evaluate(() => {
         try {
           const el = document.getElementById("__NEXT_DATA__");
@@ -264,44 +241,65 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
         }
       });
       if (nextData) ingestRawItems(extractHcItemsFromPayload(nextData));
-
       await collectFromDom();
     }
 
-    await collectAllSources();
+    for (let pageIndex = 0; pageIndex < HC_MAX_PAGES; pageIndex++) {
+      const pageUrl = buildHiringCafePageUrl(pageIndex);
+      console.log(`  🔗  HC page ${pageIndex + 1}/${HC_MAX_PAGES}: ${pageUrl.slice(0, 90)}…`);
+      await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+      await page.waitForTimeout(INITIAL_PAGE_WAIT_MS);
 
-    let stableRounds = 0;
-    let paginationExhausted = false;
-    for (let round = 0; round < MAX_PAGINATION_ROUNDS && stableRounds < STABLE_ROUNDS_TO_STOP; round++) {
-      const before = itemMap.size;
-
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      await page.waitForTimeout(SCROLL_PAUSE_MS);
-
-      const loadMore = page
-        .locator(
-          'button:has-text("Load more"), button:has-text("Show more"), button:has-text("See more")'
-        )
-        .first();
-      if (await loadMore.isVisible({ timeout: 400 }).catch(() => false)) {
-        await loadMore.click({ timeout: 3_000 }).catch(() => {});
-        await page.waitForTimeout(SCROLL_PAUSE_MS);
+      const pageReady = await waitForHcResults(page);
+      if (!pageReady) {
+        console.log(`  ⚠️  HC page ${pageIndex + 1} blocked or empty`);
+        continue;
       }
 
+      stats.pagesFetched++;
       await collectAllSources();
-
-      if (itemMap.size === before) stableRounds++;
-      else stableRounds = 0;
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+      await page.waitForTimeout(SCROLL_PAUSE_MS);
     }
-    paginationExhausted = stableRounds >= STABLE_ROUNDS_TO_STOP;
 
     const rows = dedupeHcRows([...itemMap.values()]);
     stats.written = rows.length;
-    console.log(
-      `  ✓  Hiring Cafe summary: fetched=${stats.fetched} eng=${stats.afterEngineeringFilter} us=${stats.afterUsFilter} written=${stats.written} skippedNonUs=${stats.skippedNonUs} (${paginationExhausted ? "exhausted" : "partial"} pagination)`
-    );
-    return rows;
+    return { rows, stats };
   } finally {
     await browser.close().catch(() => {});
   }
+}
+
+function logHcSummary(stats, mode) {
+  console.log(
+    `  ✓  Hiring Cafe summary (${mode}): pages=${stats.pagesFetched}/${HC_MAX_PAGES} ` +
+      `fetched=${stats.fetched ?? stats.written} eng=${stats.afterEngineeringFilter} ` +
+      `us=${stats.afterUsFilter} written=${stats.written ?? stats.afterUsFilter} ` +
+      `skippedNonUs=${stats.skippedNonUs}` +
+      (stats.descriptionsEnriched ? ` descEnriched=${stats.descriptionsEnriched}` : "")
+  );
+}
+
+/**
+ * Scrape engineering jobs from Hiring Cafe pages 1–5 with full descriptions.
+ * @param {(title: string) => boolean} isEngineeringRole
+ * @returns {Promise<string[][]>} normalized scrape rows
+ */
+export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
+  try {
+    const { rows, stats } = await scrapeHiringCafeViaFetch(isEngineeringRole, isUsHcJob);
+    if (stats.afterUsFilter > 0) {
+      const deduped = dedupeHcRows(rows);
+      stats.written = deduped.length;
+      logHcSummary(stats, "fetch");
+      return deduped;
+    }
+    console.log("  ⚠️  HC HTTP fetch returned 0 US jobs — falling back to Playwright");
+  } catch (err) {
+    console.warn(`  ⚠️  HC HTTP fetch failed (${err.message}) — falling back to Playwright`);
+  }
+
+  const { rows, stats } = await scrapeHiringCafeViaPlaywright(isEngineeringRole);
+  logHcSummary(stats, "playwright");
+  return rows;
 }

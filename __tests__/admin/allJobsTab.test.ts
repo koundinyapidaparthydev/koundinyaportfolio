@@ -3,6 +3,7 @@ import {
   applyAllJobsFilters,
   detectPlatformFromUrl,
   filterByTime,
+  filterByAtsFriendly,
   jobTimeTimestamp,
   filterBySearch,
   filterByPlatform,
@@ -11,10 +12,12 @@ import {
   toggleSortColumn,
   formatRelativeTime,
   formatOpenDate,
+  parseAtsScore,
   TIME_FILTERS,
   DEFAULT_ALL_JOBS_SORT,
   DEFAULT_TIME_FILTER,
   DEFAULT_COUNTRY_LOCATION,
+  DEFAULT_ATS_MIN_SCORE,
   type AllJobsRow,
 } from "@/lib/admin/allJobsFilters";
 
@@ -173,6 +176,10 @@ describe("toggleSortColumn", () => {
       column: "postedAt",
       direction: "desc",
     });
+    expect(toggleSortColumn(DEFAULT_ALL_JOBS_SORT, "company")).toEqual({
+      column: "company",
+      direction: "asc",
+    });
   });
 
   it("toggles direction when clicking the same column", () => {
@@ -181,6 +188,31 @@ describe("toggleSortColumn", () => {
       column: "title",
       direction: "desc",
     });
+  });
+});
+
+describe("filterByAtsFriendly", () => {
+  it("keeps jobs at or above the default ATS threshold", () => {
+    const jobs = [
+      job({ atsScore: "80", title: "high" }),
+      job({ atsScore: "50", title: "low" }),
+      job({ atsScore: "", title: "missing" }),
+    ];
+    const result = filterByAtsFriendly(jobs, true, DEFAULT_ATS_MIN_SCORE);
+    expect(result).toHaveLength(1);
+    expect(result[0].title).toBe("high");
+  });
+
+  it("is disabled when filter is off", () => {
+    const jobs = [job({ atsScore: "40" })];
+    expect(filterByAtsFriendly(jobs, false)).toHaveLength(1);
+  });
+});
+
+describe("parseAtsScore", () => {
+  it("parses numeric ATS scores", () => {
+    expect(parseAtsScore("72")).toBe(72);
+    expect(parseAtsScore("")).toBeNull();
   });
 });
 
@@ -194,12 +226,21 @@ describe("sortAllJobs", () => {
     expect(sorted[0].company).toBe("Alpha");
   });
 
+  it("sorts highest ATS first by default", () => {
+    const jobs = [
+      job({ atsScore: "40", title: "low" }),
+      job({ atsScore: "88", title: "high" }),
+    ];
+    const sorted = sortAllJobs(jobs, DEFAULT_ALL_JOBS_SORT);
+    expect(sorted[0].title).toBe("high");
+  });
+
   it("sorts newest first by postedAt desc", () => {
     const jobs = [
       job({ postedAt: new Date(NOW - 3_600_000).toISOString(), title: "old" }),
       job({ postedAt: new Date(NOW - 60_000).toISOString(), title: "new" }),
     ];
-    const sorted = sortAllJobs(jobs, DEFAULT_ALL_JOBS_SORT);
+    const sorted = sortAllJobs(jobs, { column: "postedAt", direction: "desc" });
     expect(sorted[0].title).toBe("new");
   });
 
@@ -208,7 +249,7 @@ describe("sortAllJobs", () => {
       job({ postedAt: "", title: "missing" }),
       job({ postedAt: new Date(NOW - 3_600_000).toISOString(), title: "dated" }),
     ];
-    const sorted = sortAllJobs(jobs, DEFAULT_ALL_JOBS_SORT);
+    const sorted = sortAllJobs(jobs, { column: "postedAt", direction: "desc" });
     expect(sorted[0].title).toBe("dated");
     expect(sorted[1].title).toBe("missing");
   });
@@ -237,6 +278,7 @@ describe("applyAllJobsFilters", () => {
       search: "openai",
       timeFilter: "30m",
       hasDescription: true,
+      atsFriendly: false,
       countryLocation: "all",
       sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,
@@ -255,6 +297,7 @@ describe("applyAllJobsFilters", () => {
       search: "",
       timeFilter: "all",
       hasDescription: false,
+      atsFriendly: false,
       countryLocation: "us",
       sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,
@@ -271,6 +314,7 @@ describe("applyAllJobsFilters", () => {
       search: "",
       timeFilter: "all",
       hasDescription: false,
+      atsFriendly: false,
       countryLocation: "all",
       sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,

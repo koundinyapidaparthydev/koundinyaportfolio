@@ -26,12 +26,16 @@ export const DEFAULT_TIME_FILTER: TimeFilter = "10m";
 /** Matches GHA cron and `npm run job:pipeline:loop`. */
 export const HC_PIPELINE_INTERVAL_MS = 10 * 60_000;
 
+/** Default minimum ATS score when "ATS-friendly" filter is enabled. */
+export const DEFAULT_ATS_MIN_SCORE = 65;
+
 export type SortColumn =
   | "company"
   | "title"
   | "location"
   | "postedAt"
-  | "fetchedAt";
+  | "fetchedAt"
+  | "atsScore";
 export type SortDirection = "asc" | "desc";
 
 export interface AllJobsSort {
@@ -40,7 +44,7 @@ export interface AllJobsSort {
 }
 
 export const DEFAULT_ALL_JOBS_SORT: AllJobsSort = {
-  column: "postedAt",
+  column: "atsScore",
   direction: "desc",
 };
 
@@ -71,6 +75,10 @@ export interface AllJobsRow {
   /** ATS position posted date (sheet column N). */
   postedAt: string;
   description: string;
+  atsScore?: string;
+  atsMatchSummary?: string;
+  keyGaps?: string;
+  recommendedKeywords?: string;
 }
 
 export const NEW_JOB_WINDOW_MS = 30 * 60_000;
@@ -189,6 +197,25 @@ export function filterByHasDescription<T extends AllJobsRow>(
   return jobs.filter((j) => (j.description ?? "").trim().length >= MIN_DESCRIPTION_CHARS);
 }
 
+export function parseAtsScore(value?: string): number | null {
+  if (!value?.trim()) return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Keep jobs at or above the ATS threshold (requires a numeric ATS score). */
+export function filterByAtsFriendly<T extends AllJobsRow>(
+  jobs: T[],
+  enabled: boolean,
+  minScore = DEFAULT_ATS_MIN_SCORE
+): T[] {
+  if (!enabled) return jobs;
+  return jobs.filter((j) => {
+    const score = parseAtsScore(j.atsScore);
+    return score !== null && score >= minScore;
+  });
+}
+
 export function toggleSortColumn(
   current: AllJobsSort,
   column: SortColumn
@@ -201,7 +228,10 @@ export function toggleSortColumn(
   }
   return {
     column,
-    direction: column === "postedAt" || column === "fetchedAt" ? "desc" : "asc",
+    direction:
+      column === "postedAt" || column === "fetchedAt" || column === "atsScore"
+        ? "desc"
+        : "asc",
   };
 }
 
@@ -213,6 +243,15 @@ export function sortAllJobs<T extends AllJobsRow>(
   const dir = sort.direction === "asc" ? 1 : -1;
 
   return arr.sort((a, b) => {
+    if (sort.column === "atsScore") {
+      const aScore = parseAtsScore(a.atsScore);
+      const bScore = parseAtsScore(b.atsScore);
+      if (aScore === null && bScore === null) return 0;
+      if (aScore === null) return 1;
+      if (bScore === null) return -1;
+      return (aScore - bScore) * dir;
+    }
+
     if (sort.column === "postedAt" || sort.column === "fetchedAt") {
       const aT =
         sort.column === "postedAt"
@@ -249,6 +288,8 @@ export interface AllJobsFilterOpts {
   search: string;
   timeFilter: TimeFilter;
   hasDescription: boolean;
+  atsFriendly: boolean;
+  atsMinScore?: number;
   countryLocation: CountryLocationFilter;
   sort?: AllJobsSort;
   now?: number;
@@ -263,6 +304,7 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
   result = filterByTime(result, opts.timeFilter, opts.now);
   result = filterByCountryLocation(result, opts.countryLocation);
   result = filterByHasDescription(result, opts.hasDescription);
+  result = filterByAtsFriendly(result, opts.atsFriendly, opts.atsMinScore);
   return sortAllJobs(result, opts.sort ?? DEFAULT_ALL_JOBS_SORT);
 }
 

@@ -7,8 +7,9 @@
  *   2. Refresh discovered-at (column F) for jobs still on the board
  *   3. Backfill posted-at, compact duplicate rows (HC id + company/title)
  *   4. Append only NEW jobs (dedup vs Jobs + Old Jobs)
- *   5. Archive Jobs tab rows older than 6h → Old Jobs
- *   6. Log to Scrape Log + optional WhatsApp for new discoveries
+ *   5. Backfill full descriptions + ATS score vs resume (Gemini)
+ *   6. Archive Jobs tab rows older than 6h → Old Jobs
+ *   7. Log to Scrape Log + optional WhatsApp for new discoveries
  *
  * Local loop (every 10 min):
  *   while true; do
@@ -32,6 +33,10 @@ import {
   loadSheetDedupSets,
   refreshDiscoveredAt,
 } from "./lib/hiring-cafe-sheet-sync.mjs";
+import {
+  backfillHcDescriptionsOnSheet,
+  scoreHcJobsOnSheet,
+} from "./lib/hiring-cafe-ats.mjs";
 
 loadEnvLocal();
 validatePipelineEnv("scrape");
@@ -83,6 +88,9 @@ async function main() {
   const newJobs = filterNewHcJobs(normalized, knownKeys, knownRoleKeys);
   const newJobRows = await sj.writeNewJobs(sheets, newJobs);
 
+  const descriptionsBackfilled = await backfillHcDescriptionsOnSheet(sheets, GOOGLE_SHEET_ID);
+  const atsScored = await scoreHcJobsOnSheet(sheets, GOOGLE_SHEET_ID);
+
   await sj.archiveOldJobs(sheets, { maxAgeMs: APPLY_NOW_WINDOW_MS });
 
   await recordScrapeResult(sheets, GOOGLE_SHEET_ID, {
@@ -92,7 +100,9 @@ async function main() {
     newJobs: newJobRows.length,
     removedJobs: dupesRemoved,
     status: "OK",
-    notes: `HC US · refreshed ${refreshed} · dupes ${dupesRemoved} · window ${APPLY_NOW_WINDOW_MS / 3_600_000}h`,
+    notes:
+      `HC US · pages 1-${5} · refreshed ${refreshed} · dupes ${dupesRemoved} · ` +
+      `desc ${descriptionsBackfilled} · ATS ${atsScored} · window ${APPLY_NOW_WINDOW_MS / 3_600_000}h`,
   });
 
   if (newJobRows.length > 0) {
@@ -100,7 +110,7 @@ async function main() {
   }
 
   console.log(
-    `\n📊  HC pipeline: ${normalized.length} fetched | ${refreshed} refreshed | ${newJobRows.length} new | ${dupesRemoved} dupes removed | ${beforeCount} in sheet before`
+    `\n📊  HC pipeline: ${normalized.length} fetched | ${refreshed} refreshed | ${newJobRows.length} new | ${dupesRemoved} dupes | ${descriptionsBackfilled} desc | ${atsScored} ATS | ${beforeCount} in sheet before`
   );
   console.log(`═══════════════════════════════════════════════════════════\n`);
 }
