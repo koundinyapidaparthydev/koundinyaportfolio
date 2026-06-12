@@ -188,20 +188,20 @@ export default function VisitorsTab() {
       />
 
       {visitors.length === 0 ? (
-        <div className="glass-panel py-16 text-center">
+        <div className={glassCn(glass.adminPanel, "py-16 text-center")}>
           <p className="text-sm text-slate-600">No visitors recorded yet.</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="glass-panel py-12 text-center">
+        <div className={glassCn(glass.adminPanel, "py-12 text-center")}>
           <p className="text-sm text-slate-600">No results for &ldquo;{search}&rdquo;</p>
         </div>
       ) : (
         <>
           {/* ── Table ── */}
-          <div className="glass-table overflow-x-auto">
+          <div className={glassCn(glass.adminTable, "overflow-x-auto")}>
             <table className="w-full text-sm">
               <thead>
-                <tr className="glass-table-head border-b border-[var(--glass-border)]">
+                <tr className={glassCn(glass.adminTableHead, "border-b border-border/40")}>
                   {TABLE_HEADERS.map((h) => (
                     <th
                       key={h}

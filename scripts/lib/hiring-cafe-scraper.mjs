@@ -9,6 +9,7 @@ import {
   parseHcItemToRow,
   parseRelativePostedTime,
 } from "./hiring-cafe.mjs";
+import { isUsHcJob } from "./job-location-match.mjs";
 
 const MAX_PAGINATION_ROUNDS = 40;
 const STABLE_ROUNDS_TO_STOP = 3;
@@ -24,6 +25,14 @@ const SCROLL_PAUSE_MS = 1_500;
 export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ headless: true });
+
+  const stats = {
+    fetched: 0,
+    afterEngineeringFilter: 0,
+    afterUsFilter: 0,
+    written: 0,
+    skippedNonUs: 0,
+  };
 
   try {
     const context = await browser.newContext({
@@ -60,11 +69,24 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
     const itemMap = new Map();
 
     function ingestRawItems(items) {
+      stats.fetched += items.length;
       for (const item of items) {
         const row = parseHcItemToRow(item, fetchedAt);
         if (!row || !isEngineeringRole(row[1])) continue;
+        stats.afterEngineeringFilter++;
+        if (!isUsHcJob(row[2])) {
+          stats.skippedNonUs++;
+          continue;
+        }
+        stats.afterUsFilter++;
         const key = row[3];
-        if (key && !itemMap.has(key)) itemMap.set(key, row);
+        if (!key) continue;
+        const existing = itemMap.get(key);
+        if (!existing) {
+          itemMap.set(key, row);
+        } else if (!existing[6] && row[6]) {
+          existing[6] = row[6];
+        }
       }
     }
 
@@ -158,6 +180,20 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
         const postedAt = relativePosted
           ? parseRelativePostedTime(relativePosted, new Date(fetchedAt))
           : "";
+
+        if (itemMap.has(url)) {
+          const existing = itemMap.get(url);
+          if (!existing[6] && postedAt) existing[6] = postedAt;
+          if (!existing[2] && location) existing[2] = location.slice(0, 150);
+          continue;
+        }
+
+        if (!isUsHcJob(location)) {
+          stats.skippedNonUs++;
+          continue;
+        }
+
+        stats.afterUsFilter++;
         const row = [
           company,
           title.slice(0, 100),
@@ -168,7 +204,7 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
           postedAt,
           desc,
         ];
-        if (!itemMap.has(url)) itemMap.set(url, row);
+        itemMap.set(url, row);
       }
     }
 
@@ -216,8 +252,9 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
     paginationExhausted = stableRounds >= STABLE_ROUNDS_TO_STOP;
 
     const rows = dedupeHcRows([...itemMap.values()]);
+    stats.written = rows.length;
     console.log(
-      `  ✓  Hiring Cafe: ${rows.length} engineering roles (departments, ${paginationExhausted ? "exhausted" : "partial"} pagination)`
+      `  ✓  Hiring Cafe summary: fetched=${stats.fetched} eng=${stats.afterEngineeringFilter} us=${stats.afterUsFilter} written=${stats.written} skippedNonUs=${stats.skippedNonUs} (${paginationExhausted ? "exhausted" : "partial"} pagination)`
     );
     return rows;
   } finally {

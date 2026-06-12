@@ -126,11 +126,12 @@ describe("matchesLocation", () => {
 });
 
 describe("isSupportedLocation", () => {
-  it("matches any of the four supported regions", () => {
+  it("matches US HC jobs only", () => {
     expect(isSupportedLocation("San Francisco, CA")).toBe(true);
-    expect(isSupportedLocation("Bangalore, India")).toBe(true);
-    expect(isSupportedLocation("Dubai, UAE")).toBe(true);
-    expect(isSupportedLocation("Singapore")).toBe(true);
+    expect(isSupportedLocation("Remote, US")).toBe(true);
+    expect(isSupportedLocation("Bangalore, India")).toBe(false);
+    expect(isSupportedLocation("Dubai, UAE")).toBe(false);
+    expect(isSupportedLocation("Singapore")).toBe(false);
     expect(isSupportedLocation("London, UK")).toBe(false);
     expect(isSupportedLocation("")).toBe(false);
   });
@@ -146,13 +147,8 @@ describe("filterByCountryLocation", () => {
     { location: "", title: "Empty" },
   ];
 
-  it("returns only supported-region jobs when filter is all", () => {
-    expect(filterByCountryLocation(jobs, "all").map((j) => j.title)).toEqual([
-      "US role",
-      "IN role",
-      "Dubai role",
-      "SG role",
-    ]);
+  it("returns only US jobs when filter is all", () => {
+    expect(filterByCountryLocation(jobs, "all").map((j) => j.title)).toEqual(["US role"]);
   });
 
   it("filters to US jobs only", () => {

@@ -573,6 +573,27 @@ html {
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
     border-bottom: 1px solid var(--glass-border);
   }
+
+  /* Admin dashboard — solid panels, no frosted glass layers */
+  .admin-panel {
+    @apply rounded-xl border border-border/40 bg-card/90;
+  }
+
+  .admin-table {
+    @apply overflow-hidden rounded-xl border border-border/40 bg-card/90;
+  }
+
+  .admin-table-head {
+    @apply border-b border-border/40 bg-muted/50;
+  }
+
+  .admin-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-transparent px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground;
+  }
+
+  .admin-pill-active {
+    @apply admin-pill border-indigo-500/30 bg-indigo-500/10 text-indigo-600 dark:text-indigo-300;
+  }
 }
 
 /* Offset scroll targets by the fixed navbar height (64 px) */

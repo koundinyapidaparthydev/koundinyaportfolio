@@ -9,6 +9,7 @@ import {
 
 export {
   COUNTRY_LOCATION_FILTERS,
+  DEFAULT_COUNTRY_LOCATION,
   matchesLocation,
   filterByCountryLocation,
   type CountryLocationFilter,

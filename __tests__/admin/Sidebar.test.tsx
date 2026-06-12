@@ -18,8 +18,8 @@ describe("AdminSidebar", () => {
     expect(screen.getAllByText("Edit Resume").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Visitors").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Settings").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Discoveries").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Jobs").length).toBeGreaterThanOrEqual(1);
+    expect(screen.queryByText("Discoveries")).not.toBeInTheDocument();
   });
 
   it("renders the Preview live site link", () => {
@@ -65,8 +65,8 @@ describe("AdminSidebar", () => {
       .filter(Boolean);
     const overviewIdx = labels.indexOf("Overview");
     const jobsIdx = labels.indexOf("Jobs");
-    const discoveriesIdx = labels.indexOf("Discoveries");
+    const editResumeIdx = labels.indexOf("Edit Resume");
     expect(jobsIdx).toBeGreaterThan(overviewIdx);
-    expect(discoveriesIdx).toBeGreaterThan(jobsIdx);
+    expect(editResumeIdx).toBeGreaterThan(jobsIdx);
   });
 });

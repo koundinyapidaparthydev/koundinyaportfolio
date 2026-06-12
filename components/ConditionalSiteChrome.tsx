@@ -9,8 +9,6 @@ function isAdminRoute(pathname: string | null) {
 }
 
 export function ConditionalNavbar() {
-  const pathname = usePathname();
-  if (isAdminRoute(pathname)) return null;
   return <Navbar />;
 }
 

@@ -31,6 +31,7 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isAdminRoute = pathname?.startsWith("/admin") ?? false;
 
   const [scrolled, setScrolled] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -90,18 +91,33 @@ export default function Navbar() {
           <nav className="relative flex h-14 items-center px-4 sm:px-5">
             {/* Left: brand */}
             <div className="flex flex-1 items-center justify-start">
-              <button
-                onClick={() => scrollTo("hero")}
-                aria-label="Go to top"
-                className="flex items-center gap-2.5 rounded-full transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-              >
-                <span className="glass-toggle flex h-9 w-9 shrink-0 items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300">
-                  KP
-                </span>
-                <span className="hidden text-sm font-semibold text-foreground/80 sm:inline">
-                  Koundinya
-                </span>
-              </button>
+              {isAdminRoute ? (
+                <Link
+                  href="/"
+                  aria-label="Go to home"
+                  className="flex items-center gap-2.5 rounded-full transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+                >
+                  <span className="glass-toggle flex h-9 w-9 shrink-0 items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300">
+                    KP
+                  </span>
+                  <span className="hidden text-sm font-semibold text-foreground/80 sm:inline">
+                    Koundinya
+                  </span>
+                </Link>
+              ) : (
+                <button
+                  onClick={() => scrollTo("hero")}
+                  aria-label="Go to top"
+                  className="flex items-center gap-2.5 rounded-full transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+                >
+                  <span className="glass-toggle flex h-9 w-9 shrink-0 items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300">
+                    KP
+                  </span>
+                  <span className="hidden text-sm font-semibold text-foreground/80 sm:inline">
+                    Koundinya
+                  </span>
+                </button>
+              )}
             </div>
 
             {/* Center: desktop nav links */}

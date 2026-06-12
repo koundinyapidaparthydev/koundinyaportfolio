@@ -7,6 +7,8 @@
 import {
   APPLY_NOW_WINDOW_MS,
   HC_DEPARTMENTS,
+  HC_LOCATIONS,
+  HC_US_LOCATION,
   buildHiringCafeSearchState,
   buildHiringCafeSearchUrl,
   dedupeHcRows,
@@ -18,12 +20,17 @@ import {
   extractHcItemsFromPayload,
   parseRelativePostedTime,
   extractRelativePostedFromText,
+  resolvePostedAt,
 } from "../../scripts/lib/hiring-cafe.mjs";
+import { isUsHcJob } from "../../scripts/lib/job-location-match.mjs";
 
 describe("buildHiringCafeSearchState", () => {
-  it("uses department-based engineering search", () => {
+  it("uses department-based engineering search with US locations", () => {
     const state = buildHiringCafeSearchState();
     expect(state.departments).toEqual(HC_DEPARTMENTS);
+    expect(state.locations).toEqual(HC_LOCATIONS);
+    expect(state.locations[0]).toEqual(HC_US_LOCATION);
+    expect(state.locations[0].formatted_address).toBe("United States");
     expect(state.sortBy).toBe("date");
     expect(state.dateFetchedPastNDays).toBe(2);
     expect(state).not.toHaveProperty("applicationFormEase");
@@ -35,6 +42,7 @@ describe("buildHiringCafeSearchState", () => {
     const encoded = url.split("searchState=")[1];
     const parsed = JSON.parse(decodeURIComponent(encoded));
     expect(parsed.departments).toEqual(HC_DEPARTMENTS);
+    expect(parsed.locations).toEqual(HC_LOCATIONS);
   });
 });
 
@@ -135,6 +143,43 @@ describe("parseHcItemToRow", () => {
       fetchedAt
     );
     expect(row![6]).toBe("2026-06-11T08:00:00.000Z");
+  });
+
+  it("resolves relative posted fields from API rows", () => {
+    const row = parseHcItemToRow(
+      {
+        objectID: "jobid123",
+        hc_title: "Engineer",
+        hc_apply_url: "https://hiring.cafe/job/jobid123",
+        timeAgo: "48m",
+      },
+      fetchedAt
+    );
+    expect(row![6]).toBe("2026-06-12T09:12:00.000Z");
+  });
+
+  it("resolves relative_posted via resolvePostedAt", () => {
+    expect(resolvePostedAt("1h", fetchedAt)).toBe("2026-06-12T09:00:00.000Z");
+    expect(resolvePostedAt("2026-06-11T08:00:00.000Z", fetchedAt)).toBe(
+      "2026-06-11T08:00:00.000Z"
+    );
+  });
+});
+
+describe("isUsHcJob", () => {
+  it("accepts US-only locations", () => {
+    expect(isUsHcJob("United States")).toBe(true);
+    expect(isUsHcJob("San Francisco, CA")).toBe(true);
+    expect(isUsHcJob("Denver or San Antonio or United States")).toBe(true);
+    expect(isUsHcJob("Raleigh or Morrisville")).toBe(true);
+  });
+
+  it("rejects India and multi-country listings", () => {
+    expect(isUsHcJob("Bangalore, India")).toBe(false);
+    expect(isUsHcJob("Bangalore or India or United States")).toBe(false);
+    expect(isUsHcJob("Hyderabad or Bengaluru or India or United States")).toBe(false);
+    expect(isUsHcJob("")).toBe(false);
+    expect(isUsHcJob("Remote")).toBe(false);
   });
 });
 

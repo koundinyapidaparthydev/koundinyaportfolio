@@ -11,20 +11,18 @@ import { motion } from "framer-motion";
 import type { Job } from "@/app/api/jobs/route";
 import {
   TIME_FILTERS,
-  COUNTRY_LOCATION_FILTERS,
   DEFAULT_ALL_JOBS_SORT,
   DEFAULT_TIME_FILTER,
+  DEFAULT_COUNTRY_LOCATION,
   applyAllJobsFilters,
   detectPlatformFromUrl,
   filterByTime,
-  filterByCountryLocation,
   formatRelativeTime,
   formatOpenDate,
   toggleSortColumn,
   type TimeFilter,
   type SortColumn,
   type AllJobsSort,
-  type CountryLocationFilter,
 } from "@/lib/admin/allJobsFilters";
 import { glass, glassCn } from "@/lib/glass";
 import { resolveCompanyLogo, companyInitial } from "@/lib/admin/companyLogos";
@@ -150,7 +148,7 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
   }, [job.url]);
 
   return (
-    <div className="glass-panel flex h-full flex-col">
+    <div className={glassCn(glass.adminPanel, "flex h-full flex-col")}>
       <div className="flex items-start justify-between gap-2 border-b border-white/8 px-4 py-3">
         <div className="min-w-0">
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
@@ -296,7 +294,7 @@ function JobCard({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={glassCn(
-        glass.panel,
+        glass.adminPanel,
         "w-full p-4 text-left transition-colors",
         isSelected && "ring-1 ring-indigo-500/40"
       )}
@@ -329,7 +327,6 @@ function JobCard({
 export default function AllJobsTab() {
   const [search, setSearch] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(DEFAULT_TIME_FILTER);
-  const [countryLocation, setCountryLocation] = useState<CountryLocationFilter>("all");
   const [sort, setSort] = useState<AllJobsSort>(DEFAULT_ALL_JOBS_SORT);
   const [hasDescription, setHasDescription] = useState(false);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
@@ -352,10 +349,10 @@ export default function AllJobsTab() {
         search,
         timeFilter,
         hasDescription,
-        countryLocation,
+        countryLocation: DEFAULT_COUNTRY_LOCATION,
         sort,
       }),
-    [jobs, search, timeFilter, hasDescription, countryLocation, sort]
+    [jobs, search, timeFilter, hasDescription, sort]
   );
 
   const selectedJob = useMemo(
@@ -375,7 +372,7 @@ export default function AllJobsTab() {
     <div className="space-y-5">
       <AdminPageHeader
         title="Hiring Cafe Jobs"
-        subtitle="Engineering + Software Development · last 2 days"
+        subtitle="Engineering + Software Development · US · last 2 days"
         actions={
           <button
             type="button"
@@ -419,29 +416,6 @@ export default function AllJobsTab() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">Location:</span>
-        {COUNTRY_LOCATION_FILTERS.map(({ id, label }) => {
-          const count = filterByCountryLocation(jobs, id).length;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setCountryLocation(id)}
-              className={glassCn(
-                "inline-flex items-center gap-1.5",
-                countryLocation === id
-                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
-                  : glass.pill
-              )}
-            >
-              {label}
-              {count > 0 && <span className={glass.pillBadge}>{count}</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
           Discovered within:
         </span>
@@ -455,8 +429,8 @@ export default function AllJobsTab() {
               className={glassCn(
                 "inline-flex items-center gap-1.5",
                 timeFilter === id
-                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
-                  : glass.pill
+                  ? glassCn(glass.adminPillActive, "text-indigo-600 dark:text-indigo-300")
+                  : glass.adminPill
               )}
             >
               {label}
@@ -469,7 +443,7 @@ export default function AllJobsTab() {
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
         <div className="min-w-0 flex-1">
           {filtered.length === 0 ? (
-            <div className="glass-panel py-16 text-center">
+            <div className={glassCn(glass.adminPanel, "py-16 text-center")}>
               <p className="text-sm text-slate-600">
                 {jobs.length === 0
                   ? "No jobs in sheet — run the HC pipeline or configure Google Sheets."
@@ -491,9 +465,9 @@ export default function AllJobsTab() {
               </div>
 
               {/* Desktop table */}
-              <div className="glass-table hidden max-h-[calc(100vh-22rem)] overflow-auto md:block">
+              <div className={glassCn(glass.adminTable, "hidden max-h-[calc(100vh-22rem)] overflow-auto md:block")}>
                 <table className="w-full text-sm">
-                  <thead className="glass-table-head sticky top-0 z-10">
+                  <thead className={glassCn(glass.adminTableHead, "sticky top-0 z-10")}>
                     <tr className="border-b border-white/8">
                       {TABLE_COLUMNS.map(({ id, label }) => (
                         <SortableHeader

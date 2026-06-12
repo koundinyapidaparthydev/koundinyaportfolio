@@ -85,7 +85,7 @@ export default function SettingsTab() {
       <AdminPageHeader title="Settings" subtitle="Manage your admin account." />
 
       <AdminSection title="Change admin password">
-      <div className={glassCn(glass.panel, "max-w-md p-6")}>
+      <div className={glassCn(glass.adminPanel, "max-w-md p-6")}>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>
@@ -153,7 +153,7 @@ export default function SettingsTab() {
       </AdminSection>
 
       <AdminSection title="Account">
-      <div className={glassCn(glass.panel, "max-w-md p-5")}>
+      <div className={glassCn(glass.adminPanel, "max-w-md p-5")}>
         <div className="space-y-2 text-sm text-slate-500">
           <div className="flex items-center justify-between">
             <span>Email</span>

@@ -14,6 +14,7 @@ import {
   TIME_FILTERS,
   DEFAULT_ALL_JOBS_SORT,
   DEFAULT_TIME_FILTER,
+  DEFAULT_COUNTRY_LOCATION,
   type AllJobsRow,
 } from "@/lib/admin/allJobsFilters";
 
@@ -54,6 +55,10 @@ describe("detectPlatformFromUrl", () => {
 describe("All Jobs time filters", () => {
   it("defaults to 2h window for HC jobs tab", () => {
     expect(DEFAULT_TIME_FILTER).toBe("2h");
+  });
+
+  it("defaults to US-only location filter", () => {
+    expect(DEFAULT_COUNTRY_LOCATION).toBe("us");
   });
 
   it("includes all-time as the last filter option", () => {

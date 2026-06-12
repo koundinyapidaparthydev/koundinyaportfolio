@@ -5,6 +5,25 @@
 
 export const HC_DEPARTMENTS = ["Engineering", "Software Development"];
 
+/** United States workplace filter — matches hiring.cafe `searchState.locations` shape. */
+export const HC_US_LOCATION = {
+  formatted_address: "United States",
+  types: ["country"],
+  geometry: {
+    location: { lat: 34.0544, lon: -118.244 },
+  },
+  id: "user_country",
+  address_components: [
+    { long_name: "United States", short_name: "US", types: ["country"] },
+  ],
+  options: {
+    flexible_regions: ["anywhere_in_continent", "anywhere_in_world"],
+  },
+};
+
+/** US-only workplace filter for HC searchState.locations. */
+export const HC_LOCATIONS = [HC_US_LOCATION];
+
 /** Jobs posted on HC within this window (matches searchState.dateFetchedPastNDays). */
 export const HC_DATE_FETCHED_PAST_DAYS = 2;
 
@@ -17,6 +36,7 @@ export function buildHiringCafeSearchState(overrides = {}) {
   return {
     dateFetchedPastNDays: HC_DATE_FETCHED_PAST_DAYS,
     departments: HC_DEPARTMENTS,
+    locations: HC_LOCATIONS,
     sortBy: "date",
     ...overrides,
   };
@@ -90,7 +110,7 @@ export function extractRelativePostedFromText(text, refNow = new Date()) {
   return token ? parseRelativePostedTime(token, refNow) : "";
 }
 
-function resolvePostedAt(value, refNow = new Date()) {
+export function resolvePostedAt(value, refNow = new Date()) {
   if (value == null || value === "") return "";
   if (typeof value === "string") {
     const rel = parseRelativePostedTime(value, refNow);

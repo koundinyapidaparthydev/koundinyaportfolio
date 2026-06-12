@@ -1,22 +1,19 @@
 /**
  * Country/region matching for job location strings (sheet column C).
  *
- * Only US, India, Dubai, and Singapore are supported. Jobs outside these
- * regions are excluded even when the location filter is "all".
+ * Production pipeline is US-only. Legacy region helpers remain for tests.
  */
 
 export type CountryLocationFilter = "all" | "us" | "in" | "dubai" | "sg";
 
+/** Default location filter for the All Jobs tab (US-only pipeline). */
+export const DEFAULT_COUNTRY_LOCATION: CountryLocationFilter = "us";
+
+/** US-only filters shown in the admin Jobs tab. */
 export const COUNTRY_LOCATION_FILTERS: {
   id: CountryLocationFilter;
   label: string;
-}[] = [
-  { id: "all", label: "All locations" },
-  { id: "us", label: "🇺🇸 US" },
-  { id: "in", label: "🇮🇳 India" },
-  { id: "dubai", label: "🇦🇪 Dubai" },
-  { id: "sg", label: "🇸🇬 Singapore" },
-];
+}[] = [{ id: "us", label: "🇺🇸 US" }];
 
 /** US state / territory abbreviations for ", CA" style locations. */
 const US_STATE_ABBRS =
@@ -78,6 +75,20 @@ export function isUnitedStatesLocation(location: string): boolean {
   return matchesAnyPattern(trimmed, US_PATTERNS);
 }
 
+/** HC scrape + admin default: US signal required, non-US regions rejected. */
+export function isUsHcJob(location: string): boolean {
+  const trimmed = (location ?? "").trim();
+  if (!trimmed) return false;
+  if (
+    isIndiaLocation(trimmed) ||
+    isDubaiLocation(trimmed) ||
+    isSingaporeLocation(trimmed)
+  ) {
+    return false;
+  }
+  return isUnitedStatesLocation(trimmed);
+}
+
 export function isIndiaLocation(location: string): boolean {
   const trimmed = (location ?? "").trim();
   if (!trimmed) return false;
@@ -96,14 +107,9 @@ export function isSingaporeLocation(location: string): boolean {
   return matchesAnyPattern(trimmed, SINGAPORE_PATTERNS);
 }
 
-/** True when location matches any supported region (US, India, Dubai, Singapore). */
+/** True when location is a US HC job (pipeline default). */
 export function isSupportedLocation(location: string): boolean {
-  return (
-    isUnitedStatesLocation(location) ||
-    isIndiaLocation(location) ||
-    isDubaiLocation(location) ||
-    isSingaporeLocation(location)
-  );
+  return isUsHcJob(location);
 }
 
 /** Match a job location against a country filter. Empty / unsupported → false. */
@@ -111,12 +117,10 @@ export function matchesLocation(
   location: string,
   filter: CountryLocationFilter
 ): boolean {
-  if (filter === "all") return isSupportedLocation(location);
+  if (filter === "all" || filter === "us") return isUsHcJob(location);
   const trimmed = (location ?? "").trim();
   if (!trimmed) return false;
   switch (filter) {
-    case "us":
-      return isUnitedStatesLocation(trimmed);
     case "in":
       return isIndiaLocation(trimmed);
     case "dubai":

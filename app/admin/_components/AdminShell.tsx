@@ -1,7 +1,6 @@
 "use client";
 
 import { type ReactNode } from "react";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { glass, glassCn } from "@/lib/glass";
 import { useAdminTheme } from "./AdminThemeProvider";
@@ -25,7 +24,6 @@ export function AdminShell({ children }: { children: ReactNode }) {
 const TAB_TITLES: Record<string, string> = {
   overview: "Overview",
   "all-jobs": "Hiring Cafe Jobs",
-  discoveries: "Discoveries",
   "edit-resume": "Edit Resume",
   visitors: "Visitors",
   settings: "Settings",
@@ -44,28 +42,12 @@ export function AdminTopBar({
   const title = TAB_TITLES[activeTab] ?? "Admin";
 
   return (
-    <header
-      className={glassCn(
-        glass.navElevated,
-        "sticky top-0 z-40 flex items-center justify-between gap-4 px-4 py-3 sm:px-6"
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <Link
-          href="/"
-          className={glassCn(
-            glass.toggle,
-            "flex h-8 w-8 shrink-0 items-center justify-center text-xs font-bold text-indigo-600 dark:text-indigo-300"
-          )}
-        >
-          KP
-        </Link>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
-            {title}
-          </p>
-          <p className="truncate text-[10px] text-slate-500">Admin dashboard</p>
-        </div>
+    <header className="mb-6 flex items-center justify-between gap-4 border-b border-border/40 pb-4">
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">
+          {title}
+        </p>
+        <p className="truncate text-[10px] text-slate-500">Admin dashboard</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
@@ -102,12 +84,7 @@ export function AdminPageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div
-      className={glassCn(
-        glass.panel,
-        "flex flex-wrap items-start justify-between gap-3 p-5"
-      )}
-    >
+    <div className={glassCn(glass.adminPanel, "flex flex-wrap items-start justify-between gap-3 p-5")}>
       <div>
         <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
           {title}
@@ -137,7 +114,7 @@ export function AdminStatCard({
   return (
     <div
       className={glassCn(
-        glass.panel,
+        glass.adminPanel,
         "p-5 transition-colors",
         accent && "border-indigo-500/30 bg-indigo-500/10"
       )}

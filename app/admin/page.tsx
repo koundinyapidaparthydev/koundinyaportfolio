@@ -26,9 +26,6 @@ const VisitorsTab = dynamic(() => import("./_components/VisitorsTab"), {
 const SettingsTab = dynamic(() => import("./_components/SettingsTab"), {
   loading: () => <TabLoader />,
 });
-const DiscoveriesTab = dynamic(() => import("./_components/DiscoveriesTab"), {
-  loading: () => <TabLoader />,
-});
 const AllJobsTab = dynamic(() => import("./_components/AllJobsTab"), {
   loading: () => <TabLoader />,
 });
@@ -57,10 +54,10 @@ export default function AdminPage() {
   }, [queryClient]);
 
   return (
-    <div className="relative flex min-h-screen flex-col">
-      <AdminTopBar activeTab={activeTab} onRefresh={handleRefresh} refreshing={refreshing} />
-
+    <div className="relative flex min-h-screen flex-col pt-24">
       <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <AdminTopBar activeTab={activeTab} onRefresh={handleRefresh} refreshing={refreshing} />
+
         {session?.user?.email && (
           <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
             Signed in as <span className="text-slate-600 dark:text-slate-300">{session.user.email}</span>
@@ -74,9 +71,6 @@ export default function AdminPage() {
             <AdminTabPanel tabKey={activeTab}>
               {activeTab === "overview" && <OverviewTab />}
               {activeTab === "all-jobs" && <AllJobsTab />}
-              {activeTab === "discoveries" && (
-                <DiscoveriesTab onViewJobs={() => setActiveTab("all-jobs")} />
-              )}
               {activeTab === "edit-resume" && <EditResumeTab />}
               {activeTab === "visitors" && <VisitorsTab />}
               {activeTab === "settings" && <SettingsTab />}

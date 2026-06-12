@@ -20,6 +20,11 @@ const config: Config = {
     "glass-tab",
     "glass-tab-active",
     "glass-input-compact",
+    "admin-panel",
+    "admin-table",
+    "admin-table-head",
+    "admin-pill",
+    "admin-pill-active",
   ],
   theme: {
     extend: {

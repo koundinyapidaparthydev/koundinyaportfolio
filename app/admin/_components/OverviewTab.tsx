@@ -32,7 +32,7 @@ function BreakdownBar({
   total: number;
 }) {
   return (
-    <div className={glassCn(glass.panel, "p-5")}>
+    <div className={glassCn(glass.adminPanel, "p-5")}>
       <AdminSection title={title}>
       {total === 0 ? (
         <p className="text-xs text-slate-600">No data yet.</p>
@@ -238,7 +238,7 @@ export default function OverviewTab() {
         />
       </div>
 
-      <div className={glassCn(glass.panel, "p-5")}>
+      <div className={glassCn(glass.adminPanel, "p-5")}>
         <AdminSection title="Traffic — Last 7 Days">
         <div className="flex items-end gap-2" style={{ height: 100 }}>
           {last7Days.map(({ label, count }) => {
@@ -293,7 +293,7 @@ export default function OverviewTab() {
       {/* ── Top pages + Top referrers side by side ── */}
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Top pages */}
-        <div className={glassCn(glass.panel, "p-5")}>
+        <div className={glassCn(glass.adminPanel, "p-5")}>
           <AdminSection title="Top Pages">
           {pageEntries.length === 0 ? (
             <p className="text-xs text-slate-600">No data yet.</p>
@@ -324,7 +324,7 @@ export default function OverviewTab() {
         </div>
 
         {/* Top referrers */}
-        <div className={glassCn(glass.panel, "p-5")}>
+        <div className={glassCn(glass.adminPanel, "p-5")}>
           <AdminSection title="Top Referrers">
           {referrerEntries.length === 0 ? (
             <p className="text-xs text-slate-600">No data yet.</p>
@@ -357,7 +357,7 @@ export default function OverviewTab() {
 
       {/* ── Geographic distribution ── */}
       {countryEntries.length > 0 && (
-        <div className={glassCn(glass.panel, "p-5")}>
+        <div className={glassCn(glass.adminPanel, "p-5")}>
           <AdminSection title="Geographic Distribution (Top 5 Countries)">
           <div className="flex flex-wrap gap-3">
             {countryEntries.map(([country, count]) => (
@@ -378,7 +378,7 @@ export default function OverviewTab() {
 
       {/* ── Recent Activity ── */}
       {recentActivity.length > 0 && (
-        <div className={glassCn(glass.panel, "p-5")}>
+        <div className={glassCn(glass.adminPanel, "p-5")}>
           <AdminSection title="Recent Activity (last 10)">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-xs">

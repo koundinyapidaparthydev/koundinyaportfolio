@@ -30,6 +30,11 @@ export const glass = {
   drawer: "glass-drawer",
   table: "glass-table",
   tableHead: "glass-table-head",
+  adminPanel: "admin-panel",
+  adminTable: "admin-table",
+  adminTableHead: "admin-table-head",
+  adminPill: "admin-pill",
+  adminPillActive: "admin-pill-active",
 } as const;
 
 export function glassCn(...inputs: ClassValue[]) {
