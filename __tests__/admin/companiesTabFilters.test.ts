@@ -13,11 +13,11 @@ import {
 describe("CompaniesTab time filters", () => {
   const now = Date.parse("2026-06-06T12:00:00.000Z");
 
-  it("includes 30m as the first filter option", () => {
+  it("includes 10m as the first filter option", () => {
     expect(COMPANIES_TIME_FILTERS[0]).toEqual({
-      id: "30m",
-      label: "⚡ Last 30 mins",
-      ms: 30 * 60_000,
+      id: "10m",
+      label: "⚡ Last 10 mins",
+      ms: 10 * 60_000,
     });
   });
 

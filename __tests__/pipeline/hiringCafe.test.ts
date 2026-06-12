@@ -184,6 +184,13 @@ describe("isUsHcJob", () => {
 });
 
 describe("dedupeHcRows", () => {
+  it("drops duplicate company+title with different URLs", () => {
+    const rows = [
+      ["Acme", "Engineer", "US", "https://hiring.cafe/job/abc12345", "hiring-cafe", "t1", "", ""],
+      ["Acme", "Engineer", "US", "https://boards.greenhouse.io/acme/1", "hiring-cafe", "t2", "", ""],
+    ];
+    expect(dedupeHcRows(rows)).toHaveLength(1);
+  });
   it("removes duplicates by apply URL / HC id", () => {
     const rows = [
       ["A", "Eng", "", "https://hiring.cafe/job/abc12345", "hiring-cafe"],

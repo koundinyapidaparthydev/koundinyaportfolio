@@ -13,9 +13,10 @@ This project **scrapes engineering job listings from Hiring Cafe** into a Google
 ```mermaid
 flowchart LR
   HC[hiring.cafe Playwright scrape]
-  HC --> Filter[isEngineeringRole]
-  Filter --> Dedup[Dedup by URL / HC job id]
-  Dedup --> Sheet[Google Sheet Jobs A–N]
+  HC --> Filter[isEngineeringRole + US]
+  Filter --> Refresh[Refresh discovered-at for existing rows]
+  Refresh --> Dedup[Dedup HC id + company/title]
+  Dedup --> Sheet[Append new jobs to Jobs A–N]
   Sheet --> Archive[Archive rows older than 6h → Old Jobs]
   Archive --> Notify[WhatsApp optional]
 ```
@@ -23,6 +24,7 @@ flowchart LR
 | Stage | Script | npm command |
 |-------|--------|-------------|
 | **HC pipeline** (default) | `scripts/run-hiring-cafe-pipeline.mjs` | `npm run job:pipeline` |
+| **Local 10-min loop** | `scripts/run-hiring-cafe-loop.mjs` | `npm run job:pipeline:loop` |
 | **Purge legacy rows** | `scripts/purge-jobs-sheet.mjs` | `npm run job:purge` |
 | **Diagnose sheet** | `scripts/diagnose-sheet.mjs` | `npm run job:diagnose` |
 | **Env check** | `scripts/validate-pipeline-env.mjs` | `npm run job:validate-env` |
@@ -39,7 +41,9 @@ flowchart LR
 | Departments | Engineering, Software Development |
 | Date window | Last 2 days (`dateFetchedPastNDays: 2`) |
 | Apply-now window | Jobs tab keeps discoveries from last 6 hours |
-| Dedup | Apply URL / HC job id vs `Jobs` + `Old Jobs` |
+| Dedup | HC job id + company/title vs `Jobs` + `Old Jobs`; sheet compact each run |
+| Refresh | Existing rows get column F updated every scrape (last discovered) |
+| Schedule | GHA every 10 min; admin filters include 10m / 20m / 30m windows |
 
 Config lives in `scripts/lib/hiring-cafe.mjs`.
 

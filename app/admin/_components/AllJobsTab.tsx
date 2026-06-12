@@ -29,7 +29,7 @@ import { resolveCompanyLogo, companyInitial } from "@/lib/admin/companyLogos";
 import { AdminPageHeader } from "./AdminShell";
 
 async function fetchJobs(): Promise<Job[]> {
-  const res = await fetch("/api/jobs");
+  const res = await fetch("/api/jobs", { cache: "no-store" });
   if (!res.ok) throw new Error("Failed to load jobs");
   const data = (await res.json()) as { jobs: Job[]; error?: string };
   if (data.error && data.jobs.length === 0) {
@@ -340,7 +340,9 @@ export default function AllJobsTab() {
   } = useQuery<Job[], Error>({
     queryKey: ["all-jobs"],
     queryFn: fetchJobs,
-    staleTime: 30_000,
+    staleTime: 10_000,
+    refetchInterval: 60_000,
+    refetchOnWindowFocus: true,
   });
 
   const filtered = useMemo(

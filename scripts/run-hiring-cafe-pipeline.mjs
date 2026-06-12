@@ -3,10 +3,12 @@
  * Hiring Cafe–only job pipeline (default for GHA + local loops).
  *
  * Flow each run (~10 min):
- *   1. Scrape ALL HC engineering jobs (department search, full pagination)
- *   2. Archive Jobs tab rows older than 6h → Old Jobs
- *   3. Append only NEW jobs (dedup by apply URL / HC job id vs Jobs + Old Jobs)
- *   4. Log to Scrape Log + optional WhatsApp for new discoveries
+ *   1. Scrape ALL HC US engineering jobs (department search, full pagination)
+ *   2. Refresh discovered-at (column F) for jobs still on the board
+ *   3. Backfill posted-at, compact duplicate rows (HC id + company/title)
+ *   4. Append only NEW jobs (dedup vs Jobs + Old Jobs)
+ *   5. Archive Jobs tab rows older than 6h → Old Jobs
+ *   6. Log to Scrape Log + optional WhatsApp for new discoveries
  *
  * Local loop (every 10 min):
  *   while true; do
@@ -24,6 +26,12 @@ import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
 import { recordScrapeResult } from "./lib/scrape-log.mjs";
 import { APPLY_NOW_WINDOW_MS, getJobDedupKey } from "./lib/hiring-cafe.mjs";
 import { scrapeAllHiringCafeJobs } from "./lib/hiring-cafe-scraper.mjs";
+import {
+  compactJobsSheet,
+  filterNewHcJobs,
+  loadSheetDedupSets,
+  refreshDiscoveredAt,
+} from "./lib/hiring-cafe-sheet-sync.mjs";
 
 loadEnvLocal();
 validatePipelineEnv("scrape");
@@ -33,16 +41,7 @@ const DRY_RUN = process.env.DRY_RUN === "true";
 const COMPANY = "Hiring Cafe";
 
 async function loadKnownDedupKeys(sheets, sheetName) {
-  const res = await sheets.spreadsheets.values.get({
-    spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${sheetName}!D2:D`,
-  });
-  const keys = new Set();
-  for (const row of res.data.values ?? []) {
-    const url = row[0] ?? "";
-    if (!url) continue;
-    keys.add(getJobDedupKey([null, null, null, url]));
-  }
+  const { keys } = await loadSheetDedupSets(sheets, GOOGLE_SHEET_ID, sheetName);
   return keys;
 }
 
@@ -63,30 +62,37 @@ async function main() {
   const sheets = await sj.getSheets();
   await sj.ensureSheetAndHeaders(sheets);
 
-  const jobsKeys = await loadKnownDedupKeys(sheets, sj.SHEET_NAME);
-  const archiveKeys = await loadKnownDedupKeys(sheets, "Old Jobs");
-  const knownKeys = new Set([...jobsKeys, ...archiveKeys]);
+  const jobsDedup = await loadSheetDedupSets(sheets, GOOGLE_SHEET_ID, sj.SHEET_NAME);
+  const archiveDedup = await loadSheetDedupSets(sheets, GOOGLE_SHEET_ID, "Old Jobs");
+  const knownKeys = new Set([...jobsDedup.keys, ...archiveDedup.keys]);
+  const knownRoleKeys = new Set([...jobsDedup.roleKeys, ...archiveDedup.roleKeys]);
 
-  const beforeCount = jobsKeys.size;
+  const beforeCount = jobsDedup.keys.size;
 
-  await sj.archiveOldJobs(sheets, { maxAgeMs: APPLY_NOW_WINDOW_MS });
+  const refreshed = await refreshDiscoveredAt(
+    sheets,
+    GOOGLE_SHEET_ID,
+    sj.SHEET_NAME,
+    normalized,
+    scrapedAt
+  );
   await sj.syncPostedAt(sheets, normalized);
 
-  const newJobs = normalized.filter((row) => {
-    const key = getJobDedupKey(row);
-    return key && !knownKeys.has(key);
-  });
+  const dupesRemoved = await compactJobsSheet(sheets, GOOGLE_SHEET_ID, sj.SHEET_NAME);
 
+  const newJobs = filterNewHcJobs(normalized, knownKeys, knownRoleKeys);
   const newJobRows = await sj.writeNewJobs(sheets, newJobs);
+
+  await sj.archiveOldJobs(sheets, { maxAgeMs: APPLY_NOW_WINDOW_MS });
 
   await recordScrapeResult(sheets, GOOGLE_SHEET_ID, {
     company: COMPANY,
     scrapedAt,
     jobsFound: normalized.length,
     newJobs: newJobRows.length,
-    removedJobs: 0,
+    removedJobs: dupesRemoved,
     status: "OK",
-    notes: `HC-only · apply-now window ${APPLY_NOW_WINDOW_MS / 3_600_000}h`,
+    notes: `HC US · refreshed ${refreshed} · dupes ${dupesRemoved} · window ${APPLY_NOW_WINDOW_MS / 3_600_000}h`,
   });
 
   if (newJobRows.length > 0) {
@@ -94,7 +100,7 @@ async function main() {
   }
 
   console.log(
-    `\n📊  HC pipeline: ${normalized.length} fetched | ${newJobRows.length} new | ${beforeCount} in apply-now window`
+    `\n📊  HC pipeline: ${normalized.length} fetched | ${refreshed} refreshed | ${newJobRows.length} new | ${dupesRemoved} dupes removed | ${beforeCount} in sheet before`
   );
   console.log(`═══════════════════════════════════════════════════════════\n`);
 }

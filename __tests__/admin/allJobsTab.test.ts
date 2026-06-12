@@ -53,8 +53,15 @@ describe("detectPlatformFromUrl", () => {
 });
 
 describe("All Jobs time filters", () => {
-  it("defaults to 2h window for HC jobs tab", () => {
-    expect(DEFAULT_TIME_FILTER).toBe("2h");
+  it("defaults to 10m window aligned with scrape interval", () => {
+    expect(DEFAULT_TIME_FILTER).toBe("10m");
+  });
+
+  it("includes 10m and 20m discovery filters", () => {
+    expect(TIME_FILTERS.some((f) => f.id === "10m")).toBe(true);
+    expect(TIME_FILTERS.some((f) => f.id === "20m")).toBe(true);
+    expect(TIME_FILTERS.find((f) => f.id === "10m")?.ms).toBe(10 * 60_000);
+    expect(TIME_FILTERS.find((f) => f.id === "20m")?.ms).toBe(20 * 60_000);
   });
 
   it("defaults to US-only location filter", () => {

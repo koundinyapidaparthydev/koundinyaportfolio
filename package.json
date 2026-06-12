@@ -24,6 +24,7 @@
     "job:pipeline": "node scripts/run-hiring-cafe-pipeline.mjs",
     "job:pipeline:hc": "node scripts/run-hiring-cafe-pipeline.mjs",
     "job:pipeline:hc:dry": "DRY_RUN=true node scripts/run-hiring-cafe-pipeline.mjs",
+    "job:pipeline:loop": "node scripts/run-hiring-cafe-loop.mjs",
     "job:pipeline:companies": "node scripts/run-full-pipeline.mjs",
     "job:pipeline:company": "node scripts/run-company-pipeline.mjs",
     "job:validate-env": "node scripts/validate-pipeline-env.mjs --stage=scrape",

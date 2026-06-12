@@ -15,13 +15,16 @@ export {
   type CountryLocationFilter,
 } from "@/lib/admin/jobLocationMatch";
 
-export type TimeFilter = "30m" | "2h" | "6h" | "12h" | "1d" | "2d" | "all";
+export type TimeFilter = "10m" | "20m" | "30m" | "2h" | "6h" | "12h" | "1d" | "2d" | "all";
 
 /** Apply-now window: Jobs tab holds discoveries from the last 6 hours. */
 export const APPLY_NOW_WINDOW_MS = 6 * 60 * 60_000;
 
-/** Default time filter for the Hiring Cafe jobs tab. */
-export const DEFAULT_TIME_FILTER: TimeFilter = "2h";
+/** Default time filter — aligned with 10-minute scrape interval. */
+export const DEFAULT_TIME_FILTER: TimeFilter = "10m";
+
+/** Matches GHA cron and `npm run job:pipeline:loop`. */
+export const HC_PIPELINE_INTERVAL_MS = 10 * 60_000;
 
 export type SortColumn =
   | "company"
@@ -73,7 +76,9 @@ export interface AllJobsRow {
 export const NEW_JOB_WINDOW_MS = 30 * 60_000;
 
 export const TIME_FILTERS: { id: TimeFilter; label: string; ms: number | null }[] = [
-  { id: "30m", label: "⚡ Last 30 mins", ms: NEW_JOB_WINDOW_MS },
+  { id: "10m", label: "⚡ Last 10 mins", ms: HC_PIPELINE_INTERVAL_MS },
+  { id: "20m", label: "Last 20 mins", ms: 20 * 60_000 },
+  { id: "30m", label: "Last 30 mins", ms: NEW_JOB_WINDOW_MS },
   { id: "2h", label: "Last 2 hrs", ms: 2 * 3_600_000 },
   { id: "6h", label: "✅ Apply now (6h)", ms: APPLY_NOW_WINDOW_MS },
   { id: "12h", label: "Last 12 hrs", ms: 12 * 3_600_000 },

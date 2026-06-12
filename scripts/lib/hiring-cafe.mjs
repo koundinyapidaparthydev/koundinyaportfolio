@@ -265,14 +265,25 @@ export function getJobDedupKey(row) {
   }
 }
 
-/** Deduplicate scrape rows by apply URL or HC job id (first wins). */
+function roleDedupKey(row) {
+  const company = (row?.[0] ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+  const title = (row?.[1] ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+  if (!company || !title) return "";
+  return `role:${company}|${title}`;
+}
+
+/** Deduplicate scrape rows by HC job id / URL and company+title (first wins). */
 export function dedupeHcRows(rows) {
-  const seen = new Set();
+  const seenKeys = new Set();
+  const seenRoles = new Set();
   const out = [];
   for (const row of rows) {
     const key = getJobDedupKey(row);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
+    const role = roleDedupKey(row);
+    if (!key) continue;
+    if (seenKeys.has(key) || (role && seenRoles.has(role))) continue;
+    seenKeys.add(key);
+    if (role) seenRoles.add(role);
     out.push(row);
   }
   return out;
