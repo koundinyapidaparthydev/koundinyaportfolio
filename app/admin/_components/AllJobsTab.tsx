@@ -134,7 +134,15 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
   );
 }
 
-function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
+function JobDetailPanel({
+  job,
+  onClose,
+  onMinimize,
+}: {
+  job: Job;
+  onClose: () => void;
+  onMinimize: () => void;
+}) {
   const [copied, setCopied] = useState(false);
   const platform = detectPlatformFromUrl(job.url);
   const now = Date.now();
@@ -159,14 +167,26 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
           <h3 className="mt-1 text-sm font-semibold leading-snug text-white">{job.title || "Untitled"}</h3>
           <p className="text-xs text-slate-400">{job.company}</p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="shrink-0 rounded-lg p-1 text-slate-500 hover:bg-white/5 hover:text-slate-300 xl:hidden"
-          aria-label="Close details"
-        >
-          ✕
-        </button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button
+            type="button"
+            onClick={onMinimize}
+            className="rounded-lg px-2 py-1 text-xs text-slate-500 hover:bg-white/5 hover:text-slate-300"
+            aria-label="Minimize details"
+            title="Minimize"
+          >
+            ─
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-slate-500 hover:bg-white/5 hover:text-slate-300"
+            aria-label="Close details"
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
@@ -259,9 +279,12 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
           <div>
             <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
               Description
+              <span className="ml-2 font-normal normal-case tracking-normal text-slate-600">
+                ({job.description.length.toLocaleString()} chars)
+              </span>
             </p>
-            <p className="max-h-40 overflow-y-auto rounded-lg border border-white/8 bg-white/[0.02] p-3 text-xs leading-relaxed text-slate-400">
-              {job.description.length > 500 ? `${job.description.slice(0, 500)}…` : job.description}
+            <p className="max-h-[min(60vh,36rem)] overflow-y-auto whitespace-pre-wrap rounded-lg border border-white/8 bg-white/[0.02] p-3 text-xs leading-relaxed text-slate-400">
+              {job.description}
             </p>
           </div>
         )}
@@ -296,6 +319,41 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function MinimizedJobBar({
+  job,
+  onExpand,
+  onClose,
+}: {
+  job: Job;
+  onExpand: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className={glassCn(glass.adminPanel, "flex items-center gap-3 px-4 py-2.5")}>
+      <CompanyLogo company={job.company} url={job.url} size="sm" />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-xs font-medium text-white">{job.title || "Untitled"}</p>
+        <p className="truncate text-[10px] text-slate-500">{job.company}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onExpand}
+        className={glassCn(glass.btn, "shrink-0 px-2.5 py-1 text-[10px] font-medium")}
+      >
+        Expand
+      </button>
+      <button
+        type="button"
+        onClick={onClose}
+        className="shrink-0 rounded-lg p-1 text-slate-500 hover:bg-white/5 hover:text-slate-300"
+        aria-label="Close details"
+      >
+        ✕
+      </button>
     </div>
   );
 }
@@ -353,6 +411,12 @@ export default function AllJobsTab() {
   const [hasDescription, setHasDescription] = useState(false);
   const [atsFriendly, setAtsFriendly] = useState(true);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
+  const [detailMinimized, setDetailMinimized] = useState(false);
+
+  const selectJob = useCallback((url: string) => {
+    setSelectedUrl(url);
+    setDetailMinimized(false);
+  }, []);
 
   const {
     data: jobs = [],
@@ -494,7 +558,7 @@ export default function AllJobsTab() {
                     key={`${job.rowIndex}-${job.url}`}
                     job={job}
                     isSelected={selectedUrl === job.url}
-                    onSelect={() => setSelectedUrl(job.url)}
+                    onSelect={() => selectJob(job.url)}
                   />
                 ))}
               </div>
@@ -527,7 +591,7 @@ export default function AllJobsTab() {
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: Math.min(i * 0.02, 0.4) }}
-                          onClick={() => setSelectedUrl(job.url)}
+                          onClick={() => selectJob(job.url)}
                           className={[
                             "cursor-pointer transition-colors",
                             isSelected ? "bg-indigo-500/10" : "hover:bg-white/3",
@@ -596,8 +660,26 @@ export default function AllJobsTab() {
         </div>
 
         {selectedJob && (
-          <div className="w-full shrink-0 xl:sticky xl:top-24 xl:w-96 xl:max-h-[calc(100vh-8rem)]">
-            <JobDetailPanel job={selectedJob} onClose={() => setSelectedUrl(null)} />
+          <div
+            className={
+              detailMinimized
+                ? "w-full shrink-0 xl:w-96"
+                : "w-full shrink-0 xl:sticky xl:top-24 xl:w-96 xl:max-h-[calc(100vh-8rem)]"
+            }
+          >
+            {detailMinimized ? (
+              <MinimizedJobBar
+                job={selectedJob}
+                onExpand={() => setDetailMinimized(false)}
+                onClose={() => setSelectedUrl(null)}
+              />
+            ) : (
+              <JobDetailPanel
+                job={selectedJob}
+                onClose={() => setSelectedUrl(null)}
+                onMinimize={() => setDetailMinimized(true)}
+              />
+            )}
           </div>
         )}
       </div>

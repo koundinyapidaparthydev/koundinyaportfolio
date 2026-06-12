@@ -2,6 +2,11 @@
  * Keyword-based ATS scoring (mirrors lib/atsScoring.ts for Node scripts).
  */
 
+import {
+  buildResumeAtsPayload,
+  resumeAtsPayloadToText,
+} from "./resume-ats-context.mjs";
+
 const STOP_WORDS = new Set([
   "and", "or", "the", "a", "an", "with", "for", "to", "in", "of", "on", "at", "by", "from",
   "you", "we", "our", "your", "their", "this", "that", "will", "are", "is", "be", "been",
@@ -45,18 +50,11 @@ function buildResumeKeywords(resume) {
     });
   };
 
+  const payload = buildResumeAtsPayload(resume);
+  add(resumeAtsPayloadToText(payload));
+
   for (const cat of resume.skills ?? []) {
     for (const skill of cat.skills ?? []) add(skill);
-  }
-  for (const exp of resume.experience ?? []) {
-    for (const tech of exp.technologies ?? []) add(tech);
-    for (const point of exp.points ?? []) {
-      const techMentions = point.match(/\b[A-Z][a-zA-Z0-9.+#-]+\b/g) ?? [];
-      techMentions.forEach((t) => add(t));
-    }
-  }
-  for (const proj of resume.projects ?? []) {
-    for (const tech of proj.stack ?? []) add(tech);
   }
   return kws;
 }

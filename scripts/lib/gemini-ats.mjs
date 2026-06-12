@@ -4,14 +4,20 @@
  */
 
 import { calculateAtsScore } from "./ats-scoring.mjs";
+import {
+  normalizeJobDescriptionForAts,
+  serializeResumeSummaryForGemini,
+} from "./resume-ats-context.mjs";
 
 /** Cheapest generally-available Gemini model for short classification tasks. */
 export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
 
 export async function scoreJobWithGemini(jobTitle, jobDescription, resume) {
+  const fullDescription = normalizeJobDescriptionForAts(jobDescription);
   const apiKey = process.env.GEMINI_API_KEY?.trim();
+
   const fallback = () => {
-    const local = calculateAtsScore(jobDescription, resume);
+    const local = calculateAtsScore(fullDescription, resume);
     const matched = local.matched?.slice(0, 8).join(", ") || "—";
     const missing = local.missing?.slice(0, 8).join(", ") || "—";
     return {
@@ -23,17 +29,9 @@ export async function scoreJobWithGemini(jobTitle, jobDescription, resume) {
     };
   };
 
-  if (!apiKey || !jobDescription?.trim()) return fallback();
+  if (!apiKey || !fullDescription) return fallback();
 
-  const resumeSummary = JSON.stringify({
-    skills: resume.skills?.flatMap((c) => c.skills) ?? [],
-    experience: (resume.experience ?? []).map((e) => ({
-      title: e.title,
-      company: e.company,
-      technologies: e.technologies,
-    })),
-    projects: (resume.projects ?? []).map((p) => ({ name: p.name, stack: p.stack })),
-  });
+  const resumeContext = serializeResumeSummaryForGemini(resume);
 
   const prompt = `You are an ATS matcher. Score how well this resume matches the job (0-100 integer).
 Return JSON: {
@@ -48,8 +46,12 @@ Return JSON: {
 high >= 65, medium >= 35, low < 35. recommendedKeywords = top terms to add to resume for this role.
 
 Job title: ${jobTitle}
-Job description (truncated): ${jobDescription.slice(0, 6000)}
-Resume summary: ${resumeSummary.slice(0, 2500)}`;
+
+Complete job description:
+${fullDescription}
+
+Resume summary (skills, roles, technologies, projects):
+${resumeContext}`;
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
@@ -58,9 +60,13 @@ Resume summary: ${resumeSummary.slice(0, 2500)}`;
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.1, maxOutputTokens: 512, responseMimeType: "application/json" },
+        generationConfig: {
+          temperature: 0.1,
+          maxOutputTokens: 1024,
+          responseMimeType: "application/json",
+        },
       }),
-      signal: AbortSignal.timeout(25000),
+      signal: AbortSignal.timeout(45_000),
     });
 
     if (!res.ok) {

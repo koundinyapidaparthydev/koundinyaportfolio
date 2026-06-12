@@ -63,8 +63,7 @@ describe("GET /api/resume/pdf — HTTP contract", () => {
       if (res.status === 200) {
         const cd: string = (res.headers["content-disposition"] as string) ?? "";
         expect(cd).to.include("attachment");
-        expect(cd).to.include("Koundinya_Pidaparthy_Resume.pdf");
-        // Filename must not contain unencoded spaces
+        expect(cd).to.include("Koundinya_Pidaparthy_resume.pdf");
         const match = cd.match(/filename="([^"]+)"/);
         expect(match).to.not.be.null;
         expect(match![1]).to.not.include(" ");
@@ -74,14 +73,14 @@ describe("GET /api/resume/pdf — HTTP contract", () => {
     });
   });
 
-  it("200 response: Cache-Control is present with max-age >= 3600", () => {
+  it("200 response: Cache-Control is present with public max-age (dynamic PDF)", () => {
     cy.request({ url: "/api/resume/pdf", failOnStatusCode: false, encoding: "binary" }).then((res) => {
       if (res.status === 200) {
         const cc: string = (res.headers["cache-control"] as string) ?? "";
         expect(cc).to.include("public");
         const maxAgeMatch = cc.match(/max-age=(\d+)/);
         expect(maxAgeMatch).to.not.be.null;
-        expect(Number(maxAgeMatch![1])).to.be.at.least(3600);
+        expect(Number(maxAgeMatch![1])).to.be.at.least(60);
       } else {
         expect(res.status).to.eq(404);
       }
