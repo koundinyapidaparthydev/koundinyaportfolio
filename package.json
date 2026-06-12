@@ -29,7 +29,8 @@
     "job:validate-env": "node scripts/validate-pipeline-env.mjs --stage=scrape",
     "job:diagnose": "node scripts/diagnose-sheet.mjs",
     "job:enrich-descriptions": "node scripts/enrich-descriptions.mjs",
-    "job:sync-emails": "node scripts/sync-job-emails.mjs"
+    "job:sync-emails": "node scripts/sync-job-emails.mjs",
+    "resume:pdf": "node scripts/pdf-render-helper.cjs < data/resume.json > public/resume.pdf"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
