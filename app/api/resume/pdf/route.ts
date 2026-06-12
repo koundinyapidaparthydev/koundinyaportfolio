@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { promises as fs } from "fs";
 import path from "path";
+import { RESUME_DOWNLOAD_FILENAME } from "@/lib/resumeDownload";
 
 const PDF_PATH = path.join(process.cwd(), "public", "resume.pdf");
 
@@ -16,7 +17,7 @@ export async function GET() {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": 'attachment; filename="Koundinya_Pidaparthy_Resume.pdf"',
+        "Content-Disposition": `attachment; filename="${RESUME_DOWNLOAD_FILENAME}"`,
         "Cache-Control": "public, max-age=3600",
       },
     });

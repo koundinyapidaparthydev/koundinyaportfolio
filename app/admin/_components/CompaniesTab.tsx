@@ -137,7 +137,7 @@ const HIRING_CAFE_KEY = "__hiring-cafe__";
 
 const HIRING_CAFE_VIRTUAL: CompanyWithCategory = {
   name: "Hiring Cafe",
-  url: "https://hiring.cafe/?searchState=%7B%22searchQuery%22%3A%22software+engineer%22%2C%22sortBy%22%3A%22date%22%2C%22dateFetchedPastNDays%22%3A2%2C%22applicationFormEase%22%3A%5B%22Simple%22%5D%7D",
+  url: "https://hiring.cafe/?searchState=%7B%22dateFetchedPastNDays%22%3A2%2C%22departments%22%3A%5B%22Engineering%22%2C%22Software+Development%22%5D%2C%22sortBy%22%3A%22date%22%7D",
   color: "from-amber-500/20 to-amber-600/10 border-amber-500/30 hover:border-amber-400/60",
   logo: "",
   category: "hiring-cafe",
@@ -224,12 +224,13 @@ function CompanyCard({
 
   return (
     <div
-      className={[
-        "group flex min-h-[7.5rem] flex-col justify-between gap-2 rounded-xl border bg-gradient-to-br p-4 transition-all duration-200 cursor-pointer shadow-sm",
-        "hover:-translate-y-0.5 hover:shadow-md dark:shadow-none dark:hover:shadow-lg dark:hover:shadow-black/20",
+      className={glassCn(
+        glass.card,
+        "group flex min-h-[7.5rem] cursor-pointer flex-col justify-between gap-2 bg-gradient-to-br p-4 transition-all duration-300",
+        "hover:-translate-y-0.5",
         company.color,
-        isSelected ? "ring-2 ring-indigo-400/60 dark:ring-indigo-400/60" : "",
-      ].join(" ")}
+        isSelected && "ring-2 ring-indigo-400/60 dark:ring-indigo-400/60"
+      )}
       role="button"
       tabIndex={0}
       onClick={onSelect}
@@ -523,8 +524,8 @@ function CompanyJobsModal({
         aria-label="Close"
         onClick={onClose}
       />
-      <div className="relative z-10 flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/10 dark:bg-slate-900 sm:rounded-2xl">
-        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4 dark:border-white/10">
+      <div className={glassCn(glass.drawer, "relative z-10 flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl sm:rounded-2xl")}>
+        <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
           <div className="min-w-0">
             <h3 id="company-jobs-modal-title" className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
               {companyLabel}
@@ -551,7 +552,7 @@ function CompanyJobsModal({
         {isHiringCafe && rawJobs.length > 0 && (
           <div className="border-b border-amber-200/60 bg-amber-50/50 px-5 py-2.5 dark:border-amber-500/20 dark:bg-amber-500/[0.06]">
             <p className="text-[11px] text-amber-800 dark:text-amber-300">
-              ☕ Easy-apply roles from{" "}
+              ☕ Engineering roles from{" "}
               <a href={HIRING_CAFE_VIRTUAL.url} target="_blank" rel="noopener noreferrer" className="underline hover:text-amber-950 dark:hover:text-amber-200">
                 hiring.cafe
               </a>
@@ -770,7 +771,7 @@ export default function CompaniesTab({
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState<CompaniesTimeFilter>("30m");
+  const [timeFilter, setTimeFilter] = useState<CompaniesTimeFilter>("6h");
   const [countryLocation, setCountryLocation] = useState<CountryLocationFilter>("all");
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [resume, setResume] = useState<Resume | null>(null);
@@ -1073,8 +1074,8 @@ export default function CompaniesTab({
               type="button"
               onClick={handleArchive}
               disabled={archiving || loading}
-              title="Move jobs older than 2 days to 'Old Jobs' sheet"
-              className="flex items-center gap-1.5 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-3 py-1.5 text-xs text-slate-400 hover:text-amber-300 hover:bg-amber-500/10 hover:border-amber-500/30 transition-colors disabled:opacity-40"
+              title="Move jobs older than 6 hours to 'Old Jobs' sheet"
+              className={glassCn(glass.btn, "gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-amber-300 hover:border-amber-500/30 disabled:opacity-40")}
             >
               {archiving ? (
                 <svg className="h-3 w-3 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><circle cx="12" cy="12" r="10" strokeOpacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10"/></svg>
@@ -1090,7 +1091,7 @@ export default function CompaniesTab({
               type="button"
               onClick={fetchJobs}
               disabled={loading}
-              className="flex items-center gap-1.5 rounded-lg border dark:border-white/10 border-slate-200 dark:bg-white/5 bg-slate-50 px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 dark:hover:text-slate-200 hover:text-slate-600 dark:hover:bg-white/10 hover:bg-slate-100 transition-colors disabled:opacity-50"
+              className={glassCn(glass.btn, "gap-1.5 px-3 py-1.5 text-xs disabled:opacity-50")}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className={["h-3 w-3", loading ? "animate-spin" : ""].join(" ")} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
@@ -1160,7 +1161,7 @@ export default function CompaniesTab({
       )}
 
       {/* Stats bar */}
-      <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-slate-200/70 bg-slate-50/80 px-4 py-2.5 dark:border-white/8 dark:bg-white/[0.03]">
+      <div className={glassCn(glass.panel, "mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-2.5")}>
         <span className="text-xs text-slate-600 dark:text-slate-400">
           <span className="font-bold text-slate-800 dark:text-slate-200">{visibleCompanies.length}</span>{" "}
           {visibleCompanies.length === 1 ? "company" : "companies"}
@@ -1191,7 +1192,7 @@ export default function CompaniesTab({
             value={companySearch}
             onChange={(e) => setCompanySearch(e.target.value)}
             placeholder="Search companies…"
-            className="h-9 w-full rounded-xl border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-700 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400/40 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:placeholder:text-slate-500"
+            className={glassCn(glass.input, "h-9 w-full pl-8 pr-3 text-xs")}
           />
         </div>
         <select

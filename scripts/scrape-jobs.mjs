@@ -30,6 +30,8 @@ import { pathToFileURL } from "url";
 import { loadEnvLocal } from "./lib/load-env.mjs";
 import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
 import { wrapSheetsClient } from "./lib/sheets-rate-limit.mjs";
+import { APPLY_NOW_WINDOW_MS } from "./lib/hiring-cafe.mjs";
+import { scrapeAllHiringCafeJobs } from "./lib/hiring-cafe-scraper.mjs";
 import { google } from "googleapis";
 
 loadEnvLocal();
@@ -872,215 +874,15 @@ async function fetchWorkable(slug, company, category) {
 }
 
 /**
- * Hiring Cafe — scrapes easy-apply software-engineer roles using Playwright.
- *
- * hiring.cafe is a client-side React/Next.js SPA, so we launch a real browser
- * and intercept the JSON API responses the frontend makes. If interception
- * yields no results (e.g. the API shape changed) we fall back to DOM parsing.
- *
- * Only jobs tagged with `applicationFormEase: "Simple"` are fetched.
+ * Hiring Cafe — department-based search, full pagination (Playwright).
+ * @see scripts/lib/hiring-cafe-scraper.mjs
  */
-async function fetchHiringCafe(category = "hiring-cafe") {
-  let browser;
+async function fetchHiringCafe() {
   try {
-    const { chromium } = await import("playwright");
-    browser = await chromium.launch({ headless: true });
-
-    const context = await browser.newContext({
-      userAgent:
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      viewport: { width: 1280, height: 900 },
-    });
-    const page = await context.newPage();
-
-    // ── 1. Intercept API responses ────────────────────────────────────────
-    const capturedItems = [];
-    page.on("response", async (response) => {
-      const url   = response.url();
-      const ctype = response.headers()["content-type"] ?? "";
-      if (!ctype.includes("application/json")) return;
-      if (!/jobs|search|listings|postings|algolia/i.test(url)) return;
-      try {
-        const data = await response.json();
-        const arr  = data?.hits ?? data?.jobs ?? data?.results ?? data?.postings
-                  ?? (Array.isArray(data) ? data : null);
-        if (Array.isArray(arr) && arr.length > 0) capturedItems.push(...arr);
-      } catch { /* ignore */ }
-    });
-
-    const searchState = encodeURIComponent(JSON.stringify({
-      searchQuery: "software engineer",
-      sortBy: "date",
-      dateFetchedPastNDays: 2,
-      applicationFormEase: ["Simple"],
-    }));
-    const searchUrl = `https://hiring.cafe/?searchState=${searchState}`;
-
-    // hiring.cafe keeps long-polling analytics open — networkidle never settles
-    await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
-    await page.waitForTimeout(4_000);
-
-    // ── 2. Try structured data from window.__NEXT_DATA__ ─────────────────
-    const nextData = await page.evaluate(() => {
-      try {
-        const el = document.getElementById("__NEXT_DATA__");
-        return el ? JSON.parse(el.textContent ?? "{}") : null;
-      } catch { return null; }
-    });
-
-    /** Normalise any item shape → row (legacy API + current ssrHits schema) */
-    function toRow(item) {
-      const v5   = item.v5_processed_job_data ?? {};
-      const v7   = item.v7_processed_job_data ?? {};
-      const info = item.job_information ?? {};
-
-      const title =
-        item.hc_title ?? item.job_title ?? info.title ?? info.job_title_raw ??
-        item.jobTitle ?? item.title ?? item.name ?? "";
-      const company =
-        v5.company_name ?? item.enriched_company_data?.name ??
-        v7.company_profile?.name ??
-        item.companyName ?? item.company ?? item.employer ?? "Hiring Cafe";
-      const location =
-        v5.formatted_workplace_location ??
-        (Array.isArray(v5.workplace_cities) ? v5.workplace_cities.join(", ") : "") ??
-        item.location ?? item.city ?? item.locationName ?? "";
-
-      let salary = item.salary ?? item.compensation ?? "";
-      if (!salary && v5.yearly_min_compensation != null) {
-        const lo = Math.round(v5.yearly_min_compensation / 1000);
-        const hi = Math.round((v5.yearly_max_compensation ?? v5.yearly_min_compensation) / 1000);
-        salary = `$${lo}k-$${hi}k/yr`;
-      } else if (!salary && v7.compensation_and_benefits?.salary) {
-        const s = v7.compensation_and_benefits.salary;
-        salary = `$${Math.round(s.low / 1000)}k-$${Math.round(s.high / 1000)}k/yr`;
-      }
-
-      const skills = Array.isArray(item.skills)
-        ? item.skills.join(", ")
-        : (Array.isArray(v5.technical_tools) ? v5.technical_tools.join(", ") : (item.skills ?? ""));
-
-      const id = item.objectID ?? item.id ?? item.jobId ?? item._id ?? item.listingId ?? "";
-      const url =
-        item.hc_apply_url ?? item.apply_url ?? item.jobUrl ?? item.applyUrl ??
-        (/^[a-z0-9]{8,}$/i.test(String(id)) ? `https://hiring.cafe/job/${id}` : "");
-      if (!title || !url) return null;
-
-      const summary =
-        v5.requirements_summary ??
-        v7.experience_requirements?.requirements_summary ??
-        item.description ?? item.summary ?? info.description ?? "";
-      const salaryLine  = salary ? `Salary: ${salary}` : "";
-      const skillsLine  = skills ? `Skills: ${skills}` : "";
-      const description = [salaryLine, skillsLine, summary].filter(Boolean).join("\n").slice(0, 2500);
-
-      return [company, title, location, url, "hiring-cafe", now(), item.posted_at ?? item.created_at ?? "", description];
-    }
-
-    // Try captured API items first
-    if (capturedItems.length > 0) {
-      const rows = capturedItems.map(toRow).filter(Boolean);
-      if (rows.length > 0) {
-        const engRows = rows.filter((r) => isEngineeringRole(r[1]));
-        console.log(`  ✓  Hiring Cafe: ${engRows.length} easy-apply engineering roles (API)`);
-        return engRows;
-      }
-    }
-
-    // Try __NEXT_DATA__
-    if (nextData) {
-      const pageProps = nextData?.props?.pageProps ?? {};
-      const items =
-        pageProps.ssrHits ?? pageProps.jobs    ?? pageProps.listings ?? pageProps.postings ??
-        pageProps.results ?? pageProps.hits      ?? [];
-      if (Array.isArray(items) && items.length > 0) {
-        const rows = items.map(toRow).filter(Boolean)
-          .filter((r) => isEngineeringRole(r[1]));
-        if (rows.length > 0) {
-          console.log(`  ✓  Hiring Cafe: ${rows.length} easy-apply engineering roles (__NEXT_DATA__)`);
-          return rows;
-        }
-      }
-    }
-
-    // ── 3. DOM fallback ───────────────────────────────────────────────────
-    const domRows = await page.evaluate(() => {
-      const results = [];
-
-      // Every job card on hiring.cafe has exactly one link to /job/{id}
-      const jobLinks = Array.from(document.querySelectorAll("a"))
-        .filter((a) => /\/job\/[a-z0-9]{8,}/.test(a.getAttribute("href") ?? a.href ?? ""));
-
-      for (const link of jobLinks) {
-        const jobUrl = link.href.startsWith("http")
-          ? link.href
-          : `https://hiring.cafe${link.getAttribute("href")}`;
-
-        // Walk UP to find the bounding card element
-        let card = link.parentElement;
-        for (let i = 0; i < 12 && card; i++) {
-          const orgLinks = card.querySelectorAll('a[href*="/org/"]');
-          const height   = card.getBoundingClientRect?.()?.height ?? 0;
-          if (orgLinks.length >= 1 && height > 60) break;
-          card = card.parentElement;
-        }
-        if (!card) continue;
-
-        const cardText = (card.innerText ?? card.textContent ?? "").replace(/\s+/g, " ").trim();
-        if (cardText.length < 20) continue;
-
-        // Company (via /org/ link)
-        const orgEl   = card.querySelector('a[href*="/org/"]');
-        const company = orgEl?.innerText?.trim() ?? "";
-
-        // Title: look for headings first, then longest plausible line
-        let title = "";
-        for (const sel of ["h1", "h2", "h3", "h4", "strong"]) {
-          const el = card.querySelector(sel);
-          const t  = el?.innerText?.trim() ?? "";
-          if (t.length > 5 && t.length < 120) { title = t; break; }
-        }
-        if (!title) {
-          title = cardText.split(/\s{2,}|\n/)
-            .map((s) => s.trim())
-            .find((s) => s.length > 6 && s.length < 100 && !/\$|,\s*United|Full Time|Part Time|Remote|Onsite|Hybrid|\bYOE\b/i.test(s)) ?? "";
-        }
-
-        // Salary
-        const salary = (cardText.match(/\$[\d,]+[kKmM]?\s*[-–—]\s*\$[\d,]+[kKmM]?(?:\s*\/\s*(?:yr|year|hr))?/)?.[0] ?? "").trim();
-
-        // Location
-        const locMatch = cardText.match(
-          /([A-Z][a-zA-Z ]+,\s*[A-Z][a-zA-Z ]+,\s*United States|United States|Remote|[A-Z][a-z]+ [A-Z][a-z]+,\s*[A-Z]{2})/
-        );
-        const location = locMatch?.[0]?.trim() ?? "";
-
-        // Work type
-        const workType = (cardText.match(/\b(Remote|Hybrid|Onsite|On-Site)\b/i)?.[0] ?? "").trim();
-
-        if (!title || !jobUrl.includes("/job/")) continue;
-        if (results.some((r) => r[3] === jobUrl)) continue; // deduplicate
-
-        const fullLoc = [location, workType].filter(Boolean).join(" · ");
-        const desc    = [salary ? `Salary: ${salary}` : "", cardText.slice(0, 1800)]
-          .filter(Boolean).join("\n").slice(0, 2000);
-
-        results.push([company || "Hiring Cafe", title.slice(0, 100), fullLoc.slice(0, 150), jobUrl, "hiring-cafe", new Date().toISOString(), "", desc]);
-      }
-
-      return results;
-    });
-
-    const engDomRows = domRows.filter((r) => isEngineeringRole(r[1]));
-    console.log(`  ✓  Hiring Cafe: ${engDomRows.length} easy-apply engineering roles (DOM)`);
-    return engDomRows;
-
+    return await scrapeAllHiringCafeJobs(isEngineeringRole);
   } catch (e) {
     console.warn("  ⚠  Hiring Cafe:", e.message);
     return [];
-  } finally {
-    if (browser) await browser.close().catch(() => {});
   }
 }
 
@@ -1596,8 +1398,8 @@ async function ensureSheetAndHeaders(sheets) {
  *
  * Column F is scrape-time, NOT the ATS posted date. On first discovery we set
  * it to now(); on every subsequent scrape where the URL is still live we
- * refresh it so the admin 30m/2h filters and 2-day archive reflect *last
- * seen*, not first seen.
+ * refresh it so the admin time filters reflect *last seen*, not first seen.
+ * Not used by the Hiring Cafe pipeline (discovery time = fetchedAt).
  */
 async function refreshLastSeenAt(sheets, scrapedJobs) {
   const scrapedUrls = new Set(scrapedJobs.map((row) => row[3]).filter(Boolean));
@@ -1812,16 +1614,15 @@ async function sendWhatsAppNotification(newJobRows) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Move rows older than 2 days from the Jobs sheet to an "Old Jobs" archive
- * sheet. Creates the archive sheet automatically if it does not yet exist.
+ * Move rows older than maxAgeMs from the Jobs sheet to an "Old Jobs" archive
+ * sheet. Default: 6h apply-now window (Hiring Cafe pipeline).
  */
-async function archiveOldJobs(sheets) {
+async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
   if (DRY_RUN) {
     console.log("🏃  DRY_RUN: skipping archive");
     return;
   }
   const ARCHIVE_SHEET = "Old Jobs";
-  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
   try {
     const resp = await sheets.spreadsheets.values.get({
@@ -1837,7 +1638,7 @@ async function archiveOldJobs(sheets) {
     for (const row of dataRows) {
       const fetchedAt = row[5] ?? "";
       const age = fetchedAt ? now - new Date(fetchedAt).getTime() : Infinity;
-      if (age > TWO_DAYS_MS) {
+      if (age > maxAgeMs) {
         oldRows.push(row);
       } else {
         keepRows.push(row);
@@ -2077,11 +1878,13 @@ async function backfillDescriptions(sheets) {
 
 export {
   fetchAllJobs,
+  fetchHiringCafe,
   getSheets,
   ensureSheetAndHeaders,
   refreshLastSeenAt,
   syncPostedAt,
   writeNewJobs,
+  archiveOldJobs,
   backfillDescriptions,
   fetchDescription,
   enrichWithDescriptions,
@@ -2089,6 +1892,8 @@ export {
   normalizeScrapeRow,
   toSheetRow,
   buildScrapeTaskDefs,
+  isEngineeringRole,
+  sendWhatsAppNotification,
   SHEET_NAME,
 };
 

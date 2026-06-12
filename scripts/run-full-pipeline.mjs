@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Run per-company pipeline for all companies in companies.json.
- * Used by GitHub Actions and local full-cycle runs.
+ * Legacy / manual only — GHA default is scripts/run-hiring-cafe-pipeline.mjs.
+ * Dispatch workflow with pipeline=company-full to run this in CI.
  */
 
 import { readFileSync } from "fs";

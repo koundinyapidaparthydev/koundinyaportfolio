@@ -1,0 +1,215 @@
+/**
+ * Hiring Cafe helpers — search state, row parsing, dedup, time-slot partitioning.
+ * Pure functions (no Playwright) for tests and pipeline scripts.
+ */
+
+export const HC_DEPARTMENTS = ["Engineering", "Software Development"];
+
+/** Jobs posted on HC within this window (matches searchState.dateFetchedPastNDays). */
+export const HC_DATE_FETCHED_PAST_DAYS = 2;
+
+/** Apply-now window: Jobs tab keeps discoveries from the last 6 hours. */
+export const APPLY_NOW_WINDOW_MS = 6 * 60 * 60 * 1000;
+
+const HC_JOB_URL_RE = /hiring\.cafe\/job\/([a-z0-9]{8,})/i;
+
+export function buildHiringCafeSearchState(overrides = {}) {
+  return {
+    dateFetchedPastNDays: HC_DATE_FETCHED_PAST_DAYS,
+    departments: HC_DEPARTMENTS,
+    sortBy: "date",
+    ...overrides,
+  };
+}
+
+export function buildHiringCafeSearchUrl(overrides = {}) {
+  const state = encodeURIComponent(JSON.stringify(buildHiringCafeSearchState(overrides)));
+  return `https://hiring.cafe/?searchState=${state}`;
+}
+
+function toIsoPosted(value) {
+  if (value == null || value === "") return "";
+  if (typeof value === "number") {
+    const ms = value < 1e12 ? value * 1000 : value;
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+  }
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "" : d.toISOString();
+}
+
+/** Extract HC objectID / listing id from a raw API item or apply URL. */
+export function getHcJobId(itemOrUrl) {
+  if (typeof itemOrUrl === "string") {
+    const m = itemOrUrl.match(HC_JOB_URL_RE);
+    return m?.[1] ?? "";
+  }
+  const item = itemOrUrl ?? {};
+  return String(
+    item.objectID ?? item.id ?? item.jobId ?? item._id ?? item.listingId ?? ""
+  ).trim();
+}
+
+/** Prefer real ATS apply URL over hiring.cafe/job/{id}. */
+export function getHcApplyUrl(item) {
+  const id = getHcJobId(item);
+  const direct =
+    item.hc_apply_url ??
+    item.apply_url ??
+    item.jobUrl ??
+    item.applyUrl ??
+    item.application_url ??
+    "";
+  if (direct && !/hiring\.cafe\/job\//i.test(direct)) return direct;
+  if (direct) return direct;
+  if (/^[a-z0-9]{8,}$/i.test(id)) return `https://hiring.cafe/job/${id}`;
+  return "";
+}
+
+/**
+ * Normalise a Hiring Cafe API / SSR item → scrape row:
+ * [company, title, location, url, category, fetchedAt, postedAt, description]
+ */
+export function parseHcItemToRow(item, fetchedAt = new Date().toISOString()) {
+  const v5 = item.v5_processed_job_data ?? {};
+  const v7 = item.v7_processed_job_data ?? {};
+  const info = item.job_information ?? {};
+
+  const title =
+    item.hc_title ??
+    item.job_title ??
+    info.title ??
+    info.job_title_raw ??
+    item.jobTitle ??
+    item.title ??
+    item.name ??
+    "";
+  const company =
+    v5.company_name ??
+    item.enriched_company_data?.name ??
+    v7.company_profile?.name ??
+    item.companyName ??
+    item.company ??
+    item.employer ??
+    "Hiring Cafe";
+  const location =
+    v5.formatted_workplace_location ??
+    (Array.isArray(v5.workplace_cities) ? v5.workplace_cities.join(", ") : "") ??
+    item.location ??
+    item.city ??
+    item.locationName ??
+    "";
+
+  let salary = item.salary ?? item.compensation ?? "";
+  if (!salary && v5.yearly_min_compensation != null) {
+    const lo = Math.round(v5.yearly_min_compensation / 1000);
+    const hi = Math.round((v5.yearly_max_compensation ?? v5.yearly_min_compensation) / 1000);
+    salary = `$${lo}k-$${hi}k/yr`;
+  } else if (!salary && v7.compensation_and_benefits?.salary) {
+    const s = v7.compensation_and_benefits.salary;
+    salary = `$${Math.round(s.low / 1000)}k-$${Math.round(s.high / 1000)}k/yr`;
+  }
+
+  const skills = Array.isArray(item.skills)
+    ? item.skills.join(", ")
+    : Array.isArray(v5.technical_tools)
+      ? v5.technical_tools.join(", ")
+      : (item.skills ?? "");
+
+  const url = getHcApplyUrl(item);
+  if (!title || !url) return null;
+
+  const summary =
+    v5.requirements_summary ??
+    v7.experience_requirements?.requirements_summary ??
+    item.description ??
+    item.summary ??
+    info.description ??
+    "";
+  const salaryLine = salary ? `Salary: ${salary}` : "";
+  const skillsLine = skills ? `Skills: ${skills}` : "";
+  const description = [salaryLine, skillsLine, summary].filter(Boolean).join("\n").slice(0, 2500);
+
+  const postedAt = toIsoPosted(
+    item.posted_at ?? item.postedAt ?? item.created_at ?? item.published_at ?? ""
+  );
+
+  return [
+    company,
+    title,
+    location,
+    url,
+    "hiring-cafe",
+    fetchedAt,
+    postedAt,
+    description,
+  ];
+}
+
+/** Dedup key: apply URL, else HC job id from URL. */
+export function getJobDedupKey(row) {
+  const url = row?.[3] ?? "";
+  if (!url) return "";
+  const id = getHcJobId(url);
+  if (id) return `hc:${id}`;
+  try {
+    const u = new URL(url);
+    u.search = "";
+    return u.toString().replace(/\/$/, "");
+  } catch {
+    return url;
+  }
+}
+
+/** Deduplicate scrape rows by apply URL or HC job id (first wins). */
+export function dedupeHcRows(rows) {
+  const seen = new Set();
+  const out = [];
+  for (const row of rows) {
+    const key = getJobDedupKey(row);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(row);
+  }
+  return out;
+}
+
+/**
+ * Split sheet rows (14-col or 8-col scrape rows) by fetchedAt age.
+ * @returns {{ keep: unknown[]; archive: unknown[] }}
+ */
+export function partitionRowsByFetchedAt(rows, maxAgeMs, now = Date.now()) {
+  const keep = [];
+  const archive = [];
+  for (const row of rows) {
+    const fetchedAt = row[5] ?? "";
+    const age = fetchedAt ? now - new Date(fetchedAt).getTime() : Infinity;
+    if (age > maxAgeMs) archive.push(row);
+    else keep.push(row);
+  }
+  return { keep, archive };
+}
+
+/** Collect unique items from API payloads, __NEXT_DATA__, etc. */
+export function extractHcItemsFromPayload(data) {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  const candidates = [
+    data.hits,
+    data.jobs,
+    data.results,
+    data.postings,
+    data.ssrHits,
+    data.listings,
+  ];
+  for (const arr of candidates) {
+    if (Array.isArray(arr) && arr.length > 0) return arr;
+  }
+  const pageProps = data?.props?.pageProps ?? data?.pageProps ?? {};
+  for (const key of ["ssrHits", "jobs", "listings", "postings", "results", "hits"]) {
+    if (Array.isArray(pageProps[key]) && pageProps[key].length > 0) {
+      return pageProps[key];
+    }
+  }
+  return [];
+}

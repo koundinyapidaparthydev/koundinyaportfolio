@@ -150,7 +150,7 @@ export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
   return (
     <>
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden w-56 shrink-0 flex-col gap-1 lg:flex">
+      <aside className={glassCn(glass.panel, "hidden w-56 shrink-0 flex-col gap-1 p-3 lg:flex")}>
         <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
           Dashboard
         </p>

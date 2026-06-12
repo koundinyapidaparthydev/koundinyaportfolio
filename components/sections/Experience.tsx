@@ -17,6 +17,7 @@ import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { useExperience, useEducation } from "@/lib/store";
 import { TiltCard } from "@/components/TiltCard";
+import { glass } from "@/lib/glass";
 import type { Experience, Education } from "@/types/resume";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -58,7 +59,7 @@ function TimelineCard({ exp, side, index }: TimelineCardProps) {
         <TiltCard>
           <div
             className={[
-              "glass-card group relative overflow-hidden p-6",
+              `${glass.sectionCard} group relative overflow-hidden p-6`,
               isCurrent
                 ? "border-emerald-500/30 hover:border-emerald-500/50"
                 : "hover:border-white/20",
@@ -211,7 +212,7 @@ function EducationCard({ edu, index }: EducationCardProps) {
       initial={{ opacity: 0, y: 30 }}
       animate={inView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.6, delay: index * 0.1, ease: "easeOut" }}
-      className="glass-card p-6"
+      className={`${glass.sectionCard} p-6`}
     >
       <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
         <div>

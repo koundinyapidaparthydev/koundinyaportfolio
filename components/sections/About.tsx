@@ -9,6 +9,7 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
+import { glass } from "@/lib/glass";
 
 // ─── Stat card data ───────────────────────────────────────────────────────────
 
@@ -105,7 +106,7 @@ export default function About() {
                     delay: 0.3 + i * 0.1,
                     ease: "easeOut",
                   }}
-                  className="glass-panel p-5 text-center"
+                  className={`${glass.sectionCard} p-5 text-center`}
                 >
                   <p className="text-2xl font-bold text-indigo-400">{value}</p>
                   <p className="mt-1 text-xs text-gray-500 dark:text-slate-500">{label}</p>

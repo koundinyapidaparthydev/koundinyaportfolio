@@ -54,7 +54,15 @@ export default function AdminPage() {
   const { data: session } = useSession();
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
+    <div className="relative min-h-[calc(100vh-4rem)] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
+      <div
+        className="pointer-events-none absolute inset-0 -z-10 opacity-40 dark:opacity-30"
+        aria-hidden
+        style={{
+          background:
+            "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.15), transparent), radial-gradient(ellipse 60% 40% at 100% 50%, rgba(139,92,246,0.08), transparent)",
+        }}
+      />
       <div className="mx-auto max-w-7xl">
         {/* ── Page header ── */}
         <header className="glass-panel mb-8 flex items-start justify-between gap-4 p-5">

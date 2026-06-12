@@ -131,16 +131,12 @@ function ProjectCard({ project, index }: ProjectCardProps) {
       transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
       style={{ breakInside: "avoid" }}
     >
-      <TiltCard className="glass-card group relative flex flex-col overflow-hidden transition-all duration-300 hover:border-indigo-500/40">
-      {/* Hover glow */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          background:
-            "radial-gradient(ellipse at top, rgba(99,102,241,0.08) 0%, transparent 65%)",
-        }}
-      />
+      <TiltCard
+        className={glassCn(
+          glass.sectionCard,
+          "group relative flex flex-col overflow-hidden transition-all duration-300 hover:border-indigo-500/40 dark:hover:border-white/15"
+        )}
+      >
 
       <div className="relative flex flex-1 flex-col p-6">
         {/* ── Card header ── */}

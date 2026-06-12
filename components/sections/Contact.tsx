@@ -13,6 +13,7 @@ import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { glass, glassCn } from "@/lib/glass";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -208,14 +209,14 @@ function ContactForm() {
     }
   };
 
-  const inputCls = "glass-input";
-  const errorCls = "mt-1.5 text-xs text-red-400";
+  const inputCls = glassCn(glass.input, glass.inputCompact);
+  const errorCls = "mt-1 text-xs text-red-400";
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
       {/* Name */}
       <div>
-        <label htmlFor="contact-name" className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-slate-400">
+        <label htmlFor="contact-name" className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
           Name
         </label>
         <input
@@ -232,7 +233,7 @@ function ContactForm() {
 
       {/* Email */}
       <div>
-        <label htmlFor="contact-email" className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-slate-400">
+        <label htmlFor="contact-email" className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
           Email
         </label>
         <input
@@ -249,7 +250,7 @@ function ContactForm() {
 
       {/* Message */}
       <div>
-        <label htmlFor="contact-message" className="mb-1.5 block text-xs font-medium text-gray-500 dark:text-slate-400">
+        <label htmlFor="contact-message" className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
           Message
         </label>
         <textarea
@@ -263,14 +264,15 @@ function ContactForm() {
         {errors.message && <p className={errorCls}>{errors.message.message}</p>}
       </div>
 
-      {/* Toast */}
       <Toast toast={toast} />
 
-      {/* Submit */}
       <button
         type="submit"
         disabled={isSubmitting}
-        className="glass-btn-primary group flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+        className={glassCn(
+          glass.btnPrimary,
+          "group mt-1 flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+        )}
       >
         {isSubmitting ? (
           <>
@@ -341,28 +343,27 @@ export default function Contact() {
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="mb-14 text-center"
+          className="mb-12 text-center"
         >
           <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
             Get In Touch
           </h2>
           <div className="mx-auto mt-3 h-1 w-16 rounded-full bg-indigo-500" />
-          <p className="mx-auto mt-4 max-w-md text-sm text-gray-500 dark:text-slate-500">
+          <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-400">
             Have a project in mind or just want to connect? I&apos;d love to
             hear from you.
           </p>
         </motion.div>
 
-        {/* Two-column layout */}
-        <div className="grid gap-10 lg:grid-cols-2">
+        <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
           {/* ── Left: contact cards ── */}
           <motion.div
             initial={{ opacity: 0, x: -30 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-            className="flex flex-col gap-4"
+            className="flex flex-col gap-3"
           >
-            <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-slate-600">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
               Contact details
             </p>
             {CONTACT_ITEMS.map(({ id, label, value, href, icon }, i) => (
@@ -374,21 +375,22 @@ export default function Contact() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={inView ? { opacity: 1, x: 0 } : {}}
                 transition={{ duration: 0.45, delay: 0.15 + i * 0.08, ease: "easeOut" }}
-                className="glass-panel group flex items-center gap-4 p-4 transition-all duration-200 hover:border-indigo-300/50 dark:hover:border-indigo-500/40"
+                className={glassCn(glass.contactRow, "group")}
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500/15 text-indigo-400 transition-colors group-hover:bg-indigo-500/25 group-hover:text-indigo-300">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-white/60 text-slate-500 transition-all duration-200 group-hover:border-indigo-500/35 group-hover:bg-indigo-500/10 group-hover:text-indigo-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400 dark:group-hover:border-indigo-400/35 dark:group-hover:text-indigo-400">
                   {icon}
                 </span>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-slate-600">{label}</p>
-                  <p className="mt-0.5 truncate text-sm text-gray-600 group-hover:text-indigo-700 dark:text-slate-300 dark:group-hover:text-white">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-500">
+                    {label}
+                  </p>
+                  <p className="mt-0.5 truncate text-sm font-medium text-slate-700 transition-colors group-hover:text-indigo-600 dark:text-slate-200 dark:group-hover:text-white">
                     {value}
                   </p>
                 </div>
-                {/* Arrow */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="ml-auto h-4 w-4 shrink-0 text-slate-700 transition-transform group-hover:translate-x-0.5 group-hover:text-indigo-400"
+                  className="ml-auto h-4 w-4 shrink-0 text-slate-400 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-indigo-400"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -408,9 +410,9 @@ export default function Contact() {
             initial={{ opacity: 0, x: 30 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-            className="glass-strong p-8"
+            className={glassCn(glass.contactForm, "p-6 lg:p-7")}
           >
-            <p className="mb-6 text-sm font-semibold uppercase tracking-widest text-slate-600">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
               Send a message
             </p>
             <ContactForm />

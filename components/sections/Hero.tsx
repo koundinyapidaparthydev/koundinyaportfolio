@@ -20,6 +20,10 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import type { PersonalInfo } from "@/types/resume";
+import {
+  RESUME_DOWNLOAD_FILENAME,
+  RESUME_PDF_API_PATH,
+} from "@/lib/resumeDownload";
 
 // ─── Particle data ────────────────────────────────────────────────────────────
 // 50 particles generated deterministically so SSR and CSR produce identical
@@ -412,8 +416,8 @@ export default function Hero({ personalInfo }: HeroProps) {
               </button>
 
               <a
-                href="/api/resume/pdf"
-                download
+                href={RESUME_PDF_API_PATH}
+                download={RESUME_DOWNLOAD_FILENAME}
                 data-magnetic
                 className="glass-btn flex items-center gap-2 px-7 py-3 text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500"
               >

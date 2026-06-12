@@ -205,7 +205,7 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
           />
           {job.fetchedAt && (
             <DetailRow
-              label="Last seen"
+              label="Discovered"
               value={
                 <>
                   {formatRelativeTime(job.fetchedAt, now)}{" "}
@@ -319,7 +319,7 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
 export default function AllJobsTab() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("2d");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("6h");
   const [platform, setPlatform] = useState<PlatformFilter>("all");
   const [countryLocation, setCountryLocation] = useState<CountryLocationFilter>("all");
   const [sort, setSort] = useState<AllJobsSort>(DEFAULT_ALL_JOBS_SORT);
@@ -370,19 +370,19 @@ export default function AllJobsTab() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className={glassCn(glass.panel, "flex flex-wrap items-start justify-between gap-3 p-5")}>
         <div>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">All Jobs</h2>
           <p className="mt-0.5 text-sm text-slate-500">
             {filtered.length !== jobs.length
               ? `${filtered.length} of ${jobs.length} jobs`
-              : `${jobs.length} job${jobs.length !== 1 ? "s" : ""} in sheet`}
+              : `${jobs.length} job${jobs.length !== 1 ? "s" : ""} in apply-now window`}
           </p>
         </div>
         <button
           type="button"
           onClick={() => void refetch()}
-          className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+          className={glassCn(glass.btn, "px-3 py-1.5 text-xs font-medium")}
         >
           Refresh
         </button>
@@ -478,7 +478,7 @@ export default function AllJobsTab() {
       {/* Time filter pills */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-          Posted within:
+          Discovered within:
         </span>
         {TIME_FILTERS.map(({ id, label }) => {
           const count = filterByTime(jobs, id).length;

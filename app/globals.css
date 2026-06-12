@@ -51,13 +51,15 @@ html {
     rgba(255, 255, 255, 0.03) 40%,
     transparent 75%
   );
-  --glass-tint: rgba(99, 102, 241, 0.16);
-  --glass-tint-glow: 0 4px 24px rgba(99, 102, 241, 0.28);
+  --glass-tint: rgba(99, 102, 241, 0.1);
+  --glass-tint-glow: 0 2px 12px rgba(99, 102, 241, 0.12);
   --glass-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.45),
-    0 2px 8px rgba(0, 0, 0, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 4px 20px rgba(0, 0, 0, 0.35),
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --glass-inner: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --glass-blur: 22px;
+  --glass-saturate: 145%;
 }
 
 @layer components {
@@ -123,6 +125,142 @@ html {
 
   .glass-card:hover::before {
     opacity: 1;
+  }
+
+  /* Section cards: glass in light mode, flatter obsidian panels in dark */
+  .glass-section-card {
+    @apply glass-card;
+  }
+
+  .dark .glass-section-card {
+    background-image: none;
+    background-color: hsl(var(--aurora-hue) 28% 7% / 0.92);
+    backdrop-filter: blur(10px) saturate(125%);
+    -webkit-backdrop-filter: blur(10px) saturate(125%);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 6px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  .dark .glass-section-card::before {
+    display: none;
+  }
+
+  .dark .glass-section-card:hover {
+    border-color: rgba(255, 255, 255, 0.16);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 8px 24px rgba(0, 0, 0, 0.42);
+    transform: translateY(-1px);
+  }
+
+  /* Education cards: same obsidian surface, no extra blur layer */
+  .glass-edu-card {
+    @apply glass-section-card;
+  }
+
+  .dark .glass-edu-card::before {
+    display: none;
+  }
+
+  /* Contact info rows — flat bordered rows, not chunky glass panels */
+  .glass-contact-row {
+    @apply flex items-center gap-3.5 rounded-xl border px-4 py-3 transition-all duration-200;
+    background-color: var(--glass-bg-subtle);
+    border-color: var(--glass-border);
+    box-shadow: inset 0 1px 0 var(--glass-highlight);
+  }
+
+  .glass-contact-row:hover {
+    border-color: var(--glass-border-bright);
+    background-color: var(--glass-bg);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 4px 16px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+  }
+
+  .dark .glass-contact-row {
+    background-image: none;
+    background-color: hsl(var(--aurora-hue) 28% 7% / 0.78);
+    backdrop-filter: blur(8px) saturate(120%);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .dark .glass-contact-row:hover {
+    background-color: hsl(var(--aurora-hue) 28% 9% / 0.9);
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 6px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  /* Contact form shell — obsidian panel in dark, less blur than glass-strong */
+  .glass-contact-form {
+    @apply glass-section-card;
+  }
+
+  .dark .glass-contact-form::before {
+    display: none;
+  }
+
+  .dark .glass-strong {
+    background-image: none;
+    background-color: hsl(var(--aurora-hue) 28% 7% / 0.92);
+    backdrop-filter: blur(10px) saturate(125%);
+    -webkit-backdrop-filter: blur(10px) saturate(125%);
+    border-color: rgba(255, 255, 255, 0.11);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 6px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  .dark .glass-strong::before {
+    display: none;
+  }
+
+  .glass-input-compact {
+    @apply py-2.5;
+  }
+
+  .dark .glass-input {
+    background-color: hsl(var(--aurora-hue) 28% 6% / 0.85);
+    border-color: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px) saturate(120%);
+    -webkit-backdrop-filter: blur(8px) saturate(120%);
+  }
+
+  .dark .glass-input:focus {
+    border-color: rgba(99, 102, 241, 0.45);
+    background-color: hsl(var(--aurora-hue) 28% 8% / 0.92);
+  }
+
+  .dark .glass-panel {
+    background-image: none;
+    backdrop-filter: blur(12px) saturate(130%);
+    -webkit-backdrop-filter: blur(12px) saturate(130%);
+    border-color: rgba(255, 255, 255, 0.11);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  .dark .glass-panel:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 6px 20px rgba(0, 0, 0, 0.38);
+    transform: none;
+  }
+
+  .dark .glass-card:hover {
+    box-shadow:
+      var(--glass-shadow),
+      var(--glass-inner);
+    transform: translateY(-1px);
   }
 
   .glass-strong {

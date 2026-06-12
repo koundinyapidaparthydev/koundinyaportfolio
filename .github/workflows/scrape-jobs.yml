@@ -1,11 +1,19 @@
 name: Scrape Jobs
 
-# Runs every 30 minutes, 24/7 (UTC)
-# Scrape-only pipeline — no generate/apply workflows
+# Hiring Cafe–only pipeline — every 10 minutes (UTC)
 on:
   schedule:
-    - cron: "0,30 * * * *"
+    - cron: "*/10 * * * *"
   workflow_dispatch:
+    inputs:
+      pipeline:
+        description: "Pipeline to run"
+        required: false
+        default: "hiring-cafe"
+        type: choice
+        options:
+          - hiring-cafe
+          - company-full
 
 jobs:
   scrape:
@@ -34,7 +42,18 @@ jobs:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
 
-      - name: Scrape jobs (per-company pipeline)
+      - name: Scrape jobs (Hiring Cafe pipeline)
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.pipeline != 'company-full'
+        run: node scripts/run-hiring-cafe-pipeline.mjs
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}
+
+      - name: Scrape jobs (legacy per-company pipeline)
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.pipeline == 'company-full'
         run: node scripts/run-full-pipeline.mjs
         env:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}

@@ -224,7 +224,10 @@ function BentoCell({ category, colSpan, index }: BentoCellProps) {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96 }}
         transition={{ duration: 0.35, delay: index * 0.06, ease: "easeOut" }}
-        className="glass-card h-full p-5 hover:border-indigo-300/40 dark:hover:border-indigo-400/30"
+        className={glassCn(
+          glass.sectionCard,
+          "h-full p-5 hover:border-indigo-300/40 dark:hover:border-white/15"
+        )}
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">

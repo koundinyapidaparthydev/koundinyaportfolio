@@ -1,7 +1,9 @@
 import {
+  APPLY_NOW_WINDOW_MS,
   applyAllJobsFilters,
   detectPlatformFromUrl,
   filterByTime,
+  jobTimeTimestamp,
   filterBySearch,
   filterByPlatform,
   filterByHasDescription,
@@ -54,27 +56,39 @@ describe("All Jobs time filters", () => {
     expect(TIME_FILTERS[TIME_FILTERS.length - 1].id).toBe("all");
   });
 
-  it("30m filter keeps jobs posted within 30 minutes", () => {
+  it("30m filter keeps jobs discovered within 30 minutes", () => {
     const jobs = [
-      job({ postedAt: new Date(NOW - 20 * 60_000).toISOString() }),
-      job({ postedAt: new Date(NOW - 45 * 60_000).toISOString() }),
+      job({ fetchedAt: new Date(NOW - 20 * 60_000).toISOString() }),
+      job({ fetchedAt: new Date(NOW - 45 * 60_000).toISOString() }),
     ];
     expect(filterByTime(jobs, "30m", NOW)).toHaveLength(1);
   });
 
-  it("falls back to fetchedAt when postedAt is missing", () => {
+  it("includes 6h apply-now filter", () => {
+    const sixH = TIME_FILTERS.find((f) => f.id === "6h");
+    expect(sixH?.ms).toBe(APPLY_NOW_WINDOW_MS);
+  });
+
+  it("prefers fetchedAt over postedAt for time windows", () => {
+    const j = job({
+      postedAt: new Date(NOW - 10 * 60_000).toISOString(),
+      fetchedAt: new Date(NOW - 5 * 60 * 60_000).toISOString(),
+    });
+    expect(jobTimeTimestamp(j)).toBe(Date.parse(j.fetchedAt));
+  });
+
+  it("falls back to postedAt when fetchedAt is missing", () => {
     const jobs = [
-      job({ postedAt: new Date(NOW - 10 * 60_000).toISOString() }),
       job({
-        postedAt: "",
-        fetchedAt: new Date(NOW - 15 * 60_000).toISOString(),
+        fetchedAt: "",
+        postedAt: new Date(NOW - 10 * 60_000).toISOString(),
       }),
       job({
-        postedAt: "",
-        fetchedAt: new Date(NOW - 45 * 60_000).toISOString(),
+        fetchedAt: "",
+        postedAt: new Date(NOW - 45 * 60_000).toISOString(),
       }),
     ];
-    expect(filterByTime(jobs, "30m", NOW)).toHaveLength(2);
+    expect(filterByTime(jobs, "30m", NOW)).toHaveLength(1);
   });
 
   it("all time filter returns every job including those missing postedAt", () => {
@@ -85,14 +99,14 @@ describe("All Jobs time filters", () => {
     expect(filterByTime(jobs, "all", NOW)).toHaveLength(2);
   });
 
-  it("does not filter by fetchedAt when postedAt differs", () => {
+  it("uses fetchedAt for window even when postedAt is older", () => {
     const jobs = [
       job({
         postedAt: new Date(NOW - 7 * 24 * 3_600_000).toISOString(),
         fetchedAt: new Date(NOW - 10 * 60_000).toISOString(),
       }),
     ];
-    expect(filterByTime(jobs, "30m", NOW)).toHaveLength(0);
+    expect(filterByTime(jobs, "30m", NOW)).toHaveLength(1);
   });
 });
 
@@ -201,6 +215,7 @@ describe("applyAllJobsFilters", () => {
         category: "ai-agentic",
         url: "https://jobs.ashbyhq.com/openai",
         description: "x".repeat(40),
+        fetchedAt: new Date(NOW - 10 * 60_000).toISOString(),
         postedAt: new Date(NOW - 10 * 60_000).toISOString(),
       }),
       job({

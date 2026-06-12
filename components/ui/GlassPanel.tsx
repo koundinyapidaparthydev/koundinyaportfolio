@@ -2,11 +2,12 @@ import * as React from "react";
 
 import { glass, glassCn } from "@/lib/glass";
 
-type GlassVariant = "panel" | "card" | "strong" | "nav" | "drawer" | "table";
+type GlassVariant = "panel" | "card" | "sectionCard" | "strong" | "nav" | "drawer" | "table";
 
 const variantClass: Record<GlassVariant, string> = {
   panel: glass.panel,
   card: glass.card,
+  sectionCard: glass.sectionCard,
   strong: glass.strong,
   nav: glass.nav,
   drawer: glass.drawer,

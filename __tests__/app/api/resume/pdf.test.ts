@@ -86,7 +86,7 @@ describe("GET /api/resume/pdf — success cases", () => {
     const res = await GET();
     const cd = res.headers.get("Content-Disposition") ?? "";
     expect(cd).toContain("attachment");
-    expect(cd).toContain("Koundinya_Pidaparthy_Resume.pdf");
+    expect(cd).toContain("Koundinya_Pidaparthy_resume.pdf");
   });
 
   it("filename in Content-Disposition uses underscores (no unencoded spaces)", async () => {
@@ -99,7 +99,7 @@ describe("GET /api/resume/pdf — success cases", () => {
     expect(filenameMatch).not.toBeNull();
     const filename = filenameMatch![1];
     expect(filename).not.toContain(" "); // no unencoded spaces
-    expect(filename).toBe("Koundinya_Pidaparthy_Resume.pdf");
+    expect(filename).toBe("Koundinya_Pidaparthy_resume.pdf");
   });
 
   it("sets Cache-Control with public max-age >= 3600", async () => {

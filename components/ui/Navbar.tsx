@@ -12,6 +12,10 @@ import Link from "next/link";
 import { Lock, Menu, X, LayoutDashboard, FileDown, LogOut } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { glass, glassCn } from "@/lib/glass";
+import {
+  RESUME_DOWNLOAD_FILENAME,
+  RESUME_PDF_API_PATH,
+} from "@/lib/resumeDownload";
 
 const NAV_LINKS = [
   { label: "Home", id: "hero" },
@@ -113,8 +117,8 @@ export default function Navbar() {
               ))}
 
               <a
-                href="/api/resume/pdf"
-                download
+                href={RESUME_PDF_API_PATH}
+                download={RESUME_DOWNLOAD_FILENAME}
                 className={glassCn(glass.btnGhost, "flex items-center gap-1.5")}
               >
                 <FileDown className="h-3.5 w-3.5" />
@@ -209,8 +213,8 @@ export default function Navbar() {
                   ))}
 
                   <a
-                    href="/api/resume/pdf"
-                    download
+                    href={RESUME_PDF_API_PATH}
+                    download={RESUME_DOWNLOAD_FILENAME}
                     onClick={() => setMenuOpen(false)}
                     className={glassCn(glass.btnGhost, "flex items-center gap-2 py-2.5")}
                   >

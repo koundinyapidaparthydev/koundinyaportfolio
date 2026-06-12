@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
 import { requireAdminSession } from "@/lib/auth";
+import { APPLY_NOW_WINDOW_MS } from "@/lib/admin/allJobsFilters";
 
 export const dynamic = "force-dynamic";
 
 const JOBS_SHEET = "Jobs";
 const ARCHIVE_SHEET = "Old Jobs";
-const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
 
 export async function POST() {
   const session = await requireAdminSession();
@@ -42,13 +42,13 @@ export async function POST() {
     const dataRows = rows.slice(1);
     const now = Date.now();
 
-    // 2. Split old (>2 days) vs recent
+    // 2. Split old (>6h apply-now window) vs recent
     const oldRows: string[][] = [];
     const keepRows: string[][] = [];
     for (const row of dataRows) {
       const fetchedAt = row[5] ?? "";
       const age = fetchedAt ? now - new Date(fetchedAt).getTime() : Infinity;
-      if (age > TWO_DAYS_MS) {
+      if (age > APPLY_NOW_WINDOW_MS) {
         oldRows.push(row);
       } else {
         keepRows.push(row);

@@ -14,7 +14,10 @@ export {
   type CountryLocationFilter,
 } from "@/lib/admin/jobLocationMatch";
 
-export type TimeFilter = "30m" | "2h" | "12h" | "1d" | "2d" | "all";
+export type TimeFilter = "30m" | "2h" | "6h" | "12h" | "1d" | "2d" | "all";
+
+/** Apply-now window: Jobs tab holds discoveries from the last 6 hours. */
+export const APPLY_NOW_WINDOW_MS = 6 * 60 * 60_000;
 export type SortColumn =
   | "company"
   | "title"
@@ -69,6 +72,7 @@ export const NEW_JOB_WINDOW_MS = 30 * 60_000;
 export const TIME_FILTERS: { id: TimeFilter; label: string; ms: number | null }[] = [
   { id: "30m", label: "⚡ Last 30 mins", ms: NEW_JOB_WINDOW_MS },
   { id: "2h", label: "Last 2 hrs", ms: 2 * 3_600_000 },
+  { id: "6h", label: "✅ Apply now (6h)", ms: APPLY_NOW_WINDOW_MS },
   { id: "12h", label: "Last 12 hrs", ms: 12 * 3_600_000 },
   { id: "1d", label: "Last 24 hrs", ms: 24 * 3_600_000 },
   { id: "2d", label: "Last 48 hrs", ms: 48 * 3_600_000 },
@@ -118,13 +122,13 @@ function isoTimestamp(iso: string): number | null {
   return Number.isNaN(t) ? null : t;
 }
 
-/** Prefer ATS post date; fall back to last-seen when post date is missing. */
+/** Discovery time for time-slot filters (fetchedAt = first seen in apply-now window). */
 export function jobTimeTimestamp(job: AllJobsRow): number | null {
-  return isoTimestamp(job.postedAt) ?? isoTimestamp(job.fetchedAt);
+  return isoTimestamp(job.fetchedAt) ?? isoTimestamp(job.postedAt);
 }
 
 /**
- * Time-window filters use the ATS post date when available, otherwise last-seen.
+ * Time-window filters use discovery time (fetchedAt), then ATS post date.
  */
 export function filterByTime<T extends AllJobsRow>(
   jobs: T[],
