@@ -106,19 +106,23 @@ async function main() {
   }
 
   if (jobsRows.length > 0) {
-    await ensureArchiveSheet(sheets);
+    if (!CLEAR_DEDUP) {
+      await ensureArchiveSheet(sheets);
 
-    if (DRY_RUN) {
-      console.log(`🏃  DRY_RUN: would append ${jobsRows.length} row(s) → "${ARCHIVE_SHEET}"`);
-    } else {
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: GOOGLE_SHEET_ID,
-        range: `${ARCHIVE_SHEET}!A:N`,
-        valueInputOption: "RAW",
-        insertDataOption: "INSERT_ROWS",
-        requestBody: { values: jobsRows },
-      });
-      console.log(`📦  Backed up ${jobsRows.length} row(s) → "${ARCHIVE_SHEET}"`);
+      if (DRY_RUN) {
+        console.log(`🏃  DRY_RUN: would append ${jobsRows.length} row(s) → "${ARCHIVE_SHEET}"`);
+      } else {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: GOOGLE_SHEET_ID,
+          range: `${ARCHIVE_SHEET}!A:N`,
+          valueInputOption: "RAW",
+          insertDataOption: "INSERT_ROWS",
+          requestBody: { values: jobsRows },
+        });
+        console.log(`📦  Backed up ${jobsRows.length} row(s) → "${ARCHIVE_SHEET}"`);
+      }
+    } else if (DRY_RUN) {
+      console.log(`🏃  DRY_RUN: skip Old Jobs backup (--clear-dedup)`);
     }
 
     await clearSheetData(sheets, SHEET_NAME);
@@ -134,16 +138,21 @@ async function main() {
     }
   }
 
-  if (CLEAR_DEDUP && archiveBefore > 0) {
-    await clearSheetData(sheets, ARCHIVE_SHEET);
-    if (!DRY_RUN) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: GOOGLE_SHEET_ID,
-        range: `${ARCHIVE_SHEET}!A1:N1`,
-        valueInputOption: "RAW",
-        requestBody: { values: [SHEET_HEADERS] },
-      });
-      console.log(`🗑️   Cleared "${ARCHIVE_SHEET}" for fresh HC dedup`);
+  if (CLEAR_DEDUP) {
+    const archiveNow = await fetchDataRows(sheets, ARCHIVE_SHEET);
+    if (archiveNow.length > 0) {
+      if (DRY_RUN) {
+        console.log(`🏃  DRY_RUN: would clear ${archiveNow.length} row(s) from "${ARCHIVE_SHEET}"`);
+      } else {
+        await clearSheetData(sheets, ARCHIVE_SHEET);
+        await sheets.spreadsheets.values.update({
+          spreadsheetId: GOOGLE_SHEET_ID,
+          range: `${ARCHIVE_SHEET}!A1:N1`,
+          valueInputOption: "RAW",
+          requestBody: { values: [SHEET_HEADERS] },
+        });
+        console.log(`🗑️   Cleared "${ARCHIVE_SHEET}" (${archiveNow.length} row(s)) for fresh HC dedup`);
+      }
     }
   }
 
