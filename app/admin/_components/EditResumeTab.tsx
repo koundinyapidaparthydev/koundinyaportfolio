@@ -1113,7 +1113,29 @@ export default function EditResumeTab() {
 
   // ── UI state ────────────────────────────────────────────────────────────────
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [showPreview, setShowPreview] = useState(false);
+  const [showPreview, setShowPreview] = useState(true);
+  const [isEnlarged, setIsEnlarged] = useState(false);
+
+  const toggleEnlarged = useCallback(() => {
+    setIsEnlarged((prev) => {
+      const next = !prev;
+      if (next) setShowPreview(true);
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!isEnlarged) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsEnlarged(false);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [isEnlarged]);
 
   // ── Loop-prevention refs ────────────────────────────────────────────────────
   // isResettingRef   — true while reset() is running → suppresses auto-save
@@ -1303,15 +1325,65 @@ export default function EditResumeTab() {
   );
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col space-y-3">
+    <div
+      className={[
+        "flex flex-col space-y-3",
+        isEnlarged
+          ? "fixed inset-0 z-[200] overflow-hidden bg-background p-3 sm:p-4 lg:p-5"
+          : "min-h-0 flex-1",
+      ].join(" ")}
+    >
       <AdminPageHeader
         title="Edit Resume"
-        subtitle="Auto-saved every 500 ms · Cmd+Z to undo"
+        subtitle={
+          isEnlarged
+            ? "Fullscreen · Esc to exit · Auto-saved every 500 ms"
+            : "Auto-saved every 500 ms · Cmd+Z to undo"
+        }
       />
 
       {/* ── Toolbar ── */}
       <div className="flex flex-wrap items-center justify-end gap-2">
         <SaveIndicator status={saveStatus} />
+
+        {/* Enlarge / exit fullscreen */}
+        <button
+          type="button"
+          onClick={toggleEnlarged}
+          title={isEnlarged ? "Exit fullscreen (Esc)" : "Enlarge to full screen"}
+          className={glassCn(
+            "flex items-center gap-1.5",
+            isEnlarged
+              ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
+              : glass.pill
+          )}
+        >
+          {isEnlarged ? (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                strokeLinejoin="round" aria-hidden="true">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3" />
+                <path d="M21 8h-3a2 2 0 0 1-2-2V3" />
+                <path d="M3 16h3a2 2 0 0 1 2 2v3" />
+                <path d="M16 21v-3a2 2 0 0 1 2-2h3" />
+              </svg>
+              Exit fullscreen
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 24 24"
+                fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
+                strokeLinejoin="round" aria-hidden="true">
+                <path d="M15 3h6v6" />
+                <path d="M9 21H3v-6" />
+                <path d="M21 3l-7 7" />
+                <path d="M3 21l7-7" />
+              </svg>
+              Enlarge
+            </>
+          )}
+        </button>
 
         {/* Undo / Redo */}
         <div className="flex items-center gap-1">
@@ -1399,10 +1471,13 @@ export default function EditResumeTab() {
 
       {/* ── Main layout (form + optional live preview) ── */}
       {showPreview ? (
-        <div className="flex min-h-0 flex-1 gap-4 overflow-hidden lg:min-h-[calc(100vh-11rem)]">
-          {/* Left: edit form */}
+        <div
+          className={[
+            "flex min-h-0 flex-1 gap-4 overflow-hidden",
+            isEnlarged ? "h-[calc(100vh-8.5rem)]" : "lg:min-h-[calc(100vh-14rem)]",
+          ].join(" ")}
+        >
           <div className="min-h-0 w-full overflow-y-auto pr-1 lg:w-1/2">{formContent}</div>
-          {/* Right: live preview */}
           <div className="hidden min-h-0 w-1/2 overflow-hidden rounded-2xl border border-white/10 shadow-2xl lg:block">
             {previewResume ? (
               <ResumePreview resume={previewResume} />
