@@ -1,27 +1,33 @@
+import React from "react";
 import { NextResponse } from "next/server";
-import { promises as fs } from "fs";
-import path from "path";
+import { renderToBuffer } from "@react-pdf/renderer";
+import type { DocumentProps } from "@react-pdf/renderer";
+import { getResume } from "@/lib/resumeStore";
+import { ResumePdfDocument } from "@/lib/resumePdf";
 import { RESUME_DOWNLOAD_FILENAME } from "@/lib/resumeDownload";
-
-const PDF_PATH = path.join(process.cwd(), "public", "resume.pdf");
 
 /**
  * GET /api/resume/pdf
- * Serves the static resume.pdf from the public folder.
- * Returns 404 with a clear message if the file hasn't been uploaded yet.
+ * Generates PDF from data/resume.json using the same layout as the admin preview.
  */
 export async function GET() {
   try {
-    const file = await fs.readFile(PDF_PATH);
-    return new NextResponse(file, {
+    const resume = await getResume();
+    const el = React.createElement(ResumePdfDocument, {
+      resume,
+    }) as React.ReactElement<DocumentProps>;
+    const buffer = Buffer.from(await renderToBuffer(el));
+
+    return new NextResponse(buffer, {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="${RESUME_DOWNLOAD_FILENAME}"`,
-        "Cache-Control": "public, max-age=3600",
+        "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
       },
     });
-  } catch {
+  } catch (err) {
+    console.error("[GET /api/resume/pdf]", err);
     return NextResponse.json(
       { error: "Resume PDF not available. Please check back soon." },
       { status: 404 }

@@ -8,14 +8,14 @@ import {
   StyleSheet,
   Link,
 } from "@react-pdf/renderer";
-import type { Resume } from "@/types/resume";
+import type { Resume, Experience, Project, SkillCategory, Education } from "@/types/resume";
 
-// ATS-friendly palette: black / gray on white only (no accent colors)
-const BLACK = "#000000";
-const DARK  = "#1a1a1a";
-const MID   = "#333333";
-const LIGHT = "#555555";
-const RULE  = "#cccccc";
+// Matches ResumePreview.tsx — black/gray on white, centered header, same section order.
+const BLACK = "#0f172a";
+const DARK = "#334155";
+const MID = "#475569";
+const LIGHT = "#64748b";
+const RULE = "#1e293b";
 
 const styles = StyleSheet.create({
   page: {
@@ -23,64 +23,76 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: DARK,
     backgroundColor: "#ffffff",
-    paddingTop: 40,
-    paddingBottom: 40,
-    paddingHorizontal: 48,
+    paddingTop: 36,
+    paddingBottom: 36,
+    paddingHorizontal: 44,
     lineHeight: 1.4,
   },
-  header: { marginBottom: 12 },
+  header: {
+    marginBottom: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e2e8f0",
+    alignItems: "center",
+  },
   name: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: "Helvetica-Bold",
     color: BLACK,
+    textAlign: "center",
     marginBottom: 2,
   },
   title: {
     fontSize: 11,
     color: MID,
-    fontFamily: "Helvetica",
+    textAlign: "center",
     marginBottom: 6,
   },
-  contactRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 2 },
+  contactRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
   contactItem: { fontSize: 9, color: LIGHT },
-  contactSep: { fontSize: 9, color: LIGHT },
-  section: { marginBottom: 10 },
+  contactDot: { fontSize: 9, color: LIGHT, marginHorizontal: 4 },
+  summary: {
+    fontSize: 9.5,
+    color: MID,
+    lineHeight: 1.45,
+    marginTop: 6,
+    textAlign: "left",
+    maxWidth: 480,
+  },
+  section: { marginTop: 14, marginBottom: 4 },
   sectionTitle: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
     color: BLACK,
     textTransform: "uppercase",
-    letterSpacing: 0.5,
-    borderBottomWidth: 0.5,
+    letterSpacing: 1.2,
+    borderBottomWidth: 1.5,
     borderBottomColor: RULE,
     paddingBottom: 2,
     marginBottom: 6,
   },
-  summaryText: { fontSize: 10, color: MID, lineHeight: 1.45 },
-  expHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 1 },
-  expCompany: { fontSize: 10, fontFamily: "Helvetica-Bold", color: BLACK },
-  expDate: { fontSize: 9, color: LIGHT },
-  expRole: { fontSize: 9.5, color: MID, fontFamily: "Helvetica-Oblique", marginBottom: 3 },
-  bullet: { flexDirection: "row", marginBottom: 2, paddingLeft: 0 },
-  bulletDot: { width: 12, fontSize: 10, color: BLACK },
-  bulletText: { flex: 1, fontSize: 9.5, color: MID, lineHeight: 1.4 },
-  techLine: { fontSize: 8.5, color: LIGHT, marginTop: 2, fontFamily: "Helvetica-Oblique" },
-  skillRow: { flexDirection: "row", marginBottom: 3 },
-  skillCategory: { width: 100, fontSize: 9.5, fontFamily: "Helvetica-Bold", color: BLACK },
-  skillList: { flex: 1, fontSize: 9.5, color: MID },
-  projHeader: { flexDirection: "row", justifyContent: "space-between", marginBottom: 1 },
-  projName: { fontSize: 10, fontFamily: "Helvetica-Bold", color: BLACK },
-  projDate: { fontSize: 9, color: LIGHT },
-  projStack: { fontSize: 9, color: LIGHT, fontFamily: "Helvetica-Oblique", marginBottom: 3 },
-  eduHeader: { flexDirection: "row", justifyContent: "space-between" },
-  eduInstitution: { fontSize: 10, fontFamily: "Helvetica-Bold", color: BLACK },
-  eduDate: { fontSize: 9, color: LIGHT },
-  eduDegree: { fontSize: 9.5, color: MID },
+  rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "baseline" },
+  company: { fontSize: 10.5, fontFamily: "Helvetica-Bold", color: BLACK },
+  date: { fontSize: 9, color: LIGHT },
+  role: { fontSize: 10, fontFamily: "Helvetica-Oblique", color: MID },
+  location: { fontSize: 9, color: LIGHT },
+  bullet: { flexDirection: "row", marginBottom: 2, paddingLeft: 2 },
+  bulletDot: { width: 10, fontSize: 9, color: BLACK },
+  bulletText: { flex: 1, fontSize: 9.5, color: DARK, lineHeight: 1.4 },
+  techLine: { fontSize: 9, color: LIGHT, marginTop: 2 },
+  techLabel: { fontFamily: "Helvetica-Bold", color: MID },
+  skillRow: { flexDirection: "row", marginBottom: 2, flexWrap: "wrap" },
+  skillTitle: { fontSize: 10, fontFamily: "Helvetica-Bold", color: BLACK },
+  skillList: { fontSize: 9.5, color: DARK, flex: 1 },
+  projStack: { fontSize: 9, color: LIGHT, marginBottom: 2 },
+  projDesc: { fontSize: 9.5, color: DARK, lineHeight: 1.4, marginBottom: 2 },
+  eduDegree: { fontSize: 10, color: MID },
 });
-
-function Separator() {
-  return <Text style={styles.contactSep}> | </Text>;
-}
 
 function SectionTitle({ children }: { children: string }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
@@ -95,8 +107,114 @@ function Bullet({ text }: { text: string }) {
   );
 }
 
+function ExperienceBlock({ exp }: { exp: Experience }) {
+  return (
+    <View style={{ marginBottom: 8 }}>
+      <View style={styles.rowBetween}>
+        <Text style={styles.company}>{exp.companyName}</Text>
+        <Text style={styles.date}>{exp.date}</Text>
+      </View>
+      <View style={styles.rowBetween}>
+        <Text style={styles.role}>{exp.role}</Text>
+        <Text style={styles.location}>{exp.location}</Text>
+      </View>
+      {exp.points.map((point, i) => (
+        <Bullet key={i} text={point} />
+      ))}
+      {exp.otherRoles?.map((role, i) => (
+        <View key={i} style={{ marginTop: 4, marginLeft: 4 }}>
+          <View style={styles.rowBetween}>
+            <Text style={styles.role}>{role.role}</Text>
+            <Text style={styles.date}>{role.date}</Text>
+          </View>
+          {role.points.map((point, j) => (
+            <Bullet key={j} text={point} />
+          ))}
+        </View>
+      ))}
+      {exp.technologies && exp.technologies.length > 0 && (
+        <Text style={styles.techLine}>
+          <Text style={styles.techLabel}>Tech: </Text>
+          {exp.technologies.join(" · ")}
+        </Text>
+      )}
+    </View>
+  );
+}
+
+function ProjectBlock({ project }: { project: Project }) {
+  return (
+    <View style={{ marginBottom: 8 }}>
+      <View style={styles.rowBetween}>
+        <Text style={styles.company}>{project.name}</Text>
+        <Text style={styles.date}>{project.date}</Text>
+      </View>
+      {project.stack.length > 0 && (
+        <Text style={styles.projStack}>{project.stack.join(" · ")}</Text>
+      )}
+      {project.description ? (
+        <Text style={styles.projDesc}>{project.description}</Text>
+      ) : null}
+      {project.points.map((point, i) => (
+        <Bullet key={i} text={point} />
+      ))}
+    </View>
+  );
+}
+
+function SkillsBlock({ category }: { category: SkillCategory }) {
+  return (
+    <View style={styles.skillRow}>
+      <Text style={styles.skillTitle}>{category.title}: </Text>
+      <Text style={styles.skillList}>{category.skills.join(", ")}</Text>
+    </View>
+  );
+}
+
+function EducationBlock({ edu }: { edu: Education }) {
+  return (
+    <View style={{ marginBottom: 6 }}>
+      <View style={styles.rowBetween}>
+        <Text style={styles.company}>{edu.institution}</Text>
+        <Text style={styles.date}>{edu.graduationDate}</Text>
+      </View>
+      <View style={styles.rowBetween}>
+        <Text style={styles.eduDegree}>
+          {edu.degree} in {edu.field}
+          {edu.gpa ? ` · GPA: ${edu.gpa}` : ""}
+        </Text>
+        <Text style={styles.location}>{edu.location}</Text>
+      </View>
+      {edu.achievements?.map((a, i) => (
+        <Bullet key={i} text={a} />
+      ))}
+    </View>
+  );
+}
+
 export function ResumePdfDocument({ resume }: { resume: Resume }) {
-  const { personalInfo, experience, skills, projects, education } = resume;
+  const { personalInfo, experience, projects, skills, education } = resume;
+
+  const contactParts: { text: string; href?: string }[] = [];
+  if (personalInfo.email) contactParts.push({ text: personalInfo.email });
+  if (personalInfo.phone) contactParts.push({ text: personalInfo.phone });
+  if (personalInfo.location) contactParts.push({ text: personalInfo.location });
+  if (personalInfo.linkedin) {
+    contactParts.push({
+      text: personalInfo.linkedin,
+      href: personalInfo.linkedin.startsWith("http")
+        ? personalInfo.linkedin
+        : `https://${personalInfo.linkedin}`,
+    });
+  }
+  if (personalInfo.github) {
+    contactParts.push({
+      text: personalInfo.github,
+      href: personalInfo.github.startsWith("http")
+        ? personalInfo.github
+        : `https://${personalInfo.github}`,
+    });
+  }
 
   return (
     <Document
@@ -109,113 +227,59 @@ export function ResumePdfDocument({ resume }: { resume: Resume }) {
           <Text style={styles.name}>{personalInfo.name}</Text>
           <Text style={styles.title}>{personalInfo.title}</Text>
           <View style={styles.contactRow}>
-            <Text style={styles.contactItem}>{personalInfo.email}</Text>
-            <Separator />
-            <Text style={styles.contactItem}>{personalInfo.phone}</Text>
-            <Separator />
-            <Text style={styles.contactItem}>{personalInfo.location}</Text>
-            {personalInfo.linkedin && (
-              <>
-                <Separator />
-                <Link src={`https://${personalInfo.linkedin}`} style={styles.contactItem}>
-                  {personalInfo.linkedin}
-                </Link>
-              </>
-            )}
-            {personalInfo.github && (
-              <>
-                <Separator />
-                <Link src={`https://${personalInfo.github}`} style={styles.contactItem}>
-                  {personalInfo.github}
-                </Link>
-              </>
-            )}
-            {personalInfo.portfolio && (
-              <>
-                <Separator />
-                <Text style={styles.contactItem}>{personalInfo.portfolio}</Text>
-              </>
-            )}
+            {contactParts.map((part, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <Text style={styles.contactDot}>·</Text>}
+                {part.href ? (
+                  <Link src={part.href} style={styles.contactItem}>
+                    {part.text}
+                  </Link>
+                ) : (
+                  <Text style={styles.contactItem}>{part.text}</Text>
+                )}
+              </React.Fragment>
+            ))}
           </View>
+          {personalInfo.summary ? (
+            <Text style={styles.summary}>{personalInfo.summary}</Text>
+          ) : null}
         </View>
 
-        {personalInfo.summary && (
+        {experience.length > 0 && (
           <View style={styles.section}>
-            <SectionTitle>Summary</SectionTitle>
-            <Text style={styles.summaryText}>{personalInfo.summary}</Text>
-          </View>
-        )}
-
-        <View style={styles.section}>
-          <SectionTitle>Skills</SectionTitle>
-          {skills.map((cat) => (
-            <View key={cat.id} style={styles.skillRow}>
-              <Text style={styles.skillCategory}>{cat.title}</Text>
-              <Text style={styles.skillList}>{cat.skills.join(", ")}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <SectionTitle>Experience</SectionTitle>
-          {experience.map((exp) => (
-            <View key={exp.id} style={{ marginBottom: 8 }}>
-              <View style={styles.expHeader}>
-                <Text style={styles.expCompany}>{exp.companyName}</Text>
-                <Text style={styles.expDate}>{exp.date}</Text>
-              </View>
-              <Text style={styles.expRole}>
-                {exp.role} — {exp.location}
-              </Text>
-              {exp.points.map((point, i) => (
-                <Bullet key={i} text={point} />
-              ))}
-              {exp.technologies && exp.technologies.length > 0 && (
-                <Text style={styles.techLine}>
-                  {exp.technologies.slice(0, 12).join(", ")}
-                </Text>
-              )}
-            </View>
-          ))}
-        </View>
-
-        {projects.length > 0 && (
-          <View style={styles.section}>
-            <SectionTitle>Projects</SectionTitle>
-            {projects.slice(0, 3).map((proj) => (
-              <View key={proj.id} style={{ marginBottom: 7 }}>
-                <View style={styles.projHeader}>
-                  <Text style={styles.projName}>{proj.name}</Text>
-                  <Text style={styles.projDate}>{proj.date}</Text>
-                </View>
-                <Text style={styles.projStack}>{proj.stack.join(", ")}</Text>
-                {proj.points.slice(0, 3).map((point, i) => (
-                  <Bullet key={i} text={point} />
-                ))}
-              </View>
+            <SectionTitle>Experience</SectionTitle>
+            {experience.map((exp) => (
+              <ExperienceBlock key={exp.id} exp={exp} />
             ))}
           </View>
         )}
 
-        <View style={styles.section}>
-          <SectionTitle>Education</SectionTitle>
-          {education.map((edu) => (
-            <View key={edu.id} style={{ marginBottom: 5 }}>
-              <View style={styles.eduHeader}>
-                <Text style={styles.eduInstitution}>{edu.institution}</Text>
-                <Text style={styles.eduDate}>{edu.graduationDate}</Text>
-              </View>
-              <Text style={styles.eduDegree}>
-                {edu.degree} in {edu.field}
-                {edu.gpa ? ` — GPA: ${edu.gpa}` : ""}
-                {edu.location ? ` — ${edu.location}` : ""}
-              </Text>
-              {edu.achievements?.map((a, i) => (
-                <Bullet key={i} text={a} />
-              ))}
-            </View>
-          ))}
-        </View>
+        {projects.length > 0 && (
+          <View style={styles.section}>
+            <SectionTitle>Projects</SectionTitle>
+            {projects.map((proj) => (
+              <ProjectBlock key={proj.id} project={proj} />
+            ))}
+          </View>
+        )}
+
+        {skills.length > 0 && (
+          <View style={styles.section}>
+            <SectionTitle>Skills</SectionTitle>
+            {skills.map((cat) => (
+              <SkillsBlock key={cat.id} category={cat} />
+            ))}
+          </View>
+        )}
+
+        {education.length > 0 && (
+          <View style={styles.section}>
+            <SectionTitle>Education</SectionTitle>
+            {education.map((edu) => (
+              <EducationBlock key={edu.id} edu={edu} />
+            ))}
+          </View>
+        )}
       </Page>
     </Document>
   );
