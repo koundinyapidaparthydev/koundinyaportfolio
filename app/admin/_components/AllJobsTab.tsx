@@ -426,7 +426,7 @@ export default function AllJobsTab() {
       </div>
 
       {/* Category tabs */}
-      <div className={glass.tabGroup}>
+      <div className={glassCn(glass.tabGroup, "flex flex-wrap gap-1.5")}>
         <button
           type="button"
           onClick={() => setCategory("all")}
@@ -459,6 +459,7 @@ export default function AllJobsTab() {
               type="button"
               onClick={() => setCountryLocation(id)}
               className={glassCn(
+                "inline-flex items-center gap-1.5",
                 countryLocation === id
                   ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
                   : glass.pill
@@ -488,6 +489,7 @@ export default function AllJobsTab() {
               type="button"
               onClick={() => setTimeFilter(id)}
               className={glassCn(
+                "inline-flex items-center gap-1.5",
                 timeFilter === id
                   ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
                   : glass.pill

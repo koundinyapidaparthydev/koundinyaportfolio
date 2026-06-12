@@ -6,6 +6,20 @@ const config: Config = {
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx}",
+  ],
+  safelist: [
+    // Referenced via lib/glass.ts constants — must survive Tailwind purge
+    "glass-nav",
+    "glass-nav-elevated",
+    "glass-drawer",
+    "glass-pill",
+    "glass-pill-active",
+    "glass-pill-badge",
+    "glass-tab-group",
+    "glass-tab",
+    "glass-tab-active",
+    "glass-input-compact",
   ],
   theme: {
     extend: {

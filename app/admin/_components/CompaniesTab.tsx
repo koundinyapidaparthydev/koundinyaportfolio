@@ -1213,6 +1213,7 @@ export default function CompaniesTab({
           type="button"
           onClick={() => setCategoryFilters(new Set())}
           className={glassCn(
+            "inline-flex items-center gap-1.5",
             categoryFilters.size === 0
               ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
               : glass.pill
@@ -1228,6 +1229,7 @@ export default function CompaniesTab({
               type="button"
               onClick={() => setCategoryFilters((prev) => toggleCategoryFilter(prev, id))}
               className={glassCn(
+                "inline-flex items-center gap-1.5",
                 active
                   ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
                   : glass.pill
@@ -1255,6 +1257,7 @@ export default function CompaniesTab({
               type="button"
               onClick={() => setCountryLocation(id)}
               className={glassCn(
+                "inline-flex items-center gap-1.5",
                 countryLocation === id
                   ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
                   : glass.pill
@@ -1285,6 +1288,7 @@ export default function CompaniesTab({
               type="button"
               onClick={() => setTimeFilter(id)}
               className={glassCn(
+                "inline-flex items-center gap-1.5",
                 timeFilter === id
                   ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
                   : glass.pill
