@@ -13,6 +13,8 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { VisitorEntry } from "@/lib/visitorStore";
+import { glass, glassCn } from "@/lib/glass";
+import { AdminPageHeader } from "./AdminShell";
 
 const PAGE_SIZE = 25;
 
@@ -151,43 +153,39 @@ export default function VisitorsTab() {
 
   return (
     <div className="space-y-5">
-      {/* ── Header row ── */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Visitors</h2>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {filtered.length !== visitors.length
-              ? `${filtered.length} of ${visitors.length} visits`
-              : `${visitors.length} recorded visit${visitors.length !== 1 ? "s" : ""}`}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Search */}
-          <input
-            type="search"
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            placeholder="Filter by IP, page, country…"
-            className="h-8 w-56 rounded-xl border border-white/10 bg-white/5 px-3 text-xs text-slate-300 placeholder:text-slate-600 focus:border-indigo-500/40 focus:outline-none focus:ring-1 focus:ring-indigo-500/30"
-          />
-          {/* Export */}
-          <button
-            type="button"
-            onClick={() => exportCSV(filtered)}
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
-          >
-            Export CSV
-          </button>
-          {/* Refresh */}
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Visitors"
+        subtitle={
+          filtered.length !== visitors.length
+            ? `${filtered.length} of ${visitors.length} visits`
+            : `${visitors.length} recorded visit${visitors.length !== 1 ? "s" : ""}`
+        }
+        actions={
+          <>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => handleSearch(e.target.value)}
+              placeholder="Filter by IP, page, country…"
+              className="glass-input h-8 w-56 px-3 text-xs"
+            />
+            <button
+              type="button"
+              onClick={() => exportCSV(filtered)}
+              className={glassCn(glass.btn, "px-3 py-1.5 text-xs font-medium")}
+            >
+              Export CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className={glassCn(glass.btn, "px-3 py-1.5 text-xs font-medium")}
+            >
+              Refresh
+            </button>
+          </>
+        }
+      />
 
       {visitors.length === 0 ? (
         <div className="glass-panel py-16 text-center">

@@ -38,6 +38,70 @@ function toIsoPosted(value) {
   return Number.isNaN(d.getTime()) ? "" : d.toISOString();
 }
 
+const RELATIVE_POSTED_RE =
+  /\b(?:just\s*now|\d+\s*m(?:in(?:ute)?s?)?|\d+\s*h(?:r|our)?s?|\d+\s*d(?:ay)?s?)\b/i;
+
+/**
+ * Parse relative posted strings from HC UI ("48m", "1h", "2h", "3d", "Just now").
+ * @param {string} text
+ * @param {Date} [refNow]
+ * @returns {string} ISO timestamp or ""
+ */
+function toRefDate(refNow = new Date()) {
+  return refNow instanceof Date ? refNow : new Date(refNow);
+}
+
+export function parseRelativePostedTime(text, refNow = new Date()) {
+  const raw = (text ?? "").trim();
+  if (!raw) return "";
+
+  const ref = toRefDate(refNow);
+  const iso = toIsoPosted(raw);
+  if (iso) return iso;
+
+  const s = raw.toLowerCase();
+  if (/^(just\s*now|now)$/.test(s)) return ref.toISOString();
+
+  const compact = s.match(/^(\d+)\s*(m|h|d)(?:in(?:ute)?s?|r|our|ay)?s?$/i);
+  if (compact) {
+    const n = Number(compact[1]);
+    const unit = compact[2].toLowerCase();
+    const ms =
+      unit === "m" ? n * 60_000 : unit === "h" ? n * 3_600_000 : n * 86_400_000;
+    return new Date(ref.getTime() - ms).toISOString();
+  }
+
+  const ago = s.match(/^(\d+)\s*(m|h|d)(?:in(?:ute)?s?|r|our|ay)?s?\s*ago$/i);
+  if (ago) {
+    const n = Number(ago[1]);
+    const unit = ago[2].toLowerCase();
+    const ms =
+      unit === "m" ? n * 60_000 : unit === "h" ? n * 3_600_000 : n * 86_400_000;
+    return new Date(ref.getTime() - ms).toISOString();
+  }
+
+  return "";
+}
+
+/** Extract relative posted time from card / snippet text → ISO. */
+export function extractRelativePostedFromText(text, refNow = new Date()) {
+  const match = (text ?? "").match(RELATIVE_POSTED_RE);
+  const token = match?.[0]?.trim() ?? "";
+  return token ? parseRelativePostedTime(token, refNow) : "";
+}
+
+function resolvePostedAt(value, refNow = new Date()) {
+  if (value == null || value === "") return "";
+  if (typeof value === "string") {
+    const rel = parseRelativePostedTime(value, refNow);
+    if (rel) return rel;
+    if (RELATIVE_POSTED_RE.test(value)) {
+      return extractRelativePostedFromText(value, refNow);
+    }
+  }
+  return toIsoPosted(value);
+}
+
 /** Extract HC objectID / listing id from a raw API item or apply URL. */
 export function getHcJobId(itemOrUrl) {
   if (typeof itemOrUrl === "string") {
@@ -130,8 +194,28 @@ export function parseHcItemToRow(item, fetchedAt = new Date().toISOString()) {
   const skillsLine = skills ? `Skills: ${skills}` : "";
   const description = [salaryLine, skillsLine, summary].filter(Boolean).join("\n").slice(0, 2500);
 
-  const postedAt = toIsoPosted(
-    item.posted_at ?? item.postedAt ?? item.created_at ?? item.published_at ?? ""
+  const postedAt = resolvePostedAt(
+    item.posted_at ??
+      item.postedAt ??
+      item.date_posted ??
+      item.datePosted ??
+      item.listed_at ??
+      item.listedAt ??
+      item.published_at ??
+      item.publishedAt ??
+      item.updated_at ??
+      item.updatedAt ??
+      item.created_at ??
+      item.createdAt ??
+      item.relative_posted ??
+      item.timeAgo ??
+      v5.date_posted ??
+      v5.posted_at ??
+      v5.listed_at ??
+      v7.date_posted ??
+      v7.posted_at ??
+      "",
+    new Date(fetchedAt)
   );
 
   return [

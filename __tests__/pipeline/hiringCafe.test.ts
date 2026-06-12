@@ -16,6 +16,8 @@ import {
   parseHcItemToRow,
   partitionRowsByFetchedAt,
   extractHcItemsFromPayload,
+  parseRelativePostedTime,
+  extractRelativePostedFromText,
 } from "../../scripts/lib/hiring-cafe.mjs";
 
 describe("buildHiringCafeSearchState", () => {
@@ -64,6 +66,35 @@ describe("getHcJobId / getJobDedupKey", () => {
   });
 });
 
+describe("parseRelativePostedTime", () => {
+  const ref = new Date("2026-06-12T12:00:00.000Z");
+  const now = ref.getTime();
+
+  it("parses minute-relative strings", () => {
+    expect(parseRelativePostedTime("48m", ref)).toBe("2026-06-12T11:12:00.000Z");
+    expect(parseRelativePostedTime("48m", now)).toBe(new Date(now - 48 * 60_000).toISOString());
+  });
+
+  it("parses hour-relative strings", () => {
+    expect(parseRelativePostedTime("1h", ref)).toBe("2026-06-12T11:00:00.000Z");
+    expect(parseRelativePostedTime("2h", ref)).toBe("2026-06-12T10:00:00.000Z");
+    expect(parseRelativePostedTime("2h", now)).toBe(new Date(now - 2 * 3_600_000).toISOString());
+  });
+
+  it("parses just now", () => {
+    expect(parseRelativePostedTime("just now", ref)).toBe(ref.toISOString());
+  });
+
+  it("extracts relative time from card text", () => {
+    expect(extractRelativePostedFromText("Stripe · Senior Eng · 1h · Remote", ref)).toBe(
+      "2026-06-12T11:00:00.000Z"
+    );
+    expect(extractRelativePostedFromText("Stripe · Remote · 48m · $180k", ref)).toBe(
+      "2026-06-12T11:12:00.000Z"
+    );
+  });
+});
+
 describe("parseHcItemToRow", () => {
   const fetchedAt = "2026-06-12T10:00:00.000Z";
 
@@ -91,6 +122,19 @@ describe("parseHcItemToRow", () => {
     expect(row![5]).toBe(fetchedAt);
     expect(row![6]).toBe("2026-06-10T00:00:00.000Z");
     expect(row![7]).toContain("Build payments APIs");
+  });
+
+  it("maps date_posted and listed_at fields", () => {
+    const row = parseHcItemToRow(
+      {
+        objectID: "jobid123",
+        hc_title: "Engineer",
+        hc_apply_url: "https://hiring.cafe/job/jobid123",
+        date_posted: "2026-06-11T08:00:00.000Z",
+      },
+      fetchedAt
+    );
+    expect(row![6]).toBe("2026-06-11T08:00:00.000Z");
   });
 });
 

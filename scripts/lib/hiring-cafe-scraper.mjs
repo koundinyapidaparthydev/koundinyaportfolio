@@ -7,6 +7,7 @@ import {
   dedupeHcRows,
   extractHcItemsFromPayload,
   parseHcItemToRow,
+  parseRelativePostedTime,
 } from "./hiring-cafe.mjs";
 
 const MAX_PAGINATION_ROUNDS = 40;
@@ -137,14 +138,36 @@ export async function scrapeAllHiringCafeJobs(isEngineeringRole) {
             .join("\n")
             .slice(0, 2000);
 
-          results.push({ company: company || "Hiring Cafe", title, location: fullLoc, url: jobUrl, desc });
+          const relativePosted =
+            cardText.match(/\b(?:just now|\d+\s*m|\d+\s*h|\d+\s*d)\b/i)?.[0]?.trim() ?? "";
+
+          results.push({
+            company: company || "Hiring Cafe",
+            title,
+            location: fullLoc,
+            url: jobUrl,
+            desc,
+            relativePosted,
+          });
         }
         return results;
       });
 
-      for (const { company, title, location, url, desc } of domRows) {
+      for (const { company, title, location, url, desc, relativePosted } of domRows) {
         if (!isEngineeringRole(title)) continue;
-        const row = [company, title.slice(0, 100), location.slice(0, 150), url, "hiring-cafe", fetchedAt, "", desc];
+        const postedAt = relativePosted
+          ? parseRelativePostedTime(relativePosted, new Date(fetchedAt))
+          : "";
+        const row = [
+          company,
+          title.slice(0, 100),
+          location.slice(0, 150),
+          url,
+          "hiring-cafe",
+          fetchedAt,
+          postedAt,
+          desc,
+        ];
         if (!itemMap.has(url)) itemMap.set(url, row);
       }
     }

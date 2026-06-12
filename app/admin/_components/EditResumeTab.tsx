@@ -40,6 +40,7 @@ import { useResume, useUpdateResume } from "@/hooks/useResume";
 import { useResumeHistoryStore, useCanUndo, useCanRedo } from "@/lib/store";
 import ResumePreview from "./ResumePreview";
 import { glass, glassCn } from "@/lib/glass";
+import { AdminPageHeader } from "./AdminShell";
 import type {
   Resume,
   PersonalInfo,
@@ -1303,13 +1304,13 @@ export default function EditResumeTab() {
 
   return (
     <div className="space-y-4">
-      {/* ── Toolbar ── */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="mr-auto">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Edit Resume</h2>
-          <p className="text-xs text-slate-500">Auto-saved every 500 ms · Cmd+Z to undo</p>
-        </div>
+      <AdminPageHeader
+        title="Edit Resume"
+        subtitle="Auto-saved every 500 ms · Cmd+Z to undo"
+      />
 
+      {/* ── Toolbar ── */}
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <SaveIndicator status={saveStatus} />
 
         {/* Undo / Redo */}

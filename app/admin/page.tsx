@@ -4,40 +4,34 @@
  * app/admin/page.tsx — Admin dashboard.
  *
  * Protected by the NextAuth middleware in middleware.ts (role === "admin" required).
- * Renders a persistent sidebar + a tab content area.
- * Tabs: Overview · Edit Resume · Visitors · Settings
+ * Renders a dedicated admin shell with sidebar + animated tab content.
  */
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
 import AdminSidebar, { type AdminTab } from "./_components/Sidebar";
+import { AdminTopBar, AdminTabPanel } from "./_components/AdminShell";
 
-// Lazy-load the heavier tabs to keep initial JS small
-const OverviewTab = dynamic(
-  () => import("./_components/OverviewTab"),
-  { loading: () => <TabLoader /> }
-);
-const EditResumeTab = dynamic(
-  () => import("./_components/EditResumeTab"),
-  { loading: () => <TabLoader /> }
-);
-const VisitorsTab = dynamic(
-  () => import("./_components/VisitorsTab"),
-  { loading: () => <TabLoader /> }
-);
-const SettingsTab = dynamic(
-  () => import("./_components/SettingsTab"),
-  { loading: () => <TabLoader /> }
-);
-const CompaniesTab = dynamic(
-  () => import("./_components/CompaniesTab"),
-  { loading: () => <TabLoader /> }
-);
-const AllJobsTab = dynamic(
-  () => import("./_components/AllJobsTab"),
-  { loading: () => <TabLoader /> }
-);
+const OverviewTab = dynamic(() => import("./_components/OverviewTab"), {
+  loading: () => <TabLoader />,
+});
+const EditResumeTab = dynamic(() => import("./_components/EditResumeTab"), {
+  loading: () => <TabLoader />,
+});
+const VisitorsTab = dynamic(() => import("./_components/VisitorsTab"), {
+  loading: () => <TabLoader />,
+});
+const SettingsTab = dynamic(() => import("./_components/SettingsTab"), {
+  loading: () => <TabLoader />,
+});
+const DiscoveriesTab = dynamic(() => import("./_components/DiscoveriesTab"), {
+  loading: () => <TabLoader />,
+});
+const AllJobsTab = dynamic(() => import("./_components/AllJobsTab"), {
+  loading: () => <TabLoader />,
+});
 
 function TabLoader() {
   return (
@@ -47,55 +41,49 @@ function TabLoader() {
   );
 }
 
-
-
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const [refreshing, setRefreshing] = useState(false);
   const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
 
   return (
-    <div className="relative min-h-[calc(100vh-4rem)] px-4 pt-24 pb-8 sm:px-6 lg:px-8">
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 opacity-40 dark:opacity-30"
-        aria-hidden
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.15), transparent), radial-gradient(ellipse 60% 40% at 100% 50%, rgba(139,92,246,0.08), transparent)",
-        }}
-      />
-      <div className="mx-auto max-w-7xl">
-        {/* ── Page header ── */}
-        <header className="glass-panel mb-8 flex items-start justify-between gap-4 p-5">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Admin Dashboard</h1>
-            {session?.user && (
-              <p className="mt-1 text-sm text-slate-500">
-                Signed in as{" "}
-                <span className="text-slate-400">{session.user.email}</span>
-              </p>
-            )}
-          </div>
-        </header>
+    <div className="relative flex min-h-screen flex-col">
+      <AdminTopBar activeTab={activeTab} onRefresh={handleRefresh} refreshing={refreshing} />
 
-        {/* ── Two-column layout (sidebar + content) ── */}
+      <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        {session?.user?.email && (
+          <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+            Signed in as <span className="text-slate-600 dark:text-slate-300">{session.user.email}</span>
+          </p>
+        )}
+
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-          {/* Sidebar */}
           <AdminSidebar activeTab={activeTab} onSelect={setActiveTab} />
 
-          {/* Tab content */}
           <main className="min-w-0 flex-1">
-            {activeTab === "overview" && <OverviewTab />}
-            {activeTab === "edit-resume" && <EditResumeTab />}
-            {activeTab === "visitors" && <VisitorsTab />}
-            {activeTab === "settings" && <SettingsTab />}
-            {activeTab === "companies" && (
-              <CompaniesTab onViewAllJobs={() => setActiveTab("all-jobs")} />
-            )}
-            {activeTab === "all-jobs" && <AllJobsTab />}
+            <AdminTabPanel tabKey={activeTab}>
+              {activeTab === "overview" && <OverviewTab />}
+              {activeTab === "all-jobs" && <AllJobsTab />}
+              {activeTab === "discoveries" && (
+                <DiscoveriesTab onViewJobs={() => setActiveTab("all-jobs")} />
+              )}
+              {activeTab === "edit-resume" && <EditResumeTab />}
+              {activeTab === "visitors" && <VisitorsTab />}
+              {activeTab === "settings" && <SettingsTab />}
+            </AdminTabPanel>
           </main>
         </div>
       </div>
     </div>
   );
 }
-

@@ -15,6 +15,25 @@ import { runCompanyPipeline } from "./run-company-pipeline.mjs";
 loadEnvLocal();
 validatePipelineEnv("scrape");
 
+if (process.env.ALLOW_LEGACY_SCRAPE !== "1") {
+  console.error(`
+╔══════════════════════════════════════════════════════════════════╗
+║  LEGACY SCRAPE BLOCKED                                           ║
+║                                                                  ║
+║  Full company scraping is disabled. Production uses HC-only:     ║
+║    npm run job:pipeline                                          ║
+║                                                                  ║
+║  To run legacy multi-portal scrape intentionally:                ║
+║    ALLOW_LEGACY_SCRAPE=1 npm run job:pipeline:companies          ║
+╚══════════════════════════════════════════════════════════════════╝
+`);
+  process.exit(1);
+}
+
+console.warn(
+  "\n⚠️  ALLOW_LEGACY_SCRAPE=1 — running legacy full-company pipeline (not recommended)\n"
+);
+
 const ROOT = process.cwd();
 const companies = JSON.parse(
   readFileSync(join(ROOT, "companies.json"), "utf8"),

@@ -1,6 +1,7 @@
 "use client";
 
-import { glass } from "@/lib/glass";
+import { glass, glassCn } from "@/lib/glass";
+import { AdminPageHeader, AdminSection } from "./AdminShell";
 
 /**
  * SettingsTab — change the admin password.
@@ -81,18 +82,10 @@ export default function SettingsTab() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Settings</h2>
-        <p className="mt-0.5 text-sm text-slate-500">
-          Manage your admin account.
-        </p>
-      </div>
+      <AdminPageHeader title="Settings" subtitle="Manage your admin account." />
 
-      {/* ── Change password ── */}
-      <div className={`max-w-md ${glass.panel} p-6`}>
-        <p className="mb-5 text-sm font-semibold text-slate-300">
-          Change admin password
-        </p>
+      <AdminSection title="Change admin password">
+      <div className={glassCn(glass.panel, "max-w-md p-6")}>
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
           <div>
@@ -157,10 +150,10 @@ export default function SettingsTab() {
           </button>
         </form>
       </div>
+      </AdminSection>
 
-      {/* ── Info card ── */}
-      <div className={`max-w-md ${glass.panel} p-5`}>
-        <p className="mb-3 text-sm font-semibold text-slate-300">Account</p>
+      <AdminSection title="Account">
+      <div className={glassCn(glass.panel, "max-w-md p-5")}>
         <div className="space-y-2 text-sm text-slate-500">
           <div className="flex items-center justify-between">
             <span>Email</span>
@@ -176,6 +169,7 @@ export default function SettingsTab() {
           </div>
         </div>
       </div>
+      </AdminSection>
     </div>
   );
 }

@@ -11,5 +11,9 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <AdminThemeProvider>{children}</AdminThemeProvider>;
+  return (
+    <AdminThemeProvider>
+      <div className="aurora-0 relative min-h-screen">{children}</div>
+    </AdminThemeProvider>
+  );
 }

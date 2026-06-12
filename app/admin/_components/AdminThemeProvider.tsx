@@ -86,17 +86,7 @@ export default function AdminThemeProvider({
 
   return (
     <AdminThemeContext.Provider value={{ theme, toggle }}>
-      <div
-        className={[
-          theme === "dark" ? "dark" : "",
-          "min-h-[calc(100vh-4rem)]",
-          mounted
-            ? theme === "dark"
-              ? "bg-[#080808]"
-              : "bg-slate-100/80"
-            : "bg-[#080808]",
-        ].join(" ")}
-      >
+      <div className={[theme === "dark" ? "dark" : "", "min-h-screen bg-background"].join(" ")}>
         {children}
       </div>
     </AdminThemeContext.Provider>

@@ -9,11 +9,11 @@ import {
   filterByHasDescription,
   sortAllJobs,
   toggleSortColumn,
-  uniqueCategories,
   formatRelativeTime,
   formatOpenDate,
   TIME_FILTERS,
   DEFAULT_ALL_JOBS_SORT,
+  DEFAULT_TIME_FILTER,
   type AllJobsRow,
 } from "@/lib/admin/allJobsFilters";
 
@@ -52,6 +52,10 @@ describe("detectPlatformFromUrl", () => {
 });
 
 describe("All Jobs time filters", () => {
+  it("defaults to 2h window for HC jobs tab", () => {
+    expect(DEFAULT_TIME_FILTER).toBe("2h");
+  });
+
   it("includes all-time as the last filter option", () => {
     expect(TIME_FILTERS[TIME_FILTERS.length - 1].id).toBe("all");
   });
@@ -196,41 +200,30 @@ describe("sortAllJobs", () => {
     expect(sorted[0].title).toBe("dated");
     expect(sorted[1].title).toBe("missing");
   });
-
-  it("sorts by platform", () => {
-    const jobs = [
-      job({ url: "https://boards.greenhouse.io/foo", title: "gh" }),
-      job({ url: "https://jobs.ashbyhq.com/foo", title: "ashby" }),
-    ];
-    const sorted = sortAllJobs(jobs, { column: "platform", direction: "asc" });
-    expect(sorted[0].title).toBe("ashby");
-  });
 });
 
 describe("applyAllJobsFilters", () => {
-  it("combines search, category, time, platform, and description filters", () => {
+  it("combines search, time, location, and description filters", () => {
     const jobs = [
       job({
         company: "OpenAI",
-        category: "ai-agentic",
         url: "https://jobs.ashbyhq.com/openai",
         description: "x".repeat(40),
         fetchedAt: new Date(NOW - 10 * 60_000).toISOString(),
         postedAt: new Date(NOW - 10 * 60_000).toISOString(),
+        location: "San Francisco, CA",
       }),
       job({
         company: "Lyft",
-        category: "travel",
         url: "https://www.lyft.com/jobs/1",
         description: "",
         postedAt: new Date(NOW - 10 * 60_000).toISOString(),
+        location: "London, UK",
       }),
     ];
     const result = applyAllJobsFilters(jobs, {
       search: "openai",
-      category: "ai-agentic",
       timeFilter: "30m",
-      platform: "ashby",
       hasDescription: true,
       countryLocation: "all",
       sort: DEFAULT_ALL_JOBS_SORT,
@@ -248,9 +241,7 @@ describe("applyAllJobsFilters", () => {
     ];
     const usOnly = applyAllJobsFilters(jobs, {
       search: "",
-      category: "all",
       timeFilter: "all",
-      platform: "all",
       hasDescription: false,
       countryLocation: "us",
       sort: DEFAULT_ALL_JOBS_SORT,
@@ -266,27 +257,13 @@ describe("applyAllJobsFilters", () => {
     ];
     const result = applyAllJobsFilters(jobs, {
       search: "",
-      category: "all",
       timeFilter: "all",
-      platform: "all",
       hasDescription: false,
       countryLocation: "all",
       sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,
     });
     expect(result.map((j) => j.company)).toEqual(["US Co"]);
-  });
-});
-
-describe("uniqueCategories", () => {
-  it("returns sorted unique non-empty categories", () => {
-    const cats = uniqueCategories([
-      job({ category: "travel" }),
-      job({ category: "general" }),
-      job({ category: "travel" }),
-      job({ category: "" }),
-    ]);
-    expect(cats).toEqual(["general", "travel"]);
   });
 });
 

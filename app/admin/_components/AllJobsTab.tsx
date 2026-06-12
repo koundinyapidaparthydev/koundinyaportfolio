@@ -1,18 +1,19 @@
 "use client";
 
 /**
- * AllJobsTab — full job board with filters and per-row detail panel.
- * Data from GET /api/jobs (Google Sheet columns A–M).
+ * AllJobsTab — Hiring Cafe job board with search, location, and time filters.
+ * Data from GET /api/jobs (Google Sheet columns A–N).
  */
 
 import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import type { Job } from "@/app/api/jobs/route";
 import {
   TIME_FILTERS,
-  PLATFORM_FILTERS,
   COUNTRY_LOCATION_FILTERS,
   DEFAULT_ALL_JOBS_SORT,
+  DEFAULT_TIME_FILTER,
   applyAllJobsFilters,
   detectPlatformFromUrl,
   filterByTime,
@@ -20,18 +21,14 @@ import {
   formatRelativeTime,
   formatOpenDate,
   toggleSortColumn,
-  uniqueCategories,
   type TimeFilter,
   type SortColumn,
   type AllJobsSort,
-  type PlatformFilter,
   type CountryLocationFilter,
 } from "@/lib/admin/allJobsFilters";
 import { glass, glassCn } from "@/lib/glass";
-import {
-  resolveCompanyLogo,
-  companyInitial,
-} from "@/lib/admin/companyLogos";
+import { resolveCompanyLogo, companyInitial } from "@/lib/admin/companyLogos";
+import { AdminPageHeader } from "./AdminShell";
 
 async function fetchJobs(): Promise<Job[]> {
   const res = await fetch("/api/jobs");
@@ -55,17 +52,6 @@ function formatAbsolute(iso: string) {
   }
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  travel: "✈️ Travel",
-  "ai-agentic": "🤖 AI & Agentic",
-  general: "🌐 General",
-  "hiring-cafe": "☕ Hiring Cafe",
-};
-
-function categoryLabel(cat: string) {
-  return CATEGORY_LABELS[cat] ?? (cat || "—");
-}
-
 const PLATFORM_BADGE: Record<string, string> = {
   greenhouse: "bg-emerald-500/15 text-emerald-300 border-emerald-500/20",
   ashby: "bg-violet-500/15 text-violet-300 border-violet-500/20",
@@ -79,29 +65,30 @@ const TABLE_COLUMNS: { id: SortColumn; label: string }[] = [
   { id: "company", label: "Company" },
   { id: "title", label: "Title" },
   { id: "location", label: "Location" },
-  { id: "category", label: "Category" },
-  { id: "platform", label: "Platform" },
   { id: "postedAt", label: "Posted" },
-  { id: "fetchedAt", label: "Fetched" },
+  { id: "fetchedAt", label: "Discovered" },
 ];
 
-function CompanyLogo({ company, url }: { company: string; url: string }) {
+function CompanyLogo({ company, url, size = "sm" }: { company: string; url: string; size?: "sm" | "md" }) {
   const logo = resolveCompanyLogo(company, url);
   const [failed, setFailed] = useState(false);
+  const dim = size === "md" ? "h-8 w-8 text-[11px]" : "h-6 w-6 text-[9px]";
 
   if (logo && !failed) {
     return (
       <img
         src={logo}
         alt=""
-        className="h-5 w-5 shrink-0 rounded object-contain"
+        className={`${dim} shrink-0 rounded object-contain`}
         onError={() => setFailed(true)}
       />
     );
   }
 
   return (
-    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-white/10 text-[9px] font-bold text-slate-400">
+    <span
+      className={`flex ${dim} shrink-0 items-center justify-center rounded bg-white/10 font-bold text-slate-400`}
+    >
       {companyInitial(company)}
     </span>
   );
@@ -128,9 +115,7 @@ function SortableHeader({
         onClick={() => onSort(column)}
         className={[
           "text-left text-[10px] font-semibold uppercase tracking-wider transition-colors",
-          active
-            ? "text-indigo-300"
-            : "text-slate-500 hover:text-slate-300",
+          active ? "text-indigo-300" : "text-slate-500 hover:text-slate-300",
         ].join(" ")}
       >
         {label}
@@ -171,9 +156,7 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
           <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
             Job log · Row {job.rowIndex}
           </p>
-          <h3 className="mt-1 text-sm font-semibold text-white leading-snug">
-            {job.title || "Untitled"}
-          </h3>
+          <h3 className="mt-1 text-sm font-semibold leading-snug text-white">{job.title || "Untitled"}</h3>
           <p className="text-xs text-slate-400">{job.company}</p>
         </div>
         <button
@@ -194,9 +177,7 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
               job.postedAt ? (
                 <>
                   {formatOpenDate(job.postedAt)}{" "}
-                  <span className="text-slate-500">
-                    ({formatRelativeTime(job.postedAt, now)})
-                  </span>
+                  <span className="text-slate-500">({formatRelativeTime(job.postedAt, now)})</span>
                 </>
               ) : (
                 "—"
@@ -214,7 +195,6 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
               }
             />
           )}
-          <DetailRow label="Category" value={categoryLabel(job.category)} />
           <DetailRow label="Location" value={job.location} />
           <DetailRow
             label="Platform"
@@ -229,19 +209,13 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
               </span>
             }
           />
-          {job.applyStatus && (
-            <DetailRow label="Apply status" value={job.applyStatus} />
-          )}
-          {job.appliedAt && (
-            <DetailRow label="Applied at" value={formatAbsolute(job.appliedAt)} />
-          )}
+          {job.applyStatus && <DetailRow label="Apply status" value={job.applyStatus} />}
+          {job.appliedAt && <DetailRow label="Applied at" value={formatAbsolute(job.appliedAt)} />}
           {job.atsScore && <DetailRow label="ATS score" value={job.atsScore} />}
         </div>
 
         <div>
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-            URL
-          </p>
+          <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">URL</p>
           <div className="flex flex-wrap gap-2">
             <a
               href={job.url}
@@ -267,9 +241,7 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
               Description
             </p>
             <p className="max-h-40 overflow-y-auto rounded-lg border border-white/8 bg-white/[0.02] p-3 text-xs leading-relaxed text-slate-400">
-              {job.description.length > 500
-                ? `${job.description.slice(0, 500)}…`
-                : job.description}
+              {job.description.length > 500 ? `${job.description.slice(0, 500)}…` : job.description}
             </p>
           </div>
         )}
@@ -291,36 +263,72 @@ function JobDetailPanel({ job, onClose }: { job: Job; onClose: () => void }) {
                 }
               />
             )}
-            {job.coverLetter && (
-              <DetailRow label="Cover letter" value={job.coverLetter} />
-            )}
+            {job.coverLetter && <DetailRow label="Cover letter" value={job.coverLetter} />}
           </div>
         )}
 
         {job.notes && (
           <div>
-            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">
-              Notes
-            </p>
-            <p className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200/90 whitespace-pre-wrap">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-widest text-slate-500">Notes</p>
+            <p className="whitespace-pre-wrap rounded-lg border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200/90">
               {job.notes}
             </p>
           </div>
         )}
-
-        <p className="text-[10px] text-slate-600 italic">
-          Scrape run logs are not stored separately — sheet fields above are the job record.
-        </p>
       </div>
     </div>
   );
 }
 
+function JobCard({
+  job,
+  isSelected,
+  onSelect,
+}: {
+  job: Job;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onSelect}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={glassCn(
+        glass.panel,
+        "w-full p-4 text-left transition-colors",
+        isSelected && "ring-1 ring-indigo-500/40"
+      )}
+    >
+      <div className="flex items-start gap-3">
+        <CompanyLogo company={job.company} url={job.url} size="md" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{job.title}</p>
+          <p className="truncate text-xs text-slate-500">{job.company}</p>
+          <p className="mt-1 truncate text-xs text-slate-400">{job.location || "—"}</p>
+          <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-slate-500">
+            <span>Posted: {job.postedAt ? formatOpenDate(job.postedAt) : "—"}</span>
+            {job.fetchedAt && <span>· Discovered {formatRelativeTime(job.fetchedAt)}</span>}
+          </div>
+        </div>
+        <a
+          href={job.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className={glassCn(glass.btnPrimary, "shrink-0 px-2.5 py-1 text-[10px] font-medium")}
+        >
+          Apply
+        </a>
+      </div>
+    </motion.button>
+  );
+}
+
 export default function AllJobsTab() {
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("6h");
-  const [platform, setPlatform] = useState<PlatformFilter>("all");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>(DEFAULT_TIME_FILTER);
   const [countryLocation, setCountryLocation] = useState<CountryLocationFilter>("all");
   const [sort, setSort] = useState<AllJobsSort>(DEFAULT_ALL_JOBS_SORT);
   const [hasDescription, setHasDescription] = useState(false);
@@ -338,20 +346,16 @@ export default function AllJobsTab() {
     staleTime: 30_000,
   });
 
-  const categories = useMemo(() => uniqueCategories(jobs), [jobs]);
-
   const filtered = useMemo(
     () =>
       applyAllJobsFilters(jobs, {
         search,
-        category,
         timeFilter,
-        platform,
         hasDescription,
         countryLocation,
         sort,
       }),
-    [jobs, search, category, timeFilter, platform, hasDescription, countryLocation, sort]
+    [jobs, search, timeFilter, hasDescription, countryLocation, sort]
   );
 
   const selectedJob = useMemo(
@@ -369,24 +373,25 @@ export default function AllJobsTab() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className={glassCn(glass.panel, "flex flex-wrap items-start justify-between gap-3 p-5")}>
-        <div>
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">All Jobs</h2>
-          <p className="mt-0.5 text-sm text-slate-500">
-            {filtered.length !== jobs.length
-              ? `${filtered.length} of ${jobs.length} jobs`
-              : `${jobs.length} job${jobs.length !== 1 ? "s" : ""} in apply-now window`}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          className={glassCn(glass.btn, "px-3 py-1.5 text-xs font-medium")}
-        >
-          Refresh
-        </button>
-      </div>
+      <AdminPageHeader
+        title="Hiring Cafe Jobs"
+        subtitle="Engineering + Software Development · last 2 days"
+        actions={
+          <button
+            type="button"
+            onClick={() => void refetch()}
+            className={glassCn(glass.btn, "px-3 py-1.5 text-xs font-medium")}
+          >
+            Refresh
+          </button>
+        }
+      />
+
+      <p className="text-sm text-slate-500 dark:text-slate-400">
+        {filtered.length !== jobs.length
+          ? `${filtered.length} of ${jobs.length} jobs`
+          : `${jobs.length} job${jobs.length !== 1 ? "s" : ""} in sheet`}
+      </p>
 
       {isError && (
         <p className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
@@ -394,7 +399,6 @@ export default function AllJobsTab() {
         </p>
       )}
 
-      {/* Search + sort + toggles */}
       <div className="flex flex-wrap items-center gap-2">
         <input
           type="search"
@@ -403,17 +407,6 @@ export default function AllJobsTab() {
           placeholder="Search company, title, location, URL…"
           className="glass-input h-9 min-w-[200px] flex-1 px-3 text-xs"
         />
-        <select
-          value={platform}
-          onChange={(e) => setPlatform(e.target.value as PlatformFilter)}
-          className="h-9 rounded-xl border border-slate-200 bg-white px-2 text-xs text-slate-600 focus:border-indigo-400 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:text-slate-300"
-        >
-          {PLATFORM_FILTERS.map(({ id, label }) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </select>
         <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400">
           <input
             type="checkbox"
@@ -425,32 +418,8 @@ export default function AllJobsTab() {
         </label>
       </div>
 
-      {/* Category tabs */}
-      <div className={glassCn(glass.tabGroup, "flex flex-wrap gap-1.5")}>
-        <button
-          type="button"
-          onClick={() => setCategory("all")}
-          className={category === "all" ? glass.tabActive : glass.tab}
-        >
-          All categories
-        </button>
-        {categories.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => setCategory(cat)}
-            className={category === cat ? glass.tabActive : glass.tab}
-          >
-            {categoryLabel(cat)}
-          </button>
-        ))}
-      </div>
-
-      {/* Country location filter pills */}
       <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-          Location:
-        </span>
+        <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">Location:</span>
         {COUNTRY_LOCATION_FILTERS.map(({ id, label }) => {
           const count = filterByCountryLocation(jobs, id).length;
           return (
@@ -466,17 +435,12 @@ export default function AllJobsTab() {
               )}
             >
               {label}
-              {count > 0 && (
-                <span className={glass.pillBadge}>
-                  {count}
-                </span>
-              )}
+              {count > 0 && <span className={glass.pillBadge}>{count}</span>}
             </button>
           );
         })}
       </div>
 
-      {/* Time filter pills */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
           Discovered within:
@@ -496,130 +460,117 @@ export default function AllJobsTab() {
               )}
             >
               {label}
-              {count > 0 && (
-                <span className={glass.pillBadge}>
-                  {count}
-                </span>
-              )}
+              {count > 0 && <span className={glass.pillBadge}>{count}</span>}
             </button>
           );
         })}
       </div>
 
-      {/* Main layout: table + detail panel */}
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
-        {/* Job list */}
         <div className="min-w-0 flex-1">
           {filtered.length === 0 ? (
             <div className="glass-panel py-16 text-center">
               <p className="text-sm text-slate-600">
                 {jobs.length === 0
-                  ? "No jobs in sheet — run the scraper or configure Google Sheets."
+                  ? "No jobs in sheet — run the HC pipeline or configure Google Sheets."
                   : "No jobs match the current filters."}
               </p>
             </div>
           ) : (
-            <div className="glass-table max-h-[calc(100vh-22rem)] overflow-auto">
-              <table className="w-full text-sm">
-                <thead className="glass-table-head sticky top-0 z-10">
-                  <tr className="border-b border-white/8">
-                    {TABLE_COLUMNS.map(({ id, label }) => (
-                      <SortableHeader
-                        key={id}
-                        label={label}
-                        column={id}
-                        sort={sort}
-                        onSort={(column) =>
-                          setSort((current) => toggleSortColumn(current, column))
-                        }
-                      />
-                    ))}
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                      Apply
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filtered.map((job) => {
-                    const plat = detectPlatformFromUrl(job.url);
-                    const isSelected = selectedUrl === job.url;
-                    return (
-                      <tr
-                        key={`${job.rowIndex}-${job.url}`}
-                        onClick={() => setSelectedUrl(job.url)}
-                        className={[
-                          "cursor-pointer transition-colors",
-                          isSelected
-                            ? "bg-indigo-500/10"
-                            : "hover:bg-white/3",
-                        ].join(" ")}
-                      >
-                        <td className="max-w-[10rem] px-3 py-2.5">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <CompanyLogo company={job.company} url={job.url} />
-                            <span className="truncate text-xs font-medium text-slate-300">
-                              {job.company}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="max-w-[12rem] truncate px-3 py-2.5 text-xs text-slate-400">
-                          {job.title}
-                        </td>
-                        <td className="max-w-[8rem] truncate px-3 py-2.5 text-xs text-slate-500">
-                          {job.location || "—"}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
-                          <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-slate-400">
-                            {job.category || "—"}
-                          </span>
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
-                          <span
-                            className={[
-                              "rounded-full border px-2 py-0.5 text-[10px] font-medium capitalize",
-                              PLATFORM_BADGE[plat] ?? PLATFORM_BADGE.other,
-                            ].join(" ")}
-                          >
-                            {plat}
-                          </span>
-                        </td>
-                        <td
-                          className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-300"
-                          title={
-                            job.postedAt
-                              ? formatAbsolute(job.postedAt)
-                              : "ATS post date not yet backfilled"
-                          }
+            <>
+              {/* Mobile cards */}
+              <div className="space-y-3 md:hidden">
+                {filtered.map((job) => (
+                  <JobCard
+                    key={`${job.rowIndex}-${job.url}`}
+                    job={job}
+                    isSelected={selectedUrl === job.url}
+                    onSelect={() => setSelectedUrl(job.url)}
+                  />
+                ))}
+              </div>
+
+              {/* Desktop table */}
+              <div className="glass-table hidden max-h-[calc(100vh-22rem)] overflow-auto md:block">
+                <table className="w-full text-sm">
+                  <thead className="glass-table-head sticky top-0 z-10">
+                    <tr className="border-b border-white/8">
+                      {TABLE_COLUMNS.map(({ id, label }) => (
+                        <SortableHeader
+                          key={id}
+                          label={label}
+                          column={id}
+                          sort={sort}
+                          onSort={(column) => setSort((current) => toggleSortColumn(current, column))}
+                        />
+                      ))}
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                        Apply
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filtered.map((job, i) => {
+                      const isSelected = selectedUrl === job.url;
+                      return (
+                        <motion.tr
+                          key={`${job.rowIndex}-${job.url}`}
+                          initial={{ opacity: 0, y: 6 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: Math.min(i * 0.02, 0.4) }}
+                          onClick={() => setSelectedUrl(job.url)}
+                          className={[
+                            "cursor-pointer transition-colors",
+                            isSelected ? "bg-indigo-500/10" : "hover:bg-white/3",
+                          ].join(" ")}
                         >
-                          {job.postedAt ? formatOpenDate(job.postedAt) : "—"}
-                        </td>
-                        <td
-                          className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500"
-                          title={job.fetchedAt ? formatAbsolute(job.fetchedAt) : undefined}
-                        >
-                          {job.fetchedAt ? formatRelativeTime(job.fetchedAt) : "—"}
-                        </td>
-                        <td className="whitespace-nowrap px-3 py-2.5">
-                          <a
-                            href={job.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className="inline-flex rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-slate-600 transition-all hover:border-indigo-400 hover:bg-indigo-50 hover:text-indigo-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-400 dark:hover:border-indigo-500/40 dark:hover:bg-indigo-500/20 dark:hover:text-slate-100"
+                          <td className="max-w-[10rem] px-3 py-2.5">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <CompanyLogo company={job.company} url={job.url} size="md" />
+                              <span className="truncate text-xs font-medium text-slate-300">
+                                {job.company}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="max-w-[12rem] truncate px-3 py-2.5 text-xs text-slate-400">
+                            {job.title}
+                          </td>
+                          <td className="max-w-[8rem] truncate px-3 py-2.5 text-xs text-slate-500">
+                            {job.location || "—"}
+                          </td>
+                          <td
+                            className="whitespace-nowrap px-3 py-2.5 text-xs font-medium text-slate-300"
+                            title={job.postedAt ? formatAbsolute(job.postedAt) : undefined}
                           >
-                            Apply
-                          </a>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                            {job.postedAt ? formatOpenDate(job.postedAt) : "—"}
+                          </td>
+                          <td
+                            className="whitespace-nowrap px-3 py-2.5 text-xs text-slate-500"
+                            title={job.fetchedAt ? formatAbsolute(job.fetchedAt) : undefined}
+                          >
+                            {job.fetchedAt ? formatRelativeTime(job.fetchedAt) : "—"}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5">
+                            <a
+                              href={job.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className={glassCn(glass.btn, "inline-flex px-2.5 py-1 text-[10px] font-medium")}
+                            >
+                              Apply
+                            </a>
+                          </td>
+                        </motion.tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </div>
 
-        {/* Detail panel — side on desktop, below on mobile */}
         {selectedJob && (
           <div className="w-full shrink-0 xl:sticky xl:top-24 xl:w-96 xl:max-h-[calc(100vh-8rem)]">
             <JobDetailPanel job={selectedJob} onClose={() => setSelectedUrl(null)} />
@@ -629,12 +580,7 @@ export default function AllJobsTab() {
 
       {!selectedJob && filtered.length > 0 && (
         <p className="text-center text-xs text-slate-600 xl:hidden">
-          Tap a row to view job details and logs.
-        </p>
-      )}
-      {!selectedJob && filtered.length > 0 && (
-        <p className="hidden text-center text-xs text-slate-600 xl:block">
-          Select a row to view job details in the side panel.
+          Tap a row to view job details.
         </p>
       )}
     </div>

@@ -1,8 +1,10 @@
-# Jobs pipeline (scrape-only)
+# Jobs pipeline (Hiring Cafe only)
 
-This project **scrapes engineering job listings** into a Google Sheet. Auto-apply, resume generation, and form-intelligence pipelines have been removed.
+This project **scrapes engineering job listings from Hiring Cafe** into a Google Sheet. Auto-apply, resume generation, and form-intelligence pipelines have been removed.
 
-**Source of truth:** Google Sheet (`GOOGLE_SHEET_ID`) → tab **`Jobs`** (active) and **`Old Jobs`** (archived after ~48 hours).
+**Source of truth:** Google Sheet (`GOOGLE_SHEET_ID`) → tab **`Jobs`** (active apply-now window) and **`Old Jobs`** (archived after ~6 hours).
+
+**Production mode:** Hiring Cafe only — Engineering + Software Development departments, jobs posted within the last 2 days. Legacy multi-portal scraping (`companies.json`) is disabled unless `ALLOW_LEGACY_SCRAPE=1`.
 
 ---
 
@@ -10,55 +12,61 @@ This project **scrapes engineering job listings** into a Google Sheet. Auto-appl
 
 ```mermaid
 flowchart LR
-  ATS[Career boards / APIs / Playwright]
-  ATS --> Filter[isEngineeringRole]
-  Filter --> Dedup[Dedup by URL column D]
-  Dedup --> Sheet[Google Sheet Jobs A–G]
-  Sheet --> Backfill[API description backfill]
-  Backfill --> Notify[WhatsApp optional]
+  HC[hiring.cafe Playwright scrape]
+  HC --> Filter[isEngineeringRole]
+  Filter --> Dedup[Dedup by URL / HC job id]
+  Dedup --> Sheet[Google Sheet Jobs A–N]
+  Sheet --> Archive[Archive rows older than 6h → Old Jobs]
+  Archive --> Notify[WhatsApp optional]
 ```
 
 | Stage | Script | npm command |
 |-------|--------|-------------|
-| **Scrape** | `scripts/scrape-jobs.mjs` | `npm run scrape` or `npm run job:scrape` |
-| **Deep enrich** (Playwright) | `scripts/enrich-descriptions.mjs` | `npm run job:enrich-descriptions` |
+| **HC pipeline** (default) | `scripts/run-hiring-cafe-pipeline.mjs` | `npm run job:pipeline` |
+| **Purge legacy rows** | `scripts/purge-jobs-sheet.mjs` | `npm run job:purge` |
 | **Diagnose sheet** | `scripts/diagnose-sheet.mjs` | `npm run job:diagnose` |
 | **Env check** | `scripts/validate-pipeline-env.mjs` | `npm run job:validate-env` |
+| **Legacy multi-portal** (manual only) | `scripts/run-full-pipeline.mjs` | `ALLOW_LEGACY_SCRAPE=1 npm run job:pipeline:companies` |
 
-**GitHub Actions:** `.github/workflows/scrape-jobs.yml` runs every 30 minutes, 24/7.
+**GitHub Actions:** `.github/workflows/scrape-jobs.yml` runs the HC pipeline every 10 minutes, 24/7.
 
 ---
 
-## Scrape filters
+## Hiring Cafe scrape config
 
-| Filter | Rule |
-|--------|------|
-| **Role title** | `isEngineeringRole()` — keyword match (configurable via `ENGINEERING_KEYWORDS` or disable with `ENGINEERING_FILTER=off`) |
-| **Dedup** | Skip if URL (column D) already exists in `Jobs` |
-| **Description** | Fetched for new rows; `backfillDescriptions()` fills empty column G |
+| Setting | Value |
+|---------|--------|
+| Departments | Engineering, Software Development |
+| Date window | Last 2 days (`dateFetchedPastNDays: 2`) |
+| Apply-now window | Jobs tab keeps discoveries from last 6 hours |
+| Dedup | Apply URL / HC job id vs `Jobs` + `Old Jobs` |
 
-### Sheet columns
+Config lives in `scripts/lib/hiring-cafe.mjs`.
+
+---
+
+## Sheet columns
 
 | Col | Field | Set by |
 |-----|-------|--------|
 | A–G | Company, Title, Location, URL, Category, Fetched At, Description | Scraper |
 | H–M | Resume URL, Cover Letter, ATS Score, Apply Status, Applied At, Notes | Legacy (left empty on new rows) |
+| N | Posted At | Scraper (HC API / relative DOM times) |
 
 ---
 
-## Platforms
+## One-time purge (legacy → HC-only)
 
-**Active:** Greenhouse, Workday, Lever, Ashby, SmartRecruiters, iCIMS (Disney), Booking.com, Hiring.cafe (Playwright), Amazon / Google / Meta / Apple custom APIs.
+When migrating from multi-portal rows to HC-only:
 
-**Implemented, not wired** (add to `fetchAllJobs()` when you have a board slug):
+```bash
+DRY_RUN=true npm run job:purge              # preview row counts
+npm run job:purge -- --clear-dedup          # backup Jobs → Old Jobs, clear Jobs, wipe Old Jobs dedup
+npm run job:pipeline                        # fresh HC scrape
+npm run job:diagnose                        # confirm ~hundreds of hiring-cafe rows
+```
 
-- **Workable** — `fetchWorkable(slug)` → `apply.workable.com` widget API
-- **BreezyHR** — `fetchBreezyHR(slug)` → `{slug}.breezy.hr/json`
-- **Recruitee** — `fetchRecruitee(slug)` → `{slug}.recruitee.com/api/offers/`
-
-**Blocked / skipped:** Universal Studios (Cloudflare), Flywire (no public board), some Workday boards in `NO_DESCRIPTION_COMPANIES`.
-
-Companies and adapters are defined in `scripts/scrape-jobs.mjs` → `fetchAllJobs()`.
+`--clear-dedup` wipes `Old Jobs` so previously archived URLs can be re-imported.
 
 ---
 
@@ -73,9 +81,7 @@ Optional:
 
 - `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_RECIPIENT` — new-job alerts
 - `DRY_RUN=true` — fetch + summary only; no writes
-- `ENGINEERING_FILTER=off` — disable title keyword filter
-- `ENGINEERING_KEYWORDS` — comma-separated custom keywords
-- `ENRICH_PLAYWRIGHT=true` — after scrape, run `enrich-descriptions.mjs`
+- `ALLOW_LEGACY_SCRAPE=1` — required to run `job:pipeline:companies` (multi-portal legacy scrape)
 
 ---
 
@@ -83,11 +89,19 @@ Optional:
 
 ```bash
 npm run job:validate-env
-npm run scrape:dry          # DRY_RUN — no sheet writes
-npm run scrape
-npm run job:enrich-descriptions
+npm run job:pipeline:hc:dry     # DRY_RUN — no sheet writes
+npm run job:pipeline            # HC scrape + sheet update
+npm run job:purge:dry           # preview purge counts
 npm run job:diagnose
 ```
+
+---
+
+## Admin API
+
+`GET /api/jobs` returns **Hiring Cafe rows only** by default (`category === "hiring-cafe"` or URL contains `hiring.cafe`).
+
+For debugging legacy rows: `GET /api/jobs?includeLegacy=true`.
 
 ---
 

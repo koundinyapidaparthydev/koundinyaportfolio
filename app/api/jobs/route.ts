@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { isHiringCafeJob } from "@/lib/admin/hiringCafeJobs";
 
 export const dynamic = "force-dynamic"; // never cache this route
 
@@ -24,9 +25,10 @@ export interface Job {
   notes?: string;
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const sheetId = process.env.GOOGLE_SHEET_ID;
   const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  const includeLegacy = req.nextUrl.searchParams.get("includeLegacy") === "true";
 
   if (!sheetId || !serviceAccountJson) {
     return NextResponse.json(
@@ -52,7 +54,7 @@ export async function GET() {
     // First row is headers — skip it
     const dataRows = rows.length > 1 ? rows.slice(1) : [];
 
-    const jobs: Job[] = dataRows.map((row, idx) => ({
+    const allJobs: Job[] = dataRows.map((row, idx) => ({
       rowIndex: idx + 2,
       company: row[0] ?? "",
       title: row[1] ?? "",
@@ -69,6 +71,8 @@ export async function GET() {
       appliedAt: row[11] ?? "",
       notes: row[12] ?? "",
     }));
+
+    const jobs = includeLegacy ? allJobs : allJobs.filter(isHiringCafeJob);
 
     return NextResponse.json({ jobs });
   } catch (error) {

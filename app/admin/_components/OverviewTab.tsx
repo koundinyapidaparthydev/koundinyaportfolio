@@ -1,6 +1,7 @@
 "use client";
 
 import { glass, glassCn } from "@/lib/glass";
+import { AdminPageHeader, AdminSection, AdminStatCard } from "./AdminShell";
 
 /**
  * OverviewTab — rich visitor analytics dashboard.
@@ -18,48 +19,6 @@ async function fetchVisitors(): Promise<VisitorEntry[]> {
 
 // ── Small reusable primitives ────────────────────────────────────────────────
 
-function StatCard({
-  label,
-  value,
-  sub,
-  accent = false,
-}: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  accent?: boolean;
-}) {
-  return (
-    <div
-      className={glassCn(
-        "glass-panel p-5 transition-colors",
-        accent && "border-indigo-500/30 bg-indigo-500/10"
-      )}
-    >
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-        {label}
-      </p>
-      <p
-        className={[
-          "mt-2 text-3xl font-bold",
-          accent ? "text-indigo-300" : "text-white",
-        ].join(" ")}
-      >
-        {value}
-      </p>
-      {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
-    </div>
-  );
-}
-
-function SectionHeading({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="mb-4 text-[11px] font-semibold uppercase tracking-widest text-slate-500">
-      {children}
-    </p>
-  );
-}
-
 /** Horizontal stacked bar for device/browser/OS breakdowns */
 function BreakdownBar({
   title,
@@ -74,7 +33,7 @@ function BreakdownBar({
 }) {
   return (
     <div className={glassCn(glass.panel, "p-5")}>
-      <SectionHeading>{title}</SectionHeading>
+      <AdminSection title={title}>
       {total === 0 ? (
         <p className="text-xs text-slate-600">No data yet.</p>
       ) : (
@@ -114,6 +73,7 @@ function BreakdownBar({
           </ul>
         </>
       )}
+      </AdminSection>
     </div>
   );
 }
@@ -246,18 +206,14 @@ export default function OverviewTab() {
 
   return (
     <div className="space-y-8">
-      {/* ── Header ── */}
-      <div>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-white">Overview</h2>
-        <p className="mt-0.5 text-sm text-slate-500">
-          Live analytics from your portfolio&apos;s visitor tracker.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Overview"
+        subtitle="Live analytics from your portfolio's visitor tracker."
+      />
 
-      {/* ── 6 Stat cards (2×3) ── */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <StatCard label="Total Visitors" value={total} accent />
-        <StatCard
+        <AdminStatCard label="Total Visitors" value={total} accent />
+        <AdminStatCard
           label="Today's Visitors"
           value={todayCount}
           sub={
@@ -268,23 +224,22 @@ export default function OverviewTab() {
               : `↓ ${Math.abs(todayDelta)} fewer than yesterday`
           }
         />
-        <StatCard label="Unique IPs" value={uniqueIPs} sub="distinct visitors" />
-        <StatCard
+        <AdminStatCard label="Unique IPs" value={uniqueIPs} sub="distinct visitors" />
+        <AdminStatCard
           label="Top Browser"
           value={topBrowser}
           sub={browserEntries[0] ? `${browserEntries[0][1]} visits` : undefined}
         />
-        <StatCard label="Last Visit" value={lastVisit} />
-        <StatCard
+        <AdminStatCard label="Last Visit" value={lastVisit} />
+        <AdminStatCard
           label="30-Day Avg / Day"
           value={avg30}
           sub={`${count30} visits in last 30 days`}
         />
       </div>
 
-      {/* ── 7-day traffic chart ── */}
       <div className={glassCn(glass.panel, "p-5")}>
-        <SectionHeading>Traffic — Last 7 Days</SectionHeading>
+        <AdminSection title="Traffic — Last 7 Days">
         <div className="flex items-end gap-2" style={{ height: 100 }}>
           {last7Days.map(({ label, count }) => {
             const pct = maxDay > 0 ? (count / maxDay) * 100 : 0;
@@ -310,6 +265,7 @@ export default function OverviewTab() {
             );
           })}
         </div>
+        </AdminSection>
       </div>
 
       {/* ── 3-column breakdown: Device | Browser | OS ── */}
@@ -338,7 +294,7 @@ export default function OverviewTab() {
       <div className="grid gap-4 lg:grid-cols-2">
         {/* Top pages */}
         <div className={glassCn(glass.panel, "p-5")}>
-          <SectionHeading>Top Pages</SectionHeading>
+          <AdminSection title="Top Pages">
           {pageEntries.length === 0 ? (
             <p className="text-xs text-slate-600">No data yet.</p>
           ) : (
@@ -364,11 +320,12 @@ export default function OverviewTab() {
               })}
             </ul>
           )}
+          </AdminSection>
         </div>
 
         {/* Top referrers */}
         <div className={glassCn(glass.panel, "p-5")}>
-          <SectionHeading>Top Referrers</SectionHeading>
+          <AdminSection title="Top Referrers">
           {referrerEntries.length === 0 ? (
             <p className="text-xs text-slate-600">No data yet.</p>
           ) : (
@@ -394,13 +351,14 @@ export default function OverviewTab() {
               })}
             </ul>
           )}
+          </AdminSection>
         </div>
       </div>
 
       {/* ── Geographic distribution ── */}
       {countryEntries.length > 0 && (
         <div className={glassCn(glass.panel, "p-5")}>
-          <SectionHeading>Geographic Distribution (Top 5 Countries)</SectionHeading>
+          <AdminSection title="Geographic Distribution (Top 5 Countries)">
           <div className="flex flex-wrap gap-3">
             {countryEntries.map(([country, count]) => (
               <div
@@ -414,13 +372,14 @@ export default function OverviewTab() {
               </div>
             ))}
           </div>
+          </AdminSection>
         </div>
       )}
 
       {/* ── Recent Activity ── */}
       {recentActivity.length > 0 && (
         <div className={glassCn(glass.panel, "p-5")}>
-          <SectionHeading>Recent Activity (last 10)</SectionHeading>
+          <AdminSection title="Recent Activity (last 10)">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-xs">
               <thead>
@@ -469,6 +428,7 @@ export default function OverviewTab() {
               </tbody>
             </table>
           </div>
+          </AdminSection>
         </div>
       )}
     </div>

@@ -18,12 +18,14 @@ export type TimeFilter = "30m" | "2h" | "6h" | "12h" | "1d" | "2d" | "all";
 
 /** Apply-now window: Jobs tab holds discoveries from the last 6 hours. */
 export const APPLY_NOW_WINDOW_MS = 6 * 60 * 60_000;
+
+/** Default time filter for the Hiring Cafe jobs tab. */
+export const DEFAULT_TIME_FILTER: TimeFilter = "2h";
+
 export type SortColumn =
   | "company"
   | "title"
   | "location"
-  | "category"
-  | "platform"
   | "postedAt"
   | "fetchedAt";
 export type SortDirection = "asc" | "desc";
@@ -232,38 +234,28 @@ export function sortAllJobs<T extends AllJobsRow>(
       case "location":
         cmp = (a.location ?? "").localeCompare(b.location ?? "");
         break;
-      case "category":
-        cmp = (a.category ?? "").localeCompare(b.category ?? "");
-        break;
-      case "platform":
-        cmp = detectPlatformFromUrl(a.url).localeCompare(
-          detectPlatformFromUrl(b.url)
-        );
-        break;
     }
     return cmp * dir;
   });
 }
 
+export interface AllJobsFilterOpts {
+  search: string;
+  timeFilter: TimeFilter;
+  hasDescription: boolean;
+  countryLocation: CountryLocationFilter;
+  sort?: AllJobsSort;
+  now?: number;
+}
+
 export function applyAllJobsFilters<T extends AllJobsRow>(
   jobs: T[],
-  opts: {
-    search: string;
-    category: string;
-    timeFilter: TimeFilter;
-    platform: PlatformFilter;
-    hasDescription: boolean;
-    countryLocation: CountryLocationFilter;
-    sort?: AllJobsSort;
-    now?: number;
-  }
+  opts: AllJobsFilterOpts
 ): T[] {
   let result = jobs;
   result = filterBySearch(result, opts.search);
-  result = filterByCategory(result, opts.category);
   result = filterByTime(result, opts.timeFilter, opts.now);
   result = filterByCountryLocation(result, opts.countryLocation);
-  result = filterByPlatform(result, opts.platform);
   result = filterByHasDescription(result, opts.hasDescription);
   return sortAllJobs(result, opts.sort ?? DEFAULT_ALL_JOBS_SORT);
 }

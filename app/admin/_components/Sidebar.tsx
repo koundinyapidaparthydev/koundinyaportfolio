@@ -9,7 +9,7 @@ import { glass, glassCn } from "@/lib/glass";
  * Highlights the active tab and fires onSelect when a nav item is clicked.
  */
 
-export type AdminTab = "overview" | "edit-resume" | "visitors" | "settings" | "companies" | "all-jobs";
+export type AdminTab = "overview" | "edit-resume" | "visitors" | "settings" | "discoveries" | "all-jobs";
 
 const NAV_ITEMS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
   {
@@ -36,7 +36,7 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
   },
   {
     id: "all-jobs",
-    label: "All Jobs",
+    label: "Jobs",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -58,8 +58,8 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
     ),
   },
   {
-    id: "companies",
-    label: "Companies",
+    id: "discoveries",
+    label: "Discoveries",
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -72,8 +72,9 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
         strokeLinejoin="round"
         aria-hidden="true"
       >
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-        <polyline points="9 22 9 12 15 12 15 22" />
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+        <path d="M2 12h20" />
       </svg>
     ),
   },

@@ -1895,6 +1895,7 @@ export {
   isEngineeringRole,
   sendWhatsAppNotification,
   SHEET_NAME,
+  HEADERS,
 };
 
 const isCli =
