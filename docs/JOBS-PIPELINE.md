@@ -38,6 +38,8 @@ flowchart LR
 
 | Setting | Value |
 |---------|--------|
+| Search URL | `https://hiring.cafe/?searchState=…` — Engineering + Software Development, last 2 days, sorted by date (no HC `locations` filter) |
+| US filter | Applied after scrape via `isUsHcJob` (admin defaults to US-only) |
 | Departments | Engineering, Software Development |
 | Date window | Last 2 days (`dateFetchedPastNDays: 2`) |
 | Apply-now window | Jobs tab keeps discoveries from last 6 hours |

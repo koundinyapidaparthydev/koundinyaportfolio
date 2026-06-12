@@ -36,7 +36,6 @@ export function buildHiringCafeSearchState(overrides = {}) {
   return {
     dateFetchedPastNDays: HC_DATE_FETCHED_PAST_DAYS,
     departments: HC_DEPARTMENTS,
-    locations: HC_LOCATIONS,
     sortBy: "date",
     ...overrides,
   };

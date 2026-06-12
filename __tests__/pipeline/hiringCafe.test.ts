@@ -25,14 +25,12 @@ import {
 import { isUsHcJob } from "../../scripts/lib/job-location-match.mjs";
 
 describe("buildHiringCafeSearchState", () => {
-  it("uses department-based engineering search with US locations", () => {
+  it("uses department-based engineering search without HC location filter", () => {
     const state = buildHiringCafeSearchState();
     expect(state.departments).toEqual(HC_DEPARTMENTS);
-    expect(state.locations).toEqual(HC_LOCATIONS);
-    expect(state.locations[0]).toEqual(HC_US_LOCATION);
-    expect(state.locations[0].formatted_address).toBe("United States");
     expect(state.sortBy).toBe("date");
     expect(state.dateFetchedPastNDays).toBe(2);
+    expect(state).not.toHaveProperty("locations");
     expect(state).not.toHaveProperty("applicationFormEase");
   });
 
@@ -42,7 +40,15 @@ describe("buildHiringCafeSearchState", () => {
     const encoded = url.split("searchState=")[1];
     const parsed = JSON.parse(decodeURIComponent(encoded));
     expect(parsed.departments).toEqual(HC_DEPARTMENTS);
-    expect(parsed.locations).toEqual(HC_LOCATIONS);
+    expect(parsed).not.toHaveProperty("locations");
+    expect(parsed.sortBy).toBe("date");
+    expect(parsed.dateFetchedPastNDays).toBe(2);
+  });
+
+  it("allows optional US location override", () => {
+    const state = buildHiringCafeSearchState({ locations: HC_LOCATIONS });
+    expect(state.locations).toEqual(HC_LOCATIONS);
+    expect(state.locations[0]).toEqual(HC_US_LOCATION);
   });
 });
 
