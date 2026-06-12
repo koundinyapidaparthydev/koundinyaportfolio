@@ -2,7 +2,9 @@
 
 This project **scrapes engineering job listings from Hiring Cafe** into a Google Sheet. Auto-apply, resume generation, and form-intelligence pipelines have been removed.
 
-**Source of truth:** Google Sheet (`GOOGLE_SHEET_ID`) → tab **`Jobs`** (active apply-now window) and **`Old Jobs`** (archived after ~6 hours).
+**Source of truth:** Google Sheet (`GOOGLE_SHEET_ID`) → tab **`Jobs`** (active apply-now window) and **`Old Jobs`** (archived after ~12 hours).
+
+**Job fetching:** Only `.github/workflows/scrape-jobs.yml` scrapes jobs (every 10 min). The `CI` workflow runs tests on push — it does not fetch jobs.
 
 **Production mode:** Hiring Cafe only — Engineering + Software Development departments, jobs posted within the last 2 days. Legacy multi-portal scraping (`companies.json`) is disabled unless `ALLOW_LEGACY_SCRAPE=1`.
 
@@ -17,7 +19,7 @@ flowchart LR
   Filter --> Refresh[Refresh discovered-at for existing rows]
   Refresh --> Dedup[Dedup HC id + company/title]
   Dedup --> Sheet[Append new jobs to Jobs A–N]
-  Sheet --> Archive[Archive rows older than 6h → Old Jobs]
+  Sheet --> Archive[Archive rows older than 12h → Old Jobs]
   Archive --> Notify[WhatsApp optional]
 ```
 
@@ -42,7 +44,7 @@ flowchart LR
 | US filter | Applied after scrape via `isUsHcJob` (admin defaults to US-only) |
 | Departments | Engineering, Software Development |
 | Date window | Last 2 days (`dateFetchedPastNDays: 2`) |
-| Apply-now window | Jobs tab keeps discoveries from last 6 hours |
+| Apply-now window | Jobs tab keeps discoveries from last **12 hours** (older rows archived) |
 | Dedup | HC job id + company/title vs `Jobs` + `Old Jobs`; sheet compact each run |
 | Refresh | Existing rows get column F updated every scrape (last discovered) |
 | Schedule | GHA every 10 min; admin filters include 10m / 20m / 30m windows |

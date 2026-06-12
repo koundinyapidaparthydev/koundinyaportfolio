@@ -83,9 +83,10 @@ describe("All Jobs time filters", () => {
     expect(filterByTime(jobs, "30m", NOW)).toHaveLength(1);
   });
 
-  it("includes 6h apply-now filter", () => {
-    const sixH = TIME_FILTERS.find((f) => f.id === "6h");
-    expect(sixH?.ms).toBe(APPLY_NOW_WINDOW_MS);
+  it("includes 12h apply-now filter", () => {
+    const twelveH = TIME_FILTERS.find((f) => f.id === "12h");
+    expect(twelveH?.ms).toBe(APPLY_NOW_WINDOW_MS);
+    expect(twelveH?.label).toMatch(/12h/);
   });
 
   it("prefers fetchedAt over postedAt for time windows", () => {

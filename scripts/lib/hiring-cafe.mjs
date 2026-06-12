@@ -27,8 +27,8 @@ export const HC_LOCATIONS = [HC_US_LOCATION];
 /** Jobs posted on HC within this window (matches searchState.dateFetchedPastNDays). */
 export const HC_DATE_FETCHED_PAST_DAYS = 2;
 
-/** Apply-now window: Jobs tab keeps discoveries from the last 6 hours. */
-export const APPLY_NOW_WINDOW_MS = 6 * 60 * 60 * 1000;
+/** Apply-now window: Jobs tab keeps discoveries from the last 12 hours. */
+export const APPLY_NOW_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 /** Scrape search result pages 1–5 each pipeline run (HC `&page=` is 0-based). */
 export const HC_MAX_PAGES = 5;

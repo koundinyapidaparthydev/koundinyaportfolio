@@ -771,7 +771,7 @@ export default function CompaniesTab({
   const [loading, setLoading] = useState(false);
   const [lastFetched, setLastFetched] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [timeFilter, setTimeFilter] = useState<CompaniesTimeFilter>("6h");
+  const [timeFilter, setTimeFilter] = useState<CompaniesTimeFilter>("12h");
   const [countryLocation, setCountryLocation] = useState<CountryLocationFilter>("all");
   const [expandedJob, setExpandedJob] = useState<string | null>(null);
   const [resume, setResume] = useState<Resume | null>(null);
@@ -1074,7 +1074,7 @@ export default function CompaniesTab({
               type="button"
               onClick={handleArchive}
               disabled={archiving || loading}
-              title="Move jobs older than 6 hours to 'Old Jobs' sheet"
+              title="Move jobs older than 12 hours to 'Old Jobs' sheet"
               className={glassCn(glass.btn, "gap-1.5 px-3 py-1.5 text-xs text-slate-400 hover:text-amber-300 hover:border-amber-500/30 disabled:opacity-40")}
             >
               {archiving ? (

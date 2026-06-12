@@ -1,6 +1,7 @@
 name: Scrape Jobs
 
-# Hiring Cafe–only pipeline — every 10 minutes (UTC)
+# ONLY workflow that fetches jobs into Google Sheets (every 10 min UTC).
+# CI workflow runs tests/build on push — it does NOT scrape jobs.
 on:
   schedule:
     - cron: "*/10 * * * *"
@@ -52,6 +53,9 @@ jobs:
         env:
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.1-flash-lite
+          HC_ATS_BATCH_LIMIT: "30"
           WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
           WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
           WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}

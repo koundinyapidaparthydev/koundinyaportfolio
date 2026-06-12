@@ -30,7 +30,8 @@ import { pathToFileURL } from "url";
 import { loadEnvLocal } from "./lib/load-env.mjs";
 import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
 import { wrapSheetsClient } from "./lib/sheets-rate-limit.mjs";
-import { APPLY_NOW_WINDOW_MS } from "./lib/hiring-cafe.mjs";
+import { APPLY_NOW_WINDOW_MS, getJobDedupKey } from "./lib/hiring-cafe.mjs";
+import { getRoleDedupKey } from "./lib/hiring-cafe-sheet-sync.mjs";
 import { scrapeAllHiringCafeJobs } from "./lib/hiring-cafe-scraper.mjs";
 import { google } from "googleapis";
 
@@ -1486,16 +1487,37 @@ async function syncPostedAt(sheets, scrapedJobs) {
 }
 
 async function writeNewJobs(sheets, newJobs) {
-  // Fetch existing URLs to deduplicate
   const existingResp = await sheets.spreadsheets.values.get({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!D2:D`, // URL column, skip header
+    range: `${SHEET_NAME}!A2:D`,
   });
-  const existingUrls = new Set(
-    (existingResp.data.values ?? []).flat().filter(Boolean)
-  );
+  const existingKeys = new Set();
+  const existingRoles = new Set();
+  const existingUrls = new Set();
+  for (const row of existingResp.data.values ?? []) {
+    const padded = [...row];
+    while (padded.length < 4) padded.push("");
+    const url = padded[3];
+    if (url) existingUrls.add(url);
+    const key = getJobDedupKey(padded);
+    const role = getRoleDedupKey(padded);
+    if (key) existingKeys.add(key);
+    if (role) existingRoles.add(role);
+  }
 
-  const deduped = newJobs.filter((row) => row[3] && !existingUrls.has(row[3]));
+  const batchKeys = new Set();
+  const batchRoles = new Set();
+  const deduped = newJobs.filter((row) => {
+    const url = row[3];
+    if (!url) return false;
+    const key = getJobDedupKey(row);
+    const role = getRoleDedupKey(row);
+    if (existingUrls.has(url) || existingKeys.has(key) || batchKeys.has(key)) return false;
+    if (role && (existingRoles.has(role) || batchRoles.has(role))) return false;
+    if (key) batchKeys.add(key);
+    if (role) batchRoles.add(role);
+    return true;
+  });
 
   if (DRY_RUN) {
     console.log(
@@ -1616,7 +1638,7 @@ async function sendWhatsAppNotification(newJobRows) {
 
 /**
  * Move rows older than maxAgeMs from the Jobs sheet to an "Old Jobs" archive
- * sheet. Default: 6h apply-now window (Hiring Cafe pipeline).
+ * sheet. Default: 12h apply-now window (Hiring Cafe pipeline).
  */
 async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
   if (DRY_RUN) {

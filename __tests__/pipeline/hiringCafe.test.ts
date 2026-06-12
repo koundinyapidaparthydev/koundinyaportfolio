@@ -245,7 +245,7 @@ describe("partitionRowsByFetchedAt", () => {
   it("archives rows older than apply-now window", () => {
     const rows = [
       ["A", "t", "", "u1", "c", new Date(now - 2 * 60 * 60_000).toISOString()],
-      ["B", "t", "", "u2", "c", new Date(now - 8 * 60 * 60_000).toISOString()],
+      ["B", "t", "", "u2", "c", new Date(now - 13 * 60 * 60_000).toISOString()],
     ];
     const { keep, archive } = partitionRowsByFetchedAt(rows, APPLY_NOW_WINDOW_MS, now);
     expect(keep).toHaveLength(1);
@@ -254,8 +254,8 @@ describe("partitionRowsByFetchedAt", () => {
     expect(archive[0][3]).toBe("u2");
   });
 
-  it("uses 6 hour default window constant", () => {
-    expect(APPLY_NOW_WINDOW_MS).toBe(6 * 60 * 60_000);
+  it("uses 12 hour default window constant", () => {
+    expect(APPLY_NOW_WINDOW_MS).toBe(12 * 60 * 60_000);
   });
 });
 

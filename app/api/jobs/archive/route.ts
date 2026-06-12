@@ -42,7 +42,7 @@ export async function POST() {
     const dataRows = rows.slice(1);
     const now = Date.now();
 
-    // 2. Split old (>6h apply-now window) vs recent
+    // 2. Split old (>12h apply-now window) vs recent
     const oldRows: string[][] = [];
     const keepRows: string[][] = [];
     for (const row of dataRows) {
