@@ -9,6 +9,9 @@ import {
   dedupeHcRows,
   extractHcItemsFromPayload,
   getHcShortJobId,
+  getJobDedupKey,
+  isBetterHcCompanyName,
+  isBetterHcJobUrl,
   parseHcItemToRow,
   parseRelativePostedTime,
 } from "./hiring-cafe.mjs";
@@ -109,13 +112,15 @@ async function scrapeHiringCafeViaPlaywright(isEngineeringRole) {
           continue;
         }
         stats.afterUsFilter++;
-        const key = row[3];
+        const key = getJobDedupKey(row);
         if (!key) continue;
         const existing = itemMap.get(key);
         if (!existing) itemMap.set(key, row);
         else {
           if (!existing[6] && row[6]) existing[6] = row[6];
           if ((row[7] ?? "").length > (existing[7] ?? "").length) existing[7] = row[7];
+          if (isBetterHcCompanyName(row[0], existing[0])) existing[0] = row[0];
+          if (isBetterHcJobUrl(row[3], existing[3])) existing[3] = row[3];
         }
       }
     }

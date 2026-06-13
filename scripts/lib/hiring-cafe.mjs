@@ -227,8 +227,73 @@ export function getHcJobId(itemOrUrl) {
 }
 
 /** Prefer real ATS apply URL over hiring.cafe/job/{id}. */
+export function isGenericApplyUrl(url = "") {
+  const raw = String(url).trim();
+  if (!raw) return true;
+  try {
+    const parsed = new URL(raw);
+    const path = parsed.pathname.toLowerCase();
+    if (/candidateexperience\/en\/?$/i.test(path)) return true;
+    if (/candidateexperience\/?$/i.test(path) && parsed.searchParams.size === 0) return true;
+    if (/\/careers\/?$/i.test(path) && parsed.searchParams.size === 0) return true;
+    if (!/[0-9]{4,}/.test(`${path}${parsed.search}`) && /\/(en|jobs)\/?$/i.test(path)) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+const COMPANY_NOISE_RE =
+  /candidate experience|apply now|careers portal|job search|experience page/i;
+
+export function resolveHcCompanyName(item, v5 = {}, v7 = {}) {
+  const candidates = [
+    v5.company_name,
+    item.enriched_company_data?.name,
+    v7.company_profile?.name,
+    v7.company_profile?.company_name,
+    item.companyName,
+    item.company,
+    item.employer,
+    item.organization?.name,
+  ]
+    .map((s) => String(s ?? "").trim())
+    .filter(Boolean);
+
+  const clean = candidates.find((c) => c.length >= 2 && !COMPANY_NOISE_RE.test(c));
+  if (clean) return clean;
+
+  const noisy = candidates[0] ?? "";
+  if (/jpmc|j\.?\s*p\.?\s*morgan/i.test(noisy)) return "JPMorgan Chase";
+  return noisy || "Hiring Cafe";
+}
+
+function roleDedupKey(row) {
+  const company = (row?.[0] ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+  const title = (row?.[1] ?? "").toLowerCase().replace(/\s+/g, " ").trim();
+  if (!company || !title) return "";
+  return `role:${company}|${title}`;
+}
+
+export function isBetterHcJobUrl(next = "", prev = "") {
+  if (!prev?.trim()) return !!next?.trim();
+  if (isGenericApplyUrl(prev) && !isGenericApplyUrl(next)) return true;
+  if (/hiring\.cafe\/job\//i.test(next) && !/hiring\.cafe\/job\//i.test(prev)) return true;
+  return false;
+}
+
+export function isBetterHcCompanyName(next = "", prev = "") {
+  if (!prev?.trim()) return !!next?.trim();
+  if (COMPANY_NOISE_RE.test(prev) && !COMPANY_NOISE_RE.test(next)) return true;
+  if (prev.length < 4 && next.length >= 4) return true;
+  return false;
+}
+
+/** Prefer real ATS apply URL over hiring.cafe/job/{id}. */
 export function getHcApplyUrl(item) {
-  const id = getHcJobId(item);
+  const hcPage = getHcJobPageUrl(item);
   const direct =
     item.hc_apply_url ??
     item.apply_url ??
@@ -236,8 +301,12 @@ export function getHcApplyUrl(item) {
     item.applyUrl ??
     item.application_url ??
     "";
-  if (direct && !/hiring\.cafe\/job\//i.test(direct)) return direct;
+  if (direct && !/hiring\.cafe\/job\//i.test(direct) && !isGenericApplyUrl(direct)) {
+    return direct;
+  }
+  if (hcPage) return hcPage;
   if (direct) return direct;
+  const id = getHcJobId(item);
   if (/^[a-z0-9]{8,}$/i.test(id)) return `https://hiring.cafe/job/${id}`;
   return "";
 }
@@ -260,14 +329,7 @@ export function parseHcItemToRow(item, fetchedAt = new Date().toISOString()) {
     item.title ??
     item.name ??
     "";
-  const company =
-    v5.company_name ??
-    item.enriched_company_data?.name ??
-    v7.company_profile?.name ??
-    item.companyName ??
-    item.company ??
-    item.employer ??
-    "Hiring Cafe";
+  const company = resolveHcCompanyName(item, v5, v7);
   const location =
     v5.formatted_workplace_location ??
     (Array.isArray(v5.workplace_cities) ? v5.workplace_cities.join(", ") : "") ??
@@ -344,26 +406,23 @@ export function parseHcItemToRow(item, fetchedAt = new Date().toISOString()) {
   ];
 }
 
-/** Dedup key: apply URL, else HC job id from URL. */
+/** Dedup key: HC job id, else stable apply URL, else company+title for generic portals. */
 export function getJobDedupKey(row) {
   const url = row?.[3] ?? "";
   if (!url) return "";
   const id = getHcJobId(url);
   if (id) return `hc:${id}`;
-  try {
-    const u = new URL(url);
-    u.search = "";
-    return u.toString().replace(/\/$/, "");
-  } catch {
-    return url;
+  if (!isGenericApplyUrl(url)) {
+    try {
+      const u = new URL(url);
+      u.search = "";
+      return u.toString().replace(/\/$/, "");
+    } catch {
+      return url;
+    }
   }
-}
-
-function roleDedupKey(row) {
-  const company = (row?.[0] ?? "").toLowerCase().replace(/\s+/g, " ").trim();
-  const title = (row?.[1] ?? "").toLowerCase().replace(/\s+/g, " ").trim();
-  if (!company || !title) return "";
-  return `role:${company}|${title}`;
+  const role = roleDedupKey(row);
+  return role || url;
 }
 
 /** Deduplicate scrape rows by HC job id / URL and company+title (first wins). */

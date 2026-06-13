@@ -18,11 +18,13 @@ import {
   getHcJobId,
   getHcShortJobId,
   getJobDedupKey,
+  isGenericApplyUrl,
   parseHcItemToRow,
   partitionRowsByFetchedAt,
   extractHcItemsFromPayload,
   parseRelativePostedTime,
   extractRelativePostedFromText,
+  resolveHcCompanyName,
   resolvePostedAt,
   stripHtml,
 } from "../../scripts/lib/hiring-cafe.mjs";
@@ -98,6 +100,39 @@ describe("getHcApplyUrl", () => {
     expect(getHcApplyUrl({ objectID: "abc12345" })).toBe(
       "https://hiring.cafe/job/abc12345"
     );
+  });
+
+  it("rejects generic Oracle portal URLs in favor of hiring.cafe job link", () => {
+    expect(
+      getHcApplyUrl({
+        requisition_id: "okl809iskbftkno2",
+        hc_apply_url: "https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en",
+      })
+    ).toBe("https://hiring.cafe/job/okl809iskbftkno2");
+  });
+
+  it("detects generic candidate portal URLs", () => {
+    expect(isGenericApplyUrl("https://jpmc.fa.oraclecloud.com/hcmUI/CandidateExperience/en")).toBe(
+      true
+    );
+    expect(getHcApplyUrl({ hc_apply_url: "https://boards.greenhouse.io/acme/jobs/12345" })).toBe(
+      "https://boards.greenhouse.io/acme/jobs/12345"
+    );
+  });
+});
+
+describe("resolveHcCompanyName", () => {
+  it("skips noisy portal labels and uses enriched company name", () => {
+    expect(
+      resolveHcCompanyName(
+        {
+          company: "JPMC Candidate Experience page",
+          enriched_company_data: { name: "JPMorgan Chase" },
+        },
+        {},
+        {}
+      )
+    ).toBe("JPMorgan Chase");
   });
 });
 

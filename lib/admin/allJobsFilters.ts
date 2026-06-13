@@ -303,7 +303,9 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
   result = filterByTime(result, opts.timeFilter, opts.now);
   result = filterByCountryLocation(result, opts.countryLocation);
   result = filterByHasDescription(result, opts.hasDescription);
-  result = filterByAtsFriendly(result, opts.atsFriendly, opts.atsMinScore);
+  // When cross-checking a specific title, don't hide low-ATS matches.
+  const applyAtsFilter = opts.atsFriendly && !opts.search.trim();
+  result = filterByAtsFriendly(result, applyAtsFilter, opts.atsMinScore);
   return sortAllJobs(result, opts.sort ?? DEFAULT_ALL_JOBS_SORT);
 }
 

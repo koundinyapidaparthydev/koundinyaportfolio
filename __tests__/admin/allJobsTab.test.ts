@@ -288,6 +288,36 @@ describe("applyAllJobsFilters", () => {
     expect(result[0].company).toBe("OpenAI");
   });
 
+  it("shows search matches even when ATS-friendly filter is enabled", () => {
+    const jobs = [
+      job({
+        company: "JPMorgan Chase",
+        title: "AEM Lead Software Engineer",
+        atsScore: "25",
+        location: "Jersey City, NJ",
+        fetchedAt: new Date(NOW - 10 * 60_000).toISOString(),
+      }),
+      job({
+        company: "Stripe",
+        title: "Staff Engineer",
+        atsScore: "80",
+        location: "San Francisco, CA",
+        fetchedAt: new Date(NOW - 10 * 60_000).toISOString(),
+      }),
+    ];
+    const result = applyAllJobsFilters(jobs, {
+      search: "AEM Lead",
+      timeFilter: "all",
+      hasDescription: false,
+      atsFriendly: true,
+      countryLocation: "all",
+      sort: DEFAULT_ALL_JOBS_SORT,
+      now: NOW,
+    });
+    expect(result).toHaveLength(1);
+    expect(result[0].title).toBe("AEM Lead Software Engineer");
+  });
+
   it("filters by country location", () => {
     const jobs = [
       job({ location: "San Francisco, CA", company: "US Co" }),

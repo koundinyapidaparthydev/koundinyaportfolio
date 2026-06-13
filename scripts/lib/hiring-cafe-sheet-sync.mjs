@@ -2,7 +2,7 @@
  * Sheet sync for the Hiring Cafe pipeline — refresh discovered times, dedupe, filter new rows.
  */
 
-import { getJobDedupKey } from "./hiring-cafe.mjs";
+import { getJobDedupKey, isBetterHcCompanyName, isBetterHcJobUrl } from "./hiring-cafe.mjs";
 
 /** Matches GHA cron and local loop interval. */
 export const HC_PIPELINE_INTERVAL_MS = 10 * 60 * 1000;
@@ -54,29 +54,51 @@ export async function refreshDiscoveredAt(
   discoveredAt
 ) {
   const scrapedByKey = new Map();
+  const scrapedByRole = new Map();
   for (const row of scrapedRows) {
     const key = getJobDedupKey(row);
-    if (key) scrapedByKey.set(key, discoveredAt);
+    const role = getRoleDedupKey(row);
+    if (key) scrapedByKey.set(key, row);
+    if (role) scrapedByRole.set(role, row);
   }
-  if (scrapedByKey.size === 0) return 0;
+  if (scrapedByKey.size === 0 && scrapedByRole.size === 0) return 0;
 
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!D2:D`,
+    range: `${sheetName}!A2:Q`,
   });
-  const urlRows = resp.data.values ?? [];
-  if (urlRows.length === 0) return 0;
+  const rows = resp.data.values ?? [];
+  if (rows.length === 0) return 0;
 
   const updateData = [];
-  for (let i = 0; i < urlRows.length; i++) {
-    const url = urlRows[i]?.[0] ?? "";
-    if (!url) continue;
-    const key = getJobDedupKey([null, null, null, url]);
-    if (!key || !scrapedByKey.has(key)) continue;
+  let refreshed = 0;
+
+  for (let i = 0; i < rows.length; i++) {
+    const padded = padRow17(rows[i]);
+    const key = getJobDedupKey(padded);
+    const role = getRoleDedupKey(padded);
+    const scraped = (key && scrapedByKey.get(key)) || (role && scrapedByRole.get(role));
+    if (!scraped) continue;
+
+    const sheetRow = i + 2;
     updateData.push({
-      range: `${sheetName}!F${i + 2}`,
+      range: `${sheetName}!F${sheetRow}`,
       values: [[discoveredAt]],
     });
+    refreshed++;
+
+    if (isBetterHcCompanyName(scraped[0], padded[0])) {
+      updateData.push({
+        range: `${sheetName}!A${sheetRow}`,
+        values: [[scraped[0]]],
+      });
+    }
+    if (isBetterHcJobUrl(scraped[3], padded[3])) {
+      updateData.push({
+        range: `${sheetName}!D${sheetRow}`,
+        values: [[scraped[3]]],
+      });
+    }
   }
 
   if (updateData.length === 0) return 0;
@@ -85,8 +107,8 @@ export async function refreshDiscoveredAt(
     spreadsheetId,
     requestBody: { valueInputOption: "RAW", data: updateData },
   });
-  console.log(`🔄  Refreshed discovered-at for ${updateData.length} existing job(s)`);
-  return updateData.length;
+  console.log(`🔄  Refreshed discovered-at for ${refreshed} existing job(s)`);
+  return refreshed;
 }
 
 /**

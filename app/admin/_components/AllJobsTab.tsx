@@ -494,6 +494,11 @@ export default function AllJobsTab() {
         {filtered.length !== jobs.length
           ? `${filtered.length} of ${jobs.length} jobs`
           : `${jobs.length} job${jobs.length !== 1 ? "s" : ""} in sheet`}
+        {search.trim() && atsFriendly && (
+          <span className="ml-2 text-[11px] text-amber-400/90">
+            Search shows all matches (ATS filter paused)
+          </span>
+        )}
       </p>
 
       {isError && (
