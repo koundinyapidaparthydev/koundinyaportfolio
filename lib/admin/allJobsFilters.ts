@@ -98,6 +98,34 @@ export interface AllJobsRow {
   /** Sheet column S — ATS score before tailoring (for comparison). */
   preTailorAtsScore?: string;
   resumeUrl?: string;
+  applyStatus?: string;
+  appliedAt?: string;
+}
+
+/** Whether applied jobs appear in the list (hidden by default). */
+export type AppliedVisibilityFilter = "hide-applied" | "include-applied";
+
+export const DEFAULT_APPLIED_VISIBILITY_FILTER: AppliedVisibilityFilter = "hide-applied";
+
+export const APPLIED_VISIBILITY_OPTIONS: {
+  id: AppliedVisibilityFilter;
+  label: string;
+}[] = [
+  { id: "hide-applied", label: "Active jobs" },
+  { id: "include-applied", label: "All jobs + applied" },
+];
+
+/** True when the job was marked applied in the sheet (column K). */
+export function isJobApplied(job: { applyStatus?: string }): boolean {
+  return job.applyStatus?.trim().toLowerCase() === "applied";
+}
+
+export function filterByAppliedVisibility<T extends AllJobsRow>(
+  jobs: T[],
+  filter: AppliedVisibilityFilter
+): T[] {
+  if (filter === "include-applied") return jobs;
+  return jobs.filter((j) => !isJobApplied(j));
 }
 
 export const NEW_JOB_WINDOW_MS = 30 * 60_000;
@@ -340,6 +368,7 @@ export interface AllJobsFilterOpts {
   timeFilter: TimeFilter;
   hasDescription: boolean;
   resumeModifiedFilter: ResumeModifiedFilter;
+  appliedVisibility?: AppliedVisibilityFilter;
   atsMinScore?: number;
   countryLocation: CountryLocationFilter;
   sort?: AllJobsSort;
@@ -355,6 +384,10 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
   result = filterByTime(result, opts.timeFilter, opts.now);
   result = filterByCountryLocation(result, opts.countryLocation);
   result = filterByHasDescription(result, opts.hasDescription);
+  result = filterByAppliedVisibility(
+    result,
+    opts.appliedVisibility ?? DEFAULT_APPLIED_VISIBILITY_FILTER
+  );
   // When cross-checking a specific title, show all matches regardless of resume filter.
   const applyResumeFilter = opts.resumeModifiedFilter !== "all" && !opts.search.trim();
   if (applyResumeFilter) {

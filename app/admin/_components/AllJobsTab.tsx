@@ -6,7 +6,7 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import type { Job } from "@/app/api/jobs/route";
 import {
@@ -17,6 +17,8 @@ import {
   DEFAULT_ATS_MIN_SCORE,
   DEFAULT_RESUME_MODIFIED_FILTER,
   RESUME_MODIFIED_FILTER_OPTIONS,
+  DEFAULT_APPLIED_VISIBILITY_FILTER,
+  APPLIED_VISIBILITY_OPTIONS,
   applyAllJobsFilters,
   detectPlatformFromUrl,
   filterByTime,
@@ -24,10 +26,12 @@ import {
   formatOpenDate,
   toggleSortColumn,
   isResumeModified,
+  isJobApplied,
   type TimeFilter,
   type SortColumn,
   type AllJobsSort,
   type ResumeModifiedFilter,
+  type AppliedVisibilityFilter,
 } from "@/lib/admin/allJobsFilters";
 import { ATS_STRONG_SCORE } from "@/lib/admin/atsConfig";
 import { glass, glassCn } from "@/lib/glass";
@@ -144,14 +148,17 @@ function JobDetailPanel({
   job,
   onClose,
   onMinimize,
+  onToggleApplied,
 }: {
   job: Job;
   onClose: () => void;
   onMinimize: () => void;
+  onToggleApplied: (applied: boolean) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const platform = detectPlatformFromUrl(job.url);
   const now = Date.now();
+  const applied = isJobApplied(job);
 
   const copyUrl = useCallback(async () => {
     try {
@@ -196,6 +203,18 @@ function JobDetailPanel({
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
+        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
+          <input
+            type="checkbox"
+            checked={applied}
+            onChange={(e) => onToggleApplied(e.target.checked)}
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30"
+          />
+          <span className="text-xs font-medium text-slate-300">
+            {applied ? "Applied — uncheck to move back to active list" : "Mark as applied"}
+          </span>
+        </label>
+
         <div className="space-y-2">
           <DetailRow
             label="Posted"
@@ -390,11 +409,15 @@ function JobCard({
   job,
   isSelected,
   onSelect,
+  onToggleApplied,
 }: {
   job: Job;
   isSelected: boolean;
   onSelect: () => void;
+  onToggleApplied: (applied: boolean) => void;
 }) {
+  const applied = isJobApplied(job);
+
   return (
     <motion.button
       type="button"
@@ -408,10 +431,27 @@ function JobCard({
       )}
     >
       <div className="flex items-start gap-3">
+        <label
+          className="flex shrink-0 cursor-pointer items-center pt-1"
+          title={applied ? "Mark as not applied" : "Mark as applied"}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <input
+            type="checkbox"
+            checked={applied}
+            onChange={(e) => onToggleApplied(e.target.checked)}
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30"
+          />
+        </label>
         <CompanyLogo company={job.company} url={job.url} size="md" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{job.title}</p>
           <p className="truncate text-xs text-slate-500">{job.company}</p>
+          {applied && (
+            <span className="mt-1 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-400">
+              Applied
+            </span>
+          )}
           <p className="mt-1 truncate text-xs text-slate-400">{job.location || "—"}</p>
           <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-slate-500">
             <span>Posted: {job.postedAt ? formatOpenDate(job.postedAt) : "—"}</span>
@@ -433,12 +473,16 @@ function JobCard({
 }
 
 export default function AllJobsTab() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(DEFAULT_TIME_FILTER);
   const [sort, setSort] = useState<AllJobsSort>(DEFAULT_ALL_JOBS_SORT);
   const [hasDescription, setHasDescription] = useState(false);
   const [resumeModifiedFilter, setResumeModifiedFilter] =
     useState<ResumeModifiedFilter>(DEFAULT_RESUME_MODIFIED_FILTER);
+  const [appliedVisibility, setAppliedVisibility] = useState<AppliedVisibilityFilter>(
+    DEFAULT_APPLIED_VISIBILITY_FILTER
+  );
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [detailMinimized, setDetailMinimized] = useState(false);
 
@@ -446,6 +490,40 @@ export default function AllJobsTab() {
     setSelectedUrl(url);
     setDetailMinimized(false);
   }, []);
+
+  const handleToggleApplied = useCallback(
+    async (job: Job, applied: boolean) => {
+      if (!job.rowIndex) {
+        alert("Cannot update — job row index missing. Refresh and try again.");
+        return;
+      }
+      const applyStatus = applied ? "applied" : "";
+      const appliedAt = applied ? new Date().toISOString() : "";
+      const prevJobs = queryClient.getQueryData<Job[]>(["all-jobs"]) ?? [];
+
+      queryClient.setQueryData<Job[]>(["all-jobs"], (list = []) =>
+        list.map((j) =>
+          j.url === job.url ? { ...j, applyStatus, appliedAt } : j
+        )
+      );
+
+      try {
+        const res = await fetch("/api/jobs/apply-status", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rowIndex: job.rowIndex, applyStatus, appliedAt }),
+        });
+        if (!res.ok) throw new Error("Update failed");
+        if (applied && appliedVisibility === "hide-applied" && selectedUrl === job.url) {
+          setSelectedUrl(null);
+        }
+      } catch {
+        queryClient.setQueryData(["all-jobs"], prevJobs);
+        alert("Failed to save apply status. Try again.");
+      }
+    },
+    [appliedVisibility, queryClient, selectedUrl]
+  );
 
   const {
     data: jobs = [],
@@ -468,11 +546,14 @@ export default function AllJobsTab() {
         timeFilter,
         hasDescription,
         resumeModifiedFilter,
+        appliedVisibility,
         countryLocation: DEFAULT_COUNTRY_LOCATION,
         sort,
       }),
-    [jobs, search, timeFilter, hasDescription, resumeModifiedFilter, sort]
+    [jobs, search, timeFilter, hasDescription, resumeModifiedFilter, appliedVisibility, sort]
   );
+
+  const appliedCount = useMemo(() => jobs.filter(isJobApplied).length, [jobs]);
 
   const selectedJob = useMemo(
     () => (selectedUrl ? jobs.find((j) => j.url === selectedUrl) ?? null : null),
@@ -522,6 +603,11 @@ export default function AllJobsTab() {
         {filtered.length !== jobs.length
           ? `${filtered.length} of ${jobs.length} jobs`
           : `${jobs.length} job${jobs.length !== 1 ? "s" : ""} in sheet`}
+        {appliedCount > 0 && appliedVisibility === "hide-applied" && (
+          <span className="ml-2 text-[11px] text-slate-500">
+            · {appliedCount} applied hidden
+          </span>
+        )}
         {search.trim() && resumeModifiedFilter !== "all" && (
           <span className="ml-2 text-[11px] text-amber-400/90">
             Search shows all matches (resume filter paused)
@@ -570,6 +656,30 @@ export default function AllJobsTab() {
 
       <div className="flex flex-wrap items-center gap-2">
         <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+          Show:
+        </span>
+        {APPLIED_VISIBILITY_OPTIONS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setAppliedVisibility(id)}
+            className={glassCn(
+              "inline-flex items-center gap-1.5",
+              appliedVisibility === id
+                ? glassCn(glass.adminPillActive, "text-indigo-600 dark:text-indigo-300")
+                : glass.adminPill
+            )}
+          >
+            {label}
+            {id === "include-applied" && appliedCount > 0 && (
+              <span className={glass.pillBadge}>{appliedCount}</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
           Discovered within:
         </span>
         {TIME_FILTERS.map(({ id, label }) => {
@@ -613,6 +723,7 @@ export default function AllJobsTab() {
                     job={job}
                     isSelected={selectedUrl === job.url}
                     onSelect={() => selectJob(job.url)}
+                    onToggleApplied={(applied) => void handleToggleApplied(job, applied)}
                   />
                 ))}
               </div>
@@ -632,6 +743,9 @@ export default function AllJobsTab() {
                         />
                       ))}
                       <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                        Applied
+                      </th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                         Apply
                       </th>
                     </tr>
@@ -639,6 +753,7 @@ export default function AllJobsTab() {
                   <tbody className="divide-y divide-white/5">
                     {filtered.map((job, i) => {
                       const isSelected = selectedUrl === job.url;
+                      const applied = isJobApplied(job);
                       return (
                         <motion.tr
                           key={`${job.rowIndex}-${job.url}`}
@@ -649,6 +764,7 @@ export default function AllJobsTab() {
                           className={[
                             "cursor-pointer transition-colors",
                             isSelected ? "bg-indigo-500/10" : "hover:bg-white/3",
+                            applied ? "opacity-80" : "",
                           ].join(" ")}
                         >
                           <td className="max-w-[10rem] px-3 py-2.5">
@@ -693,6 +809,22 @@ export default function AllJobsTab() {
                             {job.fetchedAt ? formatRelativeTime(job.fetchedAt) : "—"}
                           </td>
                           <td className="whitespace-nowrap px-3 py-2.5">
+                            <label
+                              className="inline-flex cursor-pointer items-center"
+                              title={applied ? "Mark as not applied" : "Mark as applied"}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={applied}
+                                onChange={(e) =>
+                                  void handleToggleApplied(job, e.target.checked)
+                                }
+                                className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30"
+                              />
+                            </label>
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5">
                             <a
                               href={job.url}
                               target="_blank"
@@ -732,6 +864,7 @@ export default function AllJobsTab() {
                 job={selectedJob}
                 onClose={() => setSelectedUrl(null)}
                 onMinimize={() => setDetailMinimized(true)}
+                onToggleApplied={(applied) => void handleToggleApplied(selectedJob, applied)}
               />
             )}
           </div>

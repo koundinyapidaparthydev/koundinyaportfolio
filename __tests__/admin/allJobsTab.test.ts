@@ -21,6 +21,9 @@ import {
   DEFAULT_COUNTRY_LOCATION,
   DEFAULT_ATS_MIN_SCORE,
   DEFAULT_RESUME_MODIFIED_FILTER,
+  DEFAULT_APPLIED_VISIBILITY_FILTER,
+  filterByAppliedVisibility,
+  isJobApplied,
   type AllJobsRow,
 } from "@/lib/admin/allJobsFilters";
 
@@ -395,6 +398,45 @@ describe("applyAllJobsFilters", () => {
       now: NOW,
     });
     expect(result.map((j) => j.company)).toEqual(["US Co"]);
+  });
+});
+
+describe("applied job visibility", () => {
+  it("defaults to hiding applied jobs", () => {
+    expect(DEFAULT_APPLIED_VISIBILITY_FILTER).toBe("hide-applied");
+  });
+
+  it("detects applied status from sheet column K", () => {
+    expect(isJobApplied({ applyStatus: "applied" })).toBe(true);
+    expect(isJobApplied({ applyStatus: "Applied" })).toBe(true);
+    expect(isJobApplied({ applyStatus: "" })).toBe(false);
+  });
+
+  it("filters out applied jobs unless include-applied is selected", () => {
+    const jobs = [
+      job({ company: "Open", applyStatus: "" }),
+      job({ company: "Done", applyStatus: "applied" }),
+    ];
+    expect(filterByAppliedVisibility(jobs, "hide-applied")).toHaveLength(1);
+    expect(filterByAppliedVisibility(jobs, "hide-applied")[0].company).toBe("Open");
+    expect(filterByAppliedVisibility(jobs, "include-applied")).toHaveLength(2);
+  });
+
+  it("hides applied jobs in applyAllJobsFilters by default", () => {
+    const jobs = [
+      job({ company: "Active", applyStatus: "" }),
+      job({ company: "Applied Co", applyStatus: "applied" }),
+    ];
+    const result = applyAllJobsFilters(jobs, {
+      search: "",
+      timeFilter: "all",
+      hasDescription: false,
+      resumeModifiedFilter: "all",
+      countryLocation: "all",
+      sort: DEFAULT_ALL_JOBS_SORT,
+      now: NOW,
+    });
+    expect(result.map((j) => j.company)).toEqual(["Active"]);
   });
 });
 
