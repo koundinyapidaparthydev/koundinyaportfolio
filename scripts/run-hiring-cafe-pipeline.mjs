@@ -8,7 +8,7 @@
  *   3. Backfill posted-at, compact duplicate rows (HC id + company/title)
  *   4. Append only NEW jobs (dedup vs Jobs + Old Jobs)
  *   5. Backfill full descriptions + ATS score vs resume (Gemini)
- *   6. Tailor resumes for recent jobs scoring below 75% (Claude + re-score)
+ *   6. Tailor resumes for recent jobs scoring below 75% (Gemini + re-score)
  *   7. Archive Jobs tab rows older than 12h → Old Jobs
  *   7. Log to Scrape Log + optional WhatsApp for new discoveries
  *

@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "company, title, description required" }, { status: 400 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return NextResponse.json({ error: "ANTHROPIC_API_KEY not set" }, { status: 503 });
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) return NextResponse.json({ error: "GEMINI_API_KEY not set" }, { status: 503 });
 
   const baseResume = await getResume();
 
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (err) {
-    console.error("[generate-and-store] Claude error:", err);
+    console.error("[generate-and-store] Gemini error:", err);
     return NextResponse.json({ error: "AI generation failed" }, { status: 502 });
   }
 

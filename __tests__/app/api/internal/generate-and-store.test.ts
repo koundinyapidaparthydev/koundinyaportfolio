@@ -11,17 +11,9 @@
 // jest.mock factories are hoisted to the top, so they cannot reference external
 // const/let declarations. We expose shared mock functions via module properties.
 
-jest.mock("@anthropic-ai/sdk", () => {
-  const mockCreate = jest.fn();
-  const MockAnthropicCtor = jest.fn().mockImplementation(() => ({
-    messages: { create: mockCreate },
-  }));
-  return {
-    __esModule: true,
-    default: MockAnthropicCtor,
-    _mocks: { mockCreate },
-  };
-});
+jest.mock("@/lib/resumeTailor", () => ({
+  tailorResumeWithQualityGate: jest.fn(),
+}));
 
 jest.mock("@react-pdf/renderer", () => ({
   renderToBuffer: jest.fn().mockResolvedValue(Buffer.from("FAKE-PDF-BYTES")),
@@ -50,15 +42,6 @@ jest.mock("@/lib/resumePdf", () => ({
   ResumePdfDocument: jest.fn().mockReturnValue(null),
 }));
 
-jest.mock("@/lib/atsScoring", () => ({
-  calculateAtsScore: jest.fn().mockReturnValue({
-    score: 78,
-    matched: ["react", "typescript", "node.js"],
-    missing: ["kubernetes", "terraform"],
-    label: "high",
-  }),
-}));
-
 jest.mock("@/lib/gcsUpload", () => ({
   uploadToGCS: jest.fn().mockResolvedValue("https://storage.googleapis.com/bucket/file.pdf"),
 }));
@@ -66,19 +49,14 @@ jest.mock("@/lib/gcsUpload", () => ({
 // ─── Imports (after mocks) ────────────────────────────────────────────────────
 import { POST } from "@/app/api/internal/generate-and-store/route";
 import { NextRequest } from "next/server";
-import * as AnthropicModule from "@anthropic-ai/sdk";
+import { tailorResumeWithQualityGate } from "@/lib/resumeTailor";
 import { uploadToGCS } from "@/lib/gcsUpload";
-import { calculateAtsScore } from "@/lib/atsScoring";
 import { getResume } from "@/lib/resumeStore";
 import { renderToBuffer } from "@react-pdf/renderer";
 
 // ─── Typed mock references ─────────────────────────────────────────────────────
-// Access _mocks from the module namespace (not the default export)
-const { mockCreate: mockMessagesCreate } = (AnthropicModule as unknown as {
-  _mocks: { mockCreate: jest.Mock };
-})._mocks;
+const mockTailor = tailorResumeWithQualityGate as jest.Mock;
 const mockUploadToGCS = uploadToGCS as jest.Mock;
-const mockCalculateAtsScore = calculateAtsScore as jest.Mock;
 const mockGetResume = getResume as jest.Mock;
 const mockRenderToBuffer = renderToBuffer as jest.Mock;
 
@@ -120,22 +98,15 @@ function makeReq(
   });
 }
 
-function claudeOk(text: string) {
-  return Promise.resolve({ content: [{ type: "text", text }] });
-}
-
-function mockAtsProgression(preScore = 62, postScore = 82) {
-  let calls = 0;
-  mockCalculateAtsScore.mockImplementation(() => {
-    calls += 1;
-    const score = calls === 1 ? preScore : postScore;
-    return {
-      score,
-      matched: ["react", "typescript"],
-      missing: ["kubernetes"],
-      label: "high",
-    };
-  });
+function tailorOk(overrides: Record<string, unknown> = {}) {
+  return {
+    tailoredResume: VALID_RESUME_JSON,
+    coverLetter: VALID_RESUME_JSON.coverLetter,
+    quality: { passed: true, score: 95, issues: [], errors: [] },
+    preAtsScore: 62,
+    postAtsScore: 82,
+    ...overrides,
+  };
 }
 
 const VALID_BODY = {
@@ -154,9 +125,8 @@ describe("POST /api/internal/generate-and-store – authentication", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
-    mockMessagesCreate.mockResolvedValue({ content: [{ type: "text", text: VALID_CLAUDE_TEXT }] });
-    mockAtsProgression();
+    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, GEMINI_API_KEY: "gemini-test-key" };
+    mockTailor.mockResolvedValue(tailorOk());
   });
 
   afterEach(() => {
@@ -243,7 +213,7 @@ describe("POST /api/internal/generate-and-store – body validation", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
+    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, GEMINI_API_KEY: "gemini-test-key" };
   });
 
   afterEach(() => {
@@ -311,8 +281,7 @@ describe("POST /api/internal/generate-and-store – body validation", () => {
   });
 
   it("does NOT return 400 when jobUrl is missing (optional)", async () => {
-    mockMessagesCreate.mockResolvedValue({ content: [{ type: "text", text: VALID_CLAUDE_TEXT }] });
-    mockAtsProgression();
+    mockTailor.mockResolvedValue(tailorOk());
     const { jobUrl: _, ...bodyNoUrl } = VALID_BODY;
     void _;
     const res = await POST(makeReq(bodyNoUrl));
@@ -320,8 +289,7 @@ describe("POST /api/internal/generate-and-store – body validation", () => {
   });
 
   it("accepts body with extra unknown fields without error", async () => {
-    mockMessagesCreate.mockResolvedValue({ content: [{ type: "text", text: VALID_CLAUDE_TEXT }] });
-    mockAtsProgression();
+    mockTailor.mockResolvedValue(tailorOk());
     const res = await POST(makeReq({ ...VALID_BODY, unknownField: "ignored" }));
     expect(res.status).not.toBe(400);
   });
@@ -344,153 +312,70 @@ describe("POST /api/internal/generate-and-store – body validation", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. Claude response parsing
+// 3. Gemini tailoring integration
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("POST /api/internal/generate-and-store – Claude response parsing", () => {
+describe("POST /api/internal/generate-and-store – Gemini tailoring", () => {
   const origEnv = process.env;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
+    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, GEMINI_API_KEY: "gemini-test-key" };
     mockUploadToGCS.mockResolvedValue("https://storage.googleapis.com/bucket/file.pdf");
-    mockAtsProgression();
+    mockTailor.mockResolvedValue(tailorOk());
   });
 
   afterEach(() => {
     process.env = origEnv;
   });
 
-  it("parses clean JSON response from Claude", async () => {
-    mockMessagesCreate.mockResolvedValue(claudeOk(VALID_CLAUDE_TEXT));
-    mockAtsProgression();
+  it("returns 200 when tailoring succeeds", async () => {
     const res = await POST(makeReq(VALID_BODY));
     expect(res.status).toBe(200);
   });
 
-  it("parses JSON wrapped in ```json ... ``` fences", async () => {
-    mockMessagesCreate.mockResolvedValue(claudeOk("```json\n" + VALID_CLAUDE_TEXT + "\n```"));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(200);
-  });
-
-  it("parses JSON wrapped in plain ``` ... ``` fences", async () => {
-    mockMessagesCreate.mockResolvedValue(claudeOk("```\n" + VALID_CLAUDE_TEXT + "\n```"));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(200);
-  });
-
-  it("parses JSON with trailing explanation text after the closing brace", async () => {
-    const withTrailing = VALID_CLAUDE_TEXT + "\n\nI have tailored the resume above for the role.";
-    mockMessagesCreate.mockResolvedValue(claudeOk(withTrailing));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(200);
-  });
-
-  it("parses JSON with leading text before the opening brace", async () => {
-    const withLeading = "Here is the tailored resume:\n\n" + VALID_CLAUDE_TEXT;
-    mockMessagesCreate.mockResolvedValue(claudeOk(withLeading));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(200);
-  });
-
-  it("parses JSON with both leading and trailing text", async () => {
-    const wrapped = "Sure! Here it is:\n" + VALID_CLAUDE_TEXT + "\n\nLet me know if you need changes.";
-    mockMessagesCreate.mockResolvedValue(claudeOk(wrapped));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(200);
-  });
-
-  it("parses JSON with markdown fences AND trailing text", async () => {
-    const text = "```json\n" + VALID_CLAUDE_TEXT + "\n```\n\nHope this helps!";
-    mockMessagesCreate.mockResolvedValue(claudeOk(text));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(200);
-  });
-
-  it("returns 502 when Claude returns completely non-JSON text", async () => {
-    mockMessagesCreate.mockResolvedValue(claudeOk("I cannot process this request."));
+  it("returns 502 when tailorResumeWithQualityGate throws", async () => {
+    mockTailor.mockRejectedValue(new Error("Gemini overloaded"));
     const res = await POST(makeReq(VALID_BODY));
     expect(res.status).toBe(502);
   });
 
-  it("returns 502 when Claude returns malformed JSON", async () => {
-    mockMessagesCreate.mockResolvedValue(claudeOk("{ invalid json here }"));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(502);
-  });
-
-  it("returns 502 when Claude returns empty string", async () => {
-    mockMessagesCreate.mockResolvedValue(claudeOk(""));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(502);
-  });
-
-  it("returns 502 when Claude messages.create throws", async () => {
-    mockMessagesCreate.mockRejectedValue(new Error("Claude overloaded"));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(502);
-  });
-
-  it("returns 502 with 'AI generation failed' error when Claude fails", async () => {
-    mockMessagesCreate.mockRejectedValue(new Error("API error"));
+  it("returns 502 with 'AI generation failed' error when tailoring fails", async () => {
+    mockTailor.mockRejectedValue(new Error("API error"));
     const res = await POST(makeReq(VALID_BODY));
     const body = await res.json() as { error: string };
     expect(body.error).toBe("AI generation failed");
   });
 
-  it("handles Claude response where content[0].type is not 'text'", async () => {
-    mockMessagesCreate.mockResolvedValue({
-      content: [{ type: "image", source: { type: "base64", data: "abc" } }],
-    });
-    // Should not crash — raw will be "", JSON.parse will fail → 502
+  it("returns 422 when quality gate fails", async () => {
+    mockTailor.mockResolvedValue(
+      tailorOk({
+        quality: { passed: false, score: 40, issues: ["summary too short"], errors: ["summary"] },
+      })
+    );
     const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(502);
+    expect(res.status).toBe(422);
   });
 
-  it("handles Claude response with empty content array", async () => {
-    mockMessagesCreate.mockResolvedValue({ content: [] });
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(502);
-  });
-
-  it("extracts coverLetter from Claude JSON correctly", async () => {
+  it("extracts coverLetter from tailor result correctly", async () => {
     const clText = "Cover letter paragraph 1.\n\nParagraph 2.\n\nParagraph 3.";
-    const resp = { ...VALID_RESUME_JSON, coverLetter: clText };
-    mockMessagesCreate.mockResolvedValue(claudeOk(JSON.stringify(resp)));
+    mockTailor.mockResolvedValue(tailorOk({ coverLetter: clText }));
     const res = await POST(makeReq(VALID_BODY));
     const body = await res.json() as { coverLetterText: string };
     expect(body.coverLetterText).toBe(clText);
   });
 
-  it("uses empty string for coverLetter when it is absent from Claude JSON", async () => {
-    const { coverLetter: _, ...noCL } = VALID_RESUME_JSON;
-    void _;
-    mockMessagesCreate.mockResolvedValue(claudeOk(JSON.stringify(noCL)));
-    const res = await POST(makeReq(VALID_BODY));
-    const body = await res.json() as { coverLetterText: string };
-    expect(body.coverLetterText).toBe("");
-  });
-
-  it("handles deeply nested braces inside JSON values without losing track", async () => {
-    const nestedJSON = {
-      ...VALID_RESUME_JSON,
-      personalInfo: {
-        ...VALID_RESUME_JSON.personalInfo,
-        summary:
-          "Software engineer with 3+ years building web applications using React, TypeScript, and AWS. Interested in ACME Corp's engineering team and {React} ecosystem work.",
+  it("passes job fields and apiKey to tailorResumeWithQualityGate", async () => {
+    await POST(makeReq(VALID_BODY));
+    expect(mockTailor).toHaveBeenCalledWith(
+      expect.any(Object),
+      {
+        title: VALID_BODY.title,
+        company: VALID_BODY.company,
+        description: VALID_BODY.description,
       },
-    };
-    mockMessagesCreate.mockResolvedValue(claudeOk(JSON.stringify(nestedJSON)));
-    mockAtsProgression();
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(200);
-  });
-
-  it("handles ```JSON (uppercase) fence gracefully", async () => {
-    mockMessagesCreate.mockResolvedValue(claudeOk("```JSON\n" + VALID_CLAUDE_TEXT + "\n```"));
-    const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(200);
+      { apiKey: "gemini-test-key" }
+    );
   });
 });
 
@@ -504,9 +389,8 @@ describe("POST /api/internal/generate-and-store – GCS upload", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
-    mockMessagesCreate.mockResolvedValue(claudeOk(VALID_CLAUDE_TEXT));
-    mockAtsProgression();
+    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, GEMINI_API_KEY: "gemini-test-key" };
+    mockTailor.mockResolvedValue(tailorOk());
     mockUploadToGCS.mockResolvedValue(GCS_URL);
   });
 
@@ -593,16 +477,9 @@ describe("POST /api/internal/generate-and-store – success response", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
-    mockMessagesCreate.mockResolvedValue(claudeOk(VALID_CLAUDE_TEXT));
-    mockAtsProgression();
+    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, GEMINI_API_KEY: "gemini-test-key" };
+    mockTailor.mockResolvedValue(tailorOk());
     mockUploadToGCS.mockResolvedValue(GCS_URL);
-    mockCalculateAtsScore.mockReturnValue({
-      score: 82,
-      matched: ["react", "typescript"],
-      missing: ["kubernetes"],
-      label: "high",
-    });
   });
 
   afterEach(() => {
@@ -650,7 +527,7 @@ describe("POST /api/internal/generate-and-store – success response", () => {
     expect(body).toHaveProperty("preAtsScore");
   });
 
-  it("atsScore matches post-tailor score from calculateAtsScore", async () => {
+  it("atsScore matches post-tailor score from tailorResumeWithQualityGate", async () => {
     const res = await POST(makeReq(VALID_BODY));
     const body = await res.json() as { atsScore: number };
     expect(body.atsScore).toBe(82);
@@ -680,12 +557,9 @@ describe("POST /api/internal/generate-and-store – success response", () => {
     expect(body).not.toHaveProperty("error");
   });
 
-  it("calls calculateAtsScore with the job description", async () => {
+  it("calls tailorResumeWithQualityGate once per request", async () => {
     await POST(makeReq(VALID_BODY));
-    expect(mockCalculateAtsScore).toHaveBeenCalledWith(
-      VALID_BODY.description,
-      expect.any(Object)
-    );
+    expect(mockTailor).toHaveBeenCalledTimes(1);
   });
 
   it("calls getResume once per request", async () => {
@@ -695,40 +569,40 @@ describe("POST /api/internal/generate-and-store – success response", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 6. ANTHROPIC_API_KEY missing
+// 6. GEMINI_API_KEY missing
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("POST /api/internal/generate-and-store – missing ANTHROPIC_API_KEY", () => {
+describe("POST /api/internal/generate-and-store – missing GEMINI_API_KEY", () => {
   const origEnv = process.env;
 
   beforeEach(() => {
     jest.clearAllMocks();
     process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY };
-    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.GEMINI_API_KEY;
   });
 
   afterEach(() => {
     process.env = origEnv;
   });
 
-  it("returns 503 when ANTHROPIC_API_KEY is not set", async () => {
+  it("returns 503 when GEMINI_API_KEY is not set", async () => {
     const res = await POST(makeReq(VALID_BODY));
     expect(res.status).toBe(503);
   });
 
-  it("returns JSON error body when ANTHROPIC_API_KEY is missing", async () => {
+  it("returns JSON error body when GEMINI_API_KEY is missing", async () => {
     const res = await POST(makeReq(VALID_BODY));
     const body = await res.json() as { error: string };
     expect(body).toHaveProperty("error");
-    expect(body.error).toMatch(/ANTHROPIC_API_KEY/);
+    expect(body.error).toMatch(/GEMINI_API_KEY/);
   });
 
-  it("does not call Claude when ANTHROPIC_API_KEY is not set", async () => {
+  it("does not call tailor when GEMINI_API_KEY is not set", async () => {
     await POST(makeReq(VALID_BODY));
-    expect(mockMessagesCreate).not.toHaveBeenCalled();
+    expect(mockTailor).not.toHaveBeenCalled();
   });
 
-  it("does not call getResume when ANTHROPIC_API_KEY is not set", async () => {
+  it("does not call getResume when GEMINI_API_KEY is not set", async () => {
     // Actually, getResume IS called before the API key check in current code structure
     // Just verify the response is 503
     const res = await POST(makeReq(VALID_BODY));
@@ -746,17 +620,9 @@ describe("POST /api/internal/generate-and-store – multiple requests", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
-    mockMessagesCreate.mockResolvedValue(claudeOk(VALID_CLAUDE_TEXT));
-    mockAtsProgression();
+    process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, GEMINI_API_KEY: "gemini-test-key" };
+    mockTailor.mockResolvedValue(tailorOk());
     mockUploadToGCS.mockResolvedValue(GCS_URL);
-    mockCalculateAtsScore.mockImplementation(() => ({
-      score: 70,
-      matched: [],
-      missing: [],
-      label: "high",
-    }));
-    mockAtsProgression(70, 78);
   });
 
   afterEach(() => {

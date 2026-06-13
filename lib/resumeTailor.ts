@@ -1,8 +1,7 @@
 /**
- * Shared Claude tailoring + quality gate for admin and internal API routes.
+ * Shared Gemini tailoring + quality gate for admin and internal API routes.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
 import type { Resume } from "@/types/resume";
 import { calculateAtsScore } from "@/lib/atsScoring";
 import {
@@ -11,7 +10,8 @@ import {
   type TailorQualityResult,
 } from "@/lib/resumeQuality";
 
-const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001";
+export const GEMINI_TAILOR_MODEL =
+  process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
 
 const QUALITY_CHECKLIST = `
 QUALITY CHECKLIST — verify before responding:
@@ -99,7 +99,7 @@ ${jobDescription.slice(0, 4000)}
 OUTPUT: ONLY valid JSON with the same schema as the draft (include coverLetter). personalInfo.title must be empty.`;
 }
 
-function extractJsonObject(raw: string): Record<string, unknown> {
+export function extractJsonObject(raw: string): Record<string, unknown> {
   let cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
   const firstBrace = cleaned.indexOf("{");
   if (firstBrace > 0) cleaned = cleaned.slice(firstBrace);
@@ -134,14 +134,33 @@ function normalizeTailored(
   return { tailoredResume, coverLetter };
 }
 
-async function callClaude(client: Anthropic, prompt: string) {
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 8192,
-    messages: [{ role: "user", content: prompt }],
+async function callGemini(apiKey: string, prompt: string) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TAILOR_MODEL}:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 8192,
+        responseMimeType: "application/json",
+      },
+    }),
+    signal: AbortSignal.timeout(60_000),
   });
-  const raw = message.content[0]?.type === "text" ? message.content[0].text : "";
-  return extractJsonObject(raw);
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Gemini request failed (${res.status}): ${detail.slice(0, 200)}`);
+  }
+
+  const data = (await res.json()) as {
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+  };
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  if (!text.trim()) throw new Error("Empty response from Gemini");
+  return extractJsonObject(text);
 }
 
 export interface TailorWithQualityResult {
@@ -157,18 +176,17 @@ export async function tailorResumeWithQualityGate(
   job: { title: string; company: string; description: string },
   options: { preAtsScore?: number | null; apiKey?: string } = {}
 ): Promise<TailorWithQualityResult> {
-  const apiKey = options.apiKey ?? process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  const apiKey = (options.apiKey ?? process.env.GEMINI_API_KEY)?.trim();
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
   const preAtsScore =
     options.preAtsScore ??
     calculateAtsScore(job.description, baseResume).score;
 
-  const client = new Anthropic({ apiKey });
   const { title, company, description } = job;
 
-  let parsed = await callClaude(
-    client,
+  let parsed = await callGemini(
+    apiKey,
     buildTailorPrompt(baseResume, title, company, description)
   );
   let { tailoredResume, coverLetter } = normalizeTailored(baseResume, parsed);
@@ -184,8 +202,8 @@ export async function tailorResumeWithQualityGate(
 
   if (!quality.passed) {
     const atsGaps = postAts.missing?.slice(0, 8).join(", ") ?? "";
-    parsed = await callClaude(
-      client,
+    parsed = await callGemini(
+      apiKey,
       buildRefinePrompt(
         baseResume,
         tailoredResume,

@@ -84,8 +84,8 @@ async function renderResumePdf(resume) {
  * Tailor low-ATS jobs, re-score with Gemini, upload PDF, write sheet columns.
  */
 export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {}) {
-  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
-    console.log("⏭  Skipping resume tailoring — ANTHROPIC_API_KEY not set");
+  if (!process.env.GEMINI_API_KEY?.trim()) {
+    console.log("⏭  Skipping resume tailoring — GEMINI_API_KEY not set");
     return 0;
   }
 

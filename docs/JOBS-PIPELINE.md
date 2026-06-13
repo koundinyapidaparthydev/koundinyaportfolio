@@ -51,7 +51,7 @@ flowchart LR
 | Pagination | Pages 1–5 each run via HC `&page=` param (0-based) |
 | Descriptions | Full text from HC job detail API (`job_information.description`) |
 | ATS | Gemini scores base resume vs description → J, O–Q; jobs ≥75% marked `no` in R |
-| Auto-tailor | Jobs &lt;75% in last 12h → Claude tailor → **quality gate** → re-score → PDF → H; R=`yes`, S=pre-score |
+| Auto-tailor | Jobs &lt;75% in last 12h → Gemini tailor → **quality gate** → re-score → PDF → H; R=`yes`, S=pre-score |
 
 Config lives in `scripts/lib/hiring-cafe.mjs`.
 
@@ -96,8 +96,8 @@ Required:
 
 Optional:
 
-- `GEMINI_API_KEY` — ATS scoring (columns J, O–Q)
-- `ANTHROPIC_API_KEY`, `GCS_SERVICE_ACCOUNT_JSON`, `GCS_BUCKET_NAME` — auto-tailor resumes below 75%
+- `GEMINI_API_KEY` — ATS scoring (columns J, O–Q), resume tailoring, weekly summary
+- `GCS_SERVICE_ACCOUNT_JSON`, `GCS_BUCKET_NAME` — auto-tailor resumes below 75%
 - `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_RECIPIENT` — new-job alerts
 - `DRY_RUN=true` — fetch + summary only; no writes
 - `ALLOW_LEGACY_SCRAPE=1` — required to run `job:pipeline:companies` (multi-portal legacy scrape)

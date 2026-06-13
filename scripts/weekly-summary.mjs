@@ -4,8 +4,8 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * Runs every Sunday via GitHub Actions (weekly-summary.yml).
  * 1. Fetches the last 7 days of jobs from Google Sheets
- * 2. Sends everything + your resume profile to Claude
- * 3. Claude returns:
+ * 2. Sends everything + your resume profile to Gemini
+ * 3. Gemini returns:
  *    • Weekly job-market analysis  (which companies, roles, trends)
  *    • 3 tailored project suggestions to build this week
  *    • 3 resume / skill tips specific to what employers are asking for
@@ -14,7 +14,7 @@
  * Required env vars:
  *   GOOGLE_SHEET_ID              — target sheet
  *   GOOGLE_SERVICE_ACCOUNT_JSON  — service account (full JSON string)
- *   ANTHROPIC_API_KEY            — Claude API key
+ *   GEMINI_API_KEY               — Gemini API key
  *   WHATSAPP_PHONE_NUMBER_ID     — from Meta Developer console
  *   WHATSAPP_ACCESS_TOKEN        — permanent system user token
  *   WHATSAPP_RECIPIENT           — recipient phone e.g. +15512298660 (optional)
@@ -24,7 +24,8 @@ import { readFileSync } from "fs";
 import { loadEnvLocal } from "./lib/load-env.mjs";
 import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
 import { google } from "googleapis";
-import Anthropic from "@anthropic-ai/sdk";
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
 
 loadEnvLocal();
 
@@ -41,7 +42,7 @@ try {
 
 const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
 const GOOGLE_SERVICE_ACCOUNT_JSON = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const SHEET_NAME = "Jobs";
 const ADMIN_URL = "https://koundinyapidaparhty.vercel.app/admin";
 
@@ -131,11 +132,10 @@ Projects: ${projects}
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Claude — generate the weekly report
+// Gemini — generate the weekly report
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function generateReport(jobs, profile) {
-  const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 
   // Summarise jobs for the prompt (don't blow the context window)
   const companyCounts = {};
@@ -218,17 +218,31 @@ Rules:
 - Do not add any text outside the three sections
 `;
 
-  const message = await client.messages.create({
-    model: process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001",
-    max_tokens: 1800,
-    messages: [{ role: "user", content: prompt }],
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.35,
+        maxOutputTokens: 1800,
+      },
+    }),
+    signal: AbortSignal.timeout(60_000),
   });
 
-  return message.content[0].type === "text" ? message.content[0].text : "";
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Gemini request failed (${res.status}): ${detail.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Parse Claude's response into 3 sections
+// Parse Gemini's response into 3 sections
 // ─────────────────────────────────────────────────────────────────────────────
 
 function parseSections(raw) {
@@ -293,8 +307,8 @@ async function main() {
     console.error("❌  Missing GOOGLE_SHEET_ID or GOOGLE_SERVICE_ACCOUNT_JSON");
     process.exit(1);
   }
-  if (!ANTHROPIC_API_KEY) {
-    console.error("❌  Missing ANTHROPIC_API_KEY");
+  if (!GEMINI_API_KEY) {
+    console.error("❌  Missing GEMINI_API_KEY");
     process.exit(1);
   }
 
@@ -313,16 +327,16 @@ async function main() {
   // 2. Build candidate profile
   const profile = buildProfile();
 
-  // 3. Ask Claude for the report
-  console.log("🤖  Calling Claude for analysis…");
+  // 3. Ask Gemini for the report
+  console.log("🤖  Calling Gemini for analysis…");
   const raw = await generateReport(jobs, profile);
-  console.log("✅  Claude response received");
+  console.log("✅  Gemini response received");
 
   // 4. Parse into 3 sections
   const { market, projects, tips } = parseSections(raw);
 
   if (!market && !projects && !tips) {
-    console.warn("⚠️   Could not parse sections from Claude response:");
+    console.warn("⚠️   Could not parse sections from Gemini response:");
     console.log(raw);
     // Send raw as a single message as fallback
     await sendWhatsApp(raw.slice(0, 1600));

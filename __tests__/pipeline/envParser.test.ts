@@ -429,9 +429,9 @@ describe("applyEnvFile – real pipeline variable names", () => {
     expect(result.GOOGLE_SHEETS_ID).toBe("1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms");
   });
 
-  it("sets ANTHROPIC_API_KEY from file when not in env", () => {
-    const result = applyEnvFile("ANTHROPIC_API_KEY=sk-ant-api03-xxx", {});
-    expect(result.ANTHROPIC_API_KEY).toBe("sk-ant-api03-xxx");
+  it("sets GEMINI_API_KEY from file when not in env", () => {
+    const result = applyEnvFile("GEMINI_API_KEY=AIza-test-key", {});
+    expect(result.GEMINI_API_KEY).toBe("AIza-test-key");
   });
 
   it("sets WHATSAPP_ACCESS_TOKEN from file when not in env", () => {
@@ -458,7 +458,7 @@ GCS_BUCKET_NAME=my-bucket
 GCS_PROJECT_ID=my-project
 GCS_SERVICE_ACCOUNT_JSON=${gcsJson}
 INTERNAL_API_KEY=secret123
-ANTHROPIC_API_KEY=sk-ant-xxx
+GEMINI_API_KEY=AIza-test-key
 GOOGLE_SHEETS_ID=sheet-id-123
 NEXT_PUBLIC_BASE_URL=http://localhost:3000
 `;
@@ -466,7 +466,7 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000
     expect(result.GCS_BUCKET_NAME).toBe("my-bucket");
     expect(result.GCS_PROJECT_ID).toBe("my-project");
     expect(result.INTERNAL_API_KEY).toBe("secret123");
-    expect(result.ANTHROPIC_API_KEY).toBe("sk-ant-xxx");
+    expect(result.GEMINI_API_KEY).toBe("AIza-test-key");
     expect(result.GOOGLE_SHEETS_ID).toBe("sheet-id-123");
     expect(result.NEXT_PUBLIC_BASE_URL).toBe("http://localhost:3000");
     expect(JSON.parse(result.GCS_SERVICE_ACCOUNT_JSON!)).toHaveProperty("type", "service_account");
@@ -475,13 +475,13 @@ NEXT_PUBLIC_BASE_URL=http://localhost:3000
   it("command-line values win over all file values", () => {
     const file = `
 GCS_BUCKET_NAME=file-bucket
-ANTHROPIC_API_KEY=file-key
+GEMINI_API_KEY=file-key
 `;
     const result = applyEnvFile(file, {
       GCS_BUCKET_NAME: "cli-bucket",
-      ANTHROPIC_API_KEY: "cli-key",
+      GEMINI_API_KEY: "cli-key",
     });
     expect(result.GCS_BUCKET_NAME).toBe("cli-bucket");
-    expect(result.ANTHROPIC_API_KEY).toBe("cli-key");
+    expect(result.GEMINI_API_KEY).toBe("cli-key");
   });
 });

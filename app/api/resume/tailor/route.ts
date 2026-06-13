@@ -16,9 +16,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
   if (!apiKey) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 503 });
+    return NextResponse.json({ error: "GEMINI_API_KEY not configured" }, { status: 503 });
   }
 
   let body: { title: string; company: string; description: string; type?: "resume" | "cover" };
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       );
     }
   } catch (err) {
-    console.error("[tailor] Claude error:", err);
+    console.error("[tailor] Gemini error:", err);
     return NextResponse.json({ error: "AI generation failed. Try again." }, { status: 502 });
   }
 

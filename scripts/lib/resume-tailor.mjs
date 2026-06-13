@@ -1,16 +1,13 @@
 /**
- * Tailor resume JSON for a specific job via Claude (pipeline use).
+ * Tailor resume JSON for a specific job via Gemini (pipeline use).
  * Includes humanized prompts, quality validation, and one refinement pass.
  */
 
-import Anthropic from "@anthropic-ai/sdk";
-import { scoreJobWithGemini } from "./gemini-ats.mjs";
+import { scoreJobWithGemini, GEMINI_MODEL } from "./gemini-ats.mjs";
 import {
   validateTailoredResume,
   formatQualityFeedback,
 } from "./resume-quality.mjs";
-
-const MODEL = process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001";
 
 const QUALITY_CHECKLIST = `
 QUALITY CHECKLIST — verify before responding:
@@ -126,26 +123,42 @@ function normalizeTailored(baseResume, parsed) {
   return { tailoredResume, coverLetter };
 }
 
-async function callClaude(client, prompt) {
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 8192,
-    messages: [{ role: "user", content: prompt }],
+async function callGemini(apiKey, prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 8192,
+        responseMimeType: "application/json",
+      },
+    }),
+    signal: AbortSignal.timeout(60_000),
   });
-  const raw = message.content[0]?.type === "text" ? message.content[0].text : "";
-  return extractJsonObject(raw);
+
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    throw new Error(`Gemini request failed (${res.status}): ${detail.slice(0, 200)}`);
+  }
+
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  if (!text.trim()) throw new Error("Empty response from Gemini");
+  return extractJsonObject(text);
 }
 
 /**
  * @returns {{ tailoredResume: object, coverLetter: string }}
  */
 export async function tailorResumeForJob(baseResume, { title, company, description }) {
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
-  const client = new Anthropic({ apiKey });
-  const parsed = await callClaude(
-    client,
+  const parsed = await callGemini(
+    apiKey,
     buildTailorPrompt(baseResume, title, company, description)
   );
   return normalizeTailored(baseResume, parsed);
@@ -159,14 +172,13 @@ export async function tailorResumeWithQualityGate(
   { title, company, description },
   options = {}
 ) {
-  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY is not set");
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
   const preAtsScore = options.preAtsScore ?? null;
-  const client = new Anthropic({ apiKey });
 
-  let parsed = await callClaude(
-    client,
+  let parsed = await callGemini(
+    apiKey,
     buildTailorPrompt(baseResume, title, company, description)
   );
   let { tailoredResume, coverLetter } = normalizeTailored(baseResume, parsed);
@@ -184,8 +196,8 @@ export async function tailorResumeWithQualityGate(
     console.log(`  ↻ Quality refine for ${company} (${quality.errors.length} issues)`);
     const feedback = formatQualityFeedback(quality);
     const atsGaps = postResult.keyGaps ?? postResult.recommendedKeywords ?? "";
-    parsed = await callClaude(
-      client,
+    parsed = await callGemini(
+      apiKey,
       buildRefinePrompt(
         baseResume,
         tailoredResume,
