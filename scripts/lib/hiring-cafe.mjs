@@ -59,8 +59,8 @@ export function buildHiringCafePageUrl(pageIndex = 0, overrides = {}) {
   return pageIndex > 0 ? `${base}&page=${pageIndex}` : base;
 }
 
-/** Sheet column count (A–Q). */
-export const HC_SHEET_COLUMN_COUNT = 17;
+/** Sheet column count (A–S). */
+export const HC_SHEET_COLUMN_COUNT = 19;
 
 export const HC_SHEET_HEADERS = [
   "Company",
@@ -80,6 +80,8 @@ export const HC_SHEET_HEADERS = [
   "ATS Match Summary",
   "Key Gaps",
   "Recommended Keywords",
+  "Resume Modified",
+  "Pre-Tailor ATS",
 ];
 
 /** 16-char slug used in hiring.cafe/job/{id} URLs (stored as requisition_id in SSR hits). */

@@ -7,9 +7,9 @@ import { getJobDedupKey, isBetterHcCompanyName, isBetterHcJobUrl } from "./hirin
 /** Matches GHA cron and local loop interval. */
 export const HC_PIPELINE_INTERVAL_MS = 10 * 60 * 1000;
 
-function padRow17(row) {
+function padRow19(row) {
   const out = [...(row ?? [])];
-  while (out.length < 17) out.push("");
+  while (out.length < 19) out.push("");
   return out;
 }
 
@@ -33,7 +33,7 @@ export async function loadSheetDedupSets(sheets, spreadsheetId, sheetName) {
   const keys = new Set();
   const roleKeys = new Set();
   for (const row of res.data.values ?? []) {
-    const padded = padRow17(row);
+    const padded = padRow19(row);
     const key = getJobDedupKey(padded);
     const role = getRoleDedupKey(padded);
     if (key) keys.add(key);
@@ -65,7 +65,7 @@ export async function refreshDiscoveredAt(
 
   const resp = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!A2:Q`,
+    range: `${sheetName}!A2:S`,
   });
   const rows = resp.data.values ?? [];
   if (rows.length === 0) return 0;
@@ -74,7 +74,7 @@ export async function refreshDiscoveredAt(
   let refreshed = 0;
 
   for (let i = 0; i < rows.length; i++) {
-    const padded = padRow17(rows[i]);
+    const padded = padRow19(rows[i]);
     const key = getJobDedupKey(padded);
     const role = getRoleDedupKey(padded);
     const scraped = (key && scrapedByKey.get(key)) || (role && scrapedByRole.get(role));
@@ -118,13 +118,13 @@ export async function refreshDiscoveredAt(
 export async function compactJobsSheet(sheets, spreadsheetId, sheetName) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${sheetName}!A2:Q`,
+    range: `${sheetName}!A2:S`,
   });
   const rows = res.data.values ?? [];
   if (rows.length === 0) return 0;
 
   const withMeta = rows.map((row, idx) => {
-    const padded = padRow17(row);
+    const padded = padRow19(row);
     const fetchedMs = Date.parse(padded[5] ?? "") || 0;
     return {
       padded,
@@ -155,12 +155,12 @@ export async function compactJobsSheet(sheets, spreadsheetId, sheetName) {
 
   await sheets.spreadsheets.values.clear({
     spreadsheetId,
-    range: `${sheetName}!A2:Q`,
+    range: `${sheetName}!A2:S`,
   });
   if (keep.length > 0) {
     await sheets.spreadsheets.values.update({
       spreadsheetId,
-      range: `${sheetName}!A2:Q`,
+      range: `${sheetName}!A2:S`,
       valueInputOption: "RAW",
       requestBody: { values: keep },
     });

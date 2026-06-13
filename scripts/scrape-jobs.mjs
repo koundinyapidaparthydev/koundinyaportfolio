@@ -1393,10 +1393,10 @@ async function ensureSheetAndHeaders(sheets) {
     console.log(`📄  Created sheet "${SHEET_NAME}"`);
   }
 
-  // Always sync headers (A–Q, 17 columns)
+  // Always sync headers (A–S, 19 columns)
   await sheets.spreadsheets.values.update({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A1:Q1`,
+    range: `${SHEET_NAME}!A1:S1`,
     valueInputOption: "RAW",
     requestBody: { values: [HEADERS] },
   });
@@ -1546,7 +1546,7 @@ async function writeNewJobs(sheets, newJobs) {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A:Q`,
+    range: `${SHEET_NAME}!A:S`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
     requestBody: { values: rows14 },
@@ -1657,7 +1657,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
   try {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A2:Q`,
+      range: `${SHEET_NAME}!A2:S`,
     });
     const dataRows = (resp.data.values ?? []).map(padRowTo17);
     if (dataRows.length === 0) return;
@@ -1692,7 +1692,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
       });
       await sheets.spreadsheets.values.update({
         spreadsheetId: GOOGLE_SHEET_ID,
-        range: `${ARCHIVE_SHEET}!A1:Q1`,
+        range: `${ARCHIVE_SHEET}!A1:S1`,
         valueInputOption: "RAW",
         requestBody: { values: [HEADERS] },
       });
@@ -1702,7 +1702,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
     // Append full rows to archive (A–N)
     await sheets.spreadsheets.values.append({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${ARCHIVE_SHEET}!A:Q`,
+      range: `${ARCHIVE_SHEET}!A:S`,
       valueInputOption: "RAW",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: oldRows },
@@ -1711,7 +1711,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
     // Rewrite Jobs: headers + keep rows only; clear leftover data rows
     await sheets.spreadsheets.values.clear({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A2:Q`,
+      range: `${SHEET_NAME}!A2:S`,
     });
     const jobsBody = keepRows.length > 0 ? [HEADERS, ...keepRows] : [HEADERS];
     await sheets.spreadsheets.values.update({
