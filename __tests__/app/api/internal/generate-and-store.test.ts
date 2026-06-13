@@ -89,21 +89,22 @@ const VALID_KEY = "test-internal-key-abc123";
 const VALID_RESUME_JSON = {
   personalInfo: {
     name: "Test User",
-    title: "Software Engineer",
+    title: "",
     email: "test@example.com",
     phone: "555-1234",
     location: "New York, NY",
     linkedin: "https://linkedin.com/in/test",
     github: "https://github.com/test",
     portfolio: "https://test.com",
-    summary: "Tailored summary for this role.",
+    summary:
+      "Software engineer with 3+ years building web applications. I have shipped React and Node.js features and am interested in contributing to ACME Corp's engineering team.",
   },
   education: [],
   experience: [],
   skills: [],
   projects: [],
   coverLetter:
-    "Dear Hiring Manager,\n\nI am excited...\n\nThank you,\nTest User",
+    "Dear Hiring Manager,\n\nI built production dashboards with React at my last role and would like to do similar work at ACME Corp.\n\nThank you,\nTest User",
 };
 
 const VALID_CLAUDE_TEXT = JSON.stringify(VALID_RESUME_JSON);
@@ -121,6 +122,20 @@ function makeReq(
 
 function claudeOk(text: string) {
   return Promise.resolve({ content: [{ type: "text", text }] });
+}
+
+function mockAtsProgression(preScore = 62, postScore = 82) {
+  let calls = 0;
+  mockCalculateAtsScore.mockImplementation(() => {
+    calls += 1;
+    const score = calls === 1 ? preScore : postScore;
+    return {
+      score,
+      matched: ["react", "typescript"],
+      missing: ["kubernetes"],
+      label: "high",
+    };
+  });
 }
 
 const VALID_BODY = {
@@ -141,6 +156,7 @@ describe("POST /api/internal/generate-and-store – authentication", () => {
     jest.clearAllMocks();
     process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
     mockMessagesCreate.mockResolvedValue({ content: [{ type: "text", text: VALID_CLAUDE_TEXT }] });
+    mockAtsProgression();
   });
 
   afterEach(() => {
@@ -296,6 +312,7 @@ describe("POST /api/internal/generate-and-store – body validation", () => {
 
   it("does NOT return 400 when jobUrl is missing (optional)", async () => {
     mockMessagesCreate.mockResolvedValue({ content: [{ type: "text", text: VALID_CLAUDE_TEXT }] });
+    mockAtsProgression();
     const { jobUrl: _, ...bodyNoUrl } = VALID_BODY;
     void _;
     const res = await POST(makeReq(bodyNoUrl));
@@ -304,6 +321,7 @@ describe("POST /api/internal/generate-and-store – body validation", () => {
 
   it("accepts body with extra unknown fields without error", async () => {
     mockMessagesCreate.mockResolvedValue({ content: [{ type: "text", text: VALID_CLAUDE_TEXT }] });
+    mockAtsProgression();
     const res = await POST(makeReq({ ...VALID_BODY, unknownField: "ignored" }));
     expect(res.status).not.toBe(400);
   });
@@ -336,6 +354,7 @@ describe("POST /api/internal/generate-and-store – Claude response parsing", ()
     jest.clearAllMocks();
     process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
     mockUploadToGCS.mockResolvedValue("https://storage.googleapis.com/bucket/file.pdf");
+    mockAtsProgression();
   });
 
   afterEach(() => {
@@ -344,6 +363,7 @@ describe("POST /api/internal/generate-and-store – Claude response parsing", ()
 
   it("parses clean JSON response from Claude", async () => {
     mockMessagesCreate.mockResolvedValue(claudeOk(VALID_CLAUDE_TEXT));
+    mockAtsProgression();
     const res = await POST(makeReq(VALID_BODY));
     expect(res.status).toBe(200);
   });
@@ -457,10 +477,12 @@ describe("POST /api/internal/generate-and-store – Claude response parsing", ()
       ...VALID_RESUME_JSON,
       personalInfo: {
         ...VALID_RESUME_JSON.personalInfo,
-        summary: "Expert in {React} and {TypeScript} with {AWS} experience.",
+        summary:
+          "Software engineer with 3+ years building web applications using React, TypeScript, and AWS. Interested in ACME Corp's engineering team and {React} ecosystem work.",
       },
     };
     mockMessagesCreate.mockResolvedValue(claudeOk(JSON.stringify(nestedJSON)));
+    mockAtsProgression();
     const res = await POST(makeReq(VALID_BODY));
     expect(res.status).toBe(200);
   });
@@ -484,6 +506,7 @@ describe("POST /api/internal/generate-and-store – GCS upload", () => {
     jest.clearAllMocks();
     process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
     mockMessagesCreate.mockResolvedValue(claudeOk(VALID_CLAUDE_TEXT));
+    mockAtsProgression();
     mockUploadToGCS.mockResolvedValue(GCS_URL);
   });
 
@@ -572,6 +595,7 @@ describe("POST /api/internal/generate-and-store – success response", () => {
     jest.clearAllMocks();
     process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
     mockMessagesCreate.mockResolvedValue(claudeOk(VALID_CLAUDE_TEXT));
+    mockAtsProgression();
     mockUploadToGCS.mockResolvedValue(GCS_URL);
     mockCalculateAtsScore.mockReturnValue({
       score: 82,
@@ -613,36 +637,23 @@ describe("POST /api/internal/generate-and-store – success response", () => {
     expect(body).toHaveProperty("atsScore");
   });
 
-  it("includes matched array in response body", async () => {
+  it("includes qualityScore in response body", async () => {
     const res = await POST(makeReq(VALID_BODY));
     const body = await res.json();
-    expect(body).toHaveProperty("matched");
-    expect(Array.isArray((body as { matched: string[] }).matched)).toBe(true);
+    expect(body).toHaveProperty("qualityScore");
+    expect(typeof (body as { qualityScore: number }).qualityScore).toBe("number");
   });
 
-  it("includes missing array in response body", async () => {
+  it("includes preAtsScore in response body", async () => {
     const res = await POST(makeReq(VALID_BODY));
     const body = await res.json();
-    expect(body).toHaveProperty("missing");
-    expect(Array.isArray((body as { missing: string[] }).missing)).toBe(true);
+    expect(body).toHaveProperty("preAtsScore");
   });
 
-  it("atsScore matches what calculateAtsScore returned", async () => {
+  it("atsScore matches post-tailor score from calculateAtsScore", async () => {
     const res = await POST(makeReq(VALID_BODY));
     const body = await res.json() as { atsScore: number };
     expect(body.atsScore).toBe(82);
-  });
-
-  it("matched array matches what calculateAtsScore returned", async () => {
-    const res = await POST(makeReq(VALID_BODY));
-    const body = await res.json() as { matched: string[] };
-    expect(body.matched).toEqual(["react", "typescript"]);
-  });
-
-  it("missing array matches what calculateAtsScore returned", async () => {
-    const res = await POST(makeReq(VALID_BODY));
-    const body = await res.json() as { missing: string[] };
-    expect(body.missing).toEqual(["kubernetes"]);
   });
 
   it("coverLetterText is a string", async () => {
@@ -737,8 +748,15 @@ describe("POST /api/internal/generate-and-store – multiple requests", () => {
     jest.clearAllMocks();
     process.env = { ...origEnv, INTERNAL_API_KEY: VALID_KEY, ANTHROPIC_API_KEY: "sk-ant-test" };
     mockMessagesCreate.mockResolvedValue(claudeOk(VALID_CLAUDE_TEXT));
+    mockAtsProgression();
     mockUploadToGCS.mockResolvedValue(GCS_URL);
-    mockCalculateAtsScore.mockReturnValue({ score: 70, matched: [], missing: [], label: "high" });
+    mockCalculateAtsScore.mockImplementation(() => ({
+      score: 70,
+      matched: [],
+      missing: [],
+      label: "high",
+    }));
+    mockAtsProgression(70, 78);
   });
 
   afterEach(() => {

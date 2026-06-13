@@ -142,7 +142,7 @@ const SVSchema = z.object({ value: z.string() });
 
 const PersonalInfoSchema = z.object({
   name: z.string().min(1),
-  title: z.string().min(1),
+  title: z.string().optional(),
   email: z.string().email(),
   phone: z.string().min(1),
   location: z.string().min(1),
@@ -341,9 +341,6 @@ function PersonalInfoSection({
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Full name" error={pi.name?.message}>
           <input {...reg("personalInfo.name")} className={inputCls} />
-        </Field>
-        <Field label="Title / Role" error={pi.title?.message}>
-          <input {...reg("personalInfo.title")} className={inputCls} />
         </Field>
         <Field label="Email" error={pi.email?.message}>
           <input {...reg("personalInfo.email")} type="email" className={inputCls} />

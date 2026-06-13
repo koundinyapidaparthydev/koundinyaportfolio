@@ -8,7 +8,8 @@
  *   3. Backfill posted-at, compact duplicate rows (HC id + company/title)
  *   4. Append only NEW jobs (dedup vs Jobs + Old Jobs)
  *   5. Backfill full descriptions + ATS score vs resume (Gemini)
- *   6. Archive Jobs tab rows older than 12h → Old Jobs
+ *   6. Tailor resumes for recent jobs scoring below 75% (Claude + re-score)
+ *   7. Archive Jobs tab rows older than 12h → Old Jobs
  *   7. Log to Scrape Log + optional WhatsApp for new discoveries
  *
  * Local loop (dev only — production uses GHA):
@@ -34,6 +35,7 @@ import {
   backfillHcDescriptionsOnSheet,
   scoreHcJobsOnSheet,
 } from "./lib/hiring-cafe-ats.mjs";
+import { tailorLowAtsJobsOnSheet } from "./lib/hiring-cafe-tailor.mjs";
 
 loadEnvLocal();
 validatePipelineEnv("scrape");
@@ -87,6 +89,7 @@ async function main() {
 
   const descriptionsBackfilled = await backfillHcDescriptionsOnSheet(sheets, GOOGLE_SHEET_ID);
   const atsScored = await scoreHcJobsOnSheet(sheets, GOOGLE_SHEET_ID);
+  const tailored = await tailorLowAtsJobsOnSheet(sheets, GOOGLE_SHEET_ID);
 
   await sj.archiveOldJobs(sheets, { maxAgeMs: APPLY_NOW_WINDOW_MS });
 
@@ -99,7 +102,7 @@ async function main() {
     status: "OK",
     notes:
       `HC US · pages 1-${5} · refreshed ${refreshed} · dupes ${dupesRemoved} · ` +
-      `desc ${descriptionsBackfilled} · ATS ${atsScored} · window ${APPLY_NOW_WINDOW_MS / 3_600_000}h`,
+      `desc ${descriptionsBackfilled} · ATS ${atsScored} · tailored ${tailored} · window ${APPLY_NOW_WINDOW_MS / 3_600_000}h`,
   });
 
   if (newJobRows.length > 0) {
@@ -107,7 +110,7 @@ async function main() {
   }
 
   console.log(
-    `\n📊  HC pipeline: ${normalized.length} fetched | ${refreshed} refreshed | ${newJobRows.length} new | ${dupesRemoved} dupes | ${descriptionsBackfilled} desc | ${atsScored} ATS | ${beforeCount} in sheet before`
+    `\n📊  HC pipeline: ${normalized.length} fetched | ${refreshed} refreshed | ${newJobRows.length} new | ${dupesRemoved} dupes | ${descriptionsBackfilled} desc | ${atsScored} ATS | ${tailored} tailored | ${beforeCount} in sheet before`
   );
   console.log(`═══════════════════════════════════════════════════════════\n`);
 }

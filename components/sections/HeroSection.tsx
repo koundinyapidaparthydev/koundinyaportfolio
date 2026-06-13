@@ -5,7 +5,7 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ personalInfo }: HeroSectionProps) {
-  const { name, title, email, phone, linkedin, github } = personalInfo;
+  const { name, email, phone, linkedin, github } = personalInfo;
 
   return (
     <section
@@ -13,13 +13,9 @@ export default function HeroSection({ personalInfo }: HeroSectionProps) {
       className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-6 text-white"
     >
       <div className="mx-auto max-w-4xl text-center">
-        <p className="mb-3 text-sm font-medium uppercase tracking-widest text-indigo-400">
-          Full Stack Software Engineer
-        </p>
         <h1 className="mb-6 text-5xl font-bold tracking-tight sm:text-7xl">
           {name}
         </h1>
-        <p className="mb-8 text-lg text-slate-400 sm:text-xl">{title}</p>
 
         <div className="mb-10 flex flex-wrap items-center justify-center gap-4 text-sm text-slate-300">
           <a href={`mailto:${email}`} className="hover:text-indigo-400 transition-colors">

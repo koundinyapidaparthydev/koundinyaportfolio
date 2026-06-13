@@ -4,19 +4,20 @@
 
 import { loadResume } from "./resume-loader.mjs";
 import { scoreJobWithGemini } from "./gemini-ats.mjs";
+import { DEFAULT_ATS_MIN_SCORE } from "./ats-config.mjs";
 
 const SHEET_NAME = "Jobs";
 const DEFAULT_ATS_BATCH = Number(process.env.HC_ATS_BATCH_LIMIT) || 30;
 const MIN_DESCRIPTION_FOR_ATS = 120;
 
-function padRow17(row) {
+function padRow19(row) {
   const out = [...(row ?? [])];
-  while (out.length < 17) out.push("");
+  while (out.length < 19) out.push("");
   return out;
 }
 
 function needsAtsScore(row) {
-  const padded = padRow17(row);
+  const padded = padRow19(row);
   const desc = (padded[6] ?? "").trim();
   const score = (padded[9] ?? "").trim();
   return desc.length >= MIN_DESCRIPTION_FOR_ATS && !score;
@@ -32,11 +33,11 @@ export async function scoreHcJobsOnSheet(sheets, spreadsheetId, options = {}) {
 
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${SHEET_NAME}!A2:Q`,
+    range: `${SHEET_NAME}!A2:S`,
   });
   const rows = res.data.values ?? [];
   const targets = rows
-    .map((row, idx) => ({ row: padRow17(row), sheetRow: idx + 2 }))
+    .map((row, idx) => ({ row: padRow19(row), sheetRow: idx + 2 }))
     .filter(({ row }) => needsAtsScore(row))
     .slice(0, batchLimit);
 
@@ -49,11 +50,14 @@ export async function scoreHcJobsOnSheet(sheets, spreadsheetId, options = {}) {
     const title = row[1] ?? "";
     const desc = row[6] ?? "";
     const result = await scoreJobWithGemini(title, desc, resume);
+    const modifiedFlag =
+      result.score >= DEFAULT_ATS_MIN_SCORE ? "no" : "";
     updateData.push(
       { range: `${SHEET_NAME}!J${sheetRow}`, values: [[String(result.score)]] },
       { range: `${SHEET_NAME}!O${sheetRow}`, values: [[result.matchSummary ?? ""]] },
       { range: `${SHEET_NAME}!P${sheetRow}`, values: [[result.keyGaps ?? ""]] },
-      { range: `${SHEET_NAME}!Q${sheetRow}`, values: [[result.recommendedKeywords ?? ""]] }
+      { range: `${SHEET_NAME}!Q${sheetRow}`, values: [[result.recommendedKeywords ?? ""]] },
+      { range: `${SHEET_NAME}!R${sheetRow}`, values: [[modifiedFlag]] }
     );
   }
 
@@ -78,7 +82,7 @@ export async function backfillHcDescriptionsOnSheet(sheets, spreadsheetId, optio
   const limit = options.limit ?? 40;
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${SHEET_NAME}!A2:Q`,
+    range: `${SHEET_NAME}!A2:S`,
   });
   const rows = res.data.values ?? [];
   const buildId = await fetchHcBuildId();
@@ -86,7 +90,7 @@ export async function backfillHcDescriptionsOnSheet(sheets, spreadsheetId, optio
   let checked = 0;
 
   for (let i = 0; i < rows.length && checked < limit; i++) {
-    const row = padRow17(rows[i]);
+    const row = padRow19(rows[i]);
     const desc = (row[6] ?? "").trim();
     if (desc.length >= 400) continue;
 

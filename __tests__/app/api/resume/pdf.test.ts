@@ -31,7 +31,6 @@ const VALID_PDF_BYTES = Buffer.from(
 const SAMPLE_RESUME = {
   personalInfo: {
     name: "Koundinya Pidaparthy",
-    title: "Full Stack Software Engineer",
     email: "test@example.com",
     phone: "555-0000",
     location: "New York, NY",

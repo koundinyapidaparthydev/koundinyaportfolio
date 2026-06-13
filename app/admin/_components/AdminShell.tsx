@@ -22,11 +22,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
 }
 
 const TAB_TITLES: Record<string, string> = {
-  overview: "Overview",
   "all-jobs": "Hiring Cafe Jobs",
   "edit-resume": "Edit Resume",
-  visitors: "Visitors",
-  settings: "Settings",
 };
 
 export function AdminTopBar({

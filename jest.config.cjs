@@ -21,12 +21,8 @@ const customConfig = {
   collectCoverageFrom: [
     "hooks/useTypewriter.ts",
     "lib/resumeStore.ts",
-    "lib/emailNotification.ts",
-    "lib/visitorStore.ts",
     "app/api/resume/route.ts",
     "app/api/contact/route.ts",
-    "app/api/track/route.ts",
-    "app/api/visitors/route.ts",
     "lib/store.ts",
     "components/sections/Hero.tsx",
   ],

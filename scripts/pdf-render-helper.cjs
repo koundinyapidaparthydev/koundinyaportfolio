@@ -123,7 +123,9 @@ function ResumePdfDocument({ resume }) {
       { size: "LETTER", style: styles.page },
       e(View, { style: styles.header },
         e(Text, { style: styles.name }, personalInfo.name),
-        e(Text, { style: styles.titleText }, personalInfo.title),
+        personalInfo.title
+          ? e(Text, { style: styles.titleText }, personalInfo.title)
+          : null,
         e(View, { style: styles.contactRow }, ...contactParts)
       ),
       personalInfo.summary && e(View, { style: styles.section },

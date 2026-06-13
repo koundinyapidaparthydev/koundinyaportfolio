@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { StoreHydrator } from "@/components/StoreHydrator";
-import { TrackerInit } from "@/components/TrackerInit";
 import { AuroraScrollInit } from "@/components/AuroraScrollInit";
 import { MagneticCursor } from "@/components/MagneticCursor";
 import { Providers } from "./providers";
@@ -77,7 +76,6 @@ export default function RootLayout({
           <AuroraScrollInit />
           <MagneticCursor />
           <StoreHydrator />
-          <TrackerInit />
           <ConditionalNavbar />
           {children}
 

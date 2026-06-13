@@ -17,7 +17,7 @@ export function buildPortfolioContext(resume: Resume): string {
 
   const payload = {
     name: personalInfo.name,
-    title: personalInfo.title,
+    ...(personalInfo.title ? { title: personalInfo.title } : {}),
     location: personalInfo.location,
     email: personalInfo.email,
     linkedin: personalInfo.linkedin,

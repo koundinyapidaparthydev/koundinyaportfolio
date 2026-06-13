@@ -43,7 +43,7 @@ Return JSON: {
   "keyGaps": string[],
   "recommendedKeywords": string[]
 }
-high >= 65, medium >= 35, low < 35. recommendedKeywords = top terms to add to resume for this role.
+high >= 75, medium >= 35, low < 35. recommendedKeywords = top terms to add to resume for this role.
 
 Job title: ${jobTitle}
 
@@ -78,7 +78,7 @@ ${resumeContext}`;
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     const parsed = JSON.parse(text);
     const score = Math.min(100, Math.max(0, Number(parsed.score) || 0));
-    const label = score >= 65 ? "high" : score >= 35 ? "medium" : "low";
+    const label = score >= 75 ? "high" : score >= 35 ? "medium" : "low";
     const matched = Array.isArray(parsed.matched) ? parsed.matched.slice(0, 20) : [];
     const missing = Array.isArray(parsed.missing) ? parsed.missing.slice(0, 20) : [];
     const keyGaps = Array.isArray(parsed.keyGaps)

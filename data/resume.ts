@@ -3,7 +3,6 @@ import type { Resume } from "@/types/resume";
 export const resumeData: Resume = {
   personalInfo: {
     name: "Koundinya Pidaparthy",
-    title: "Full Stack Software Engineer",
     email: "koundinyapidaparthy@gmail.com",
     phone: "551-229-8660",
     location: "New York, NY",
@@ -11,7 +10,7 @@ export const resumeData: Resume = {
     github: "github.com/koundinyapidaparthy2",
     portfolio: "koundinyapidaparthy.com",
     summary:
-      "Full Stack Software Engineer with 3+ years of experience building scalable web applications. Proficient in React, Next.js, Node.js, TypeScript, and cloud platforms (AWS, GCP). Passionate about crafting performant, user-first products and integrating AI-powered features.",
+      "Software engineer with 3+ years of experience building scalable web applications. Proficient in React, Next.js, Node.js, TypeScript, and cloud platforms (AWS, GCP). Passionate about crafting performant, user-first products and integrating AI-powered features.",
   },
 
   education: [

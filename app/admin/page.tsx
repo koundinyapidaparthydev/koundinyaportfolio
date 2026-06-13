@@ -14,19 +14,10 @@ import dynamic from "next/dynamic";
 import AdminSidebar, { type AdminTab } from "./_components/Sidebar";
 import { AdminTopBar, AdminTabPanel } from "./_components/AdminShell";
 
-const OverviewTab = dynamic(() => import("./_components/OverviewTab"), {
+const AllJobsTab = dynamic(() => import("./_components/AllJobsTab"), {
   loading: () => <TabLoader />,
 });
 const EditResumeTab = dynamic(() => import("./_components/EditResumeTab"), {
-  loading: () => <TabLoader />,
-});
-const VisitorsTab = dynamic(() => import("./_components/VisitorsTab"), {
-  loading: () => <TabLoader />,
-});
-const SettingsTab = dynamic(() => import("./_components/SettingsTab"), {
-  loading: () => <TabLoader />,
-});
-const AllJobsTab = dynamic(() => import("./_components/AllJobsTab"), {
   loading: () => <TabLoader />,
 });
 
@@ -39,7 +30,7 @@ function TabLoader() {
 }
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
+  const [activeTab, setActiveTab] = useState<AdminTab>("all-jobs");
   const [refreshing, setRefreshing] = useState(false);
   const { data: session } = useSession();
   const queryClient = useQueryClient();
@@ -70,11 +61,8 @@ export default function AdminPage() {
 
           <main className="min-w-0 flex-1">
             <AdminTabPanel tabKey={activeTab}>
-              {activeTab === "overview" && <OverviewTab />}
               {activeTab === "all-jobs" && <AllJobsTab />}
               {activeTab === "edit-resume" && <EditResumeTab />}
-              {activeTab === "visitors" && <VisitorsTab />}
-              {activeTab === "settings" && <SettingsTab />}
             </AdminTabPanel>
           </main>
         </div>

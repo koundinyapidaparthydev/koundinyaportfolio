@@ -65,6 +65,7 @@ const HEADERS = [
   "Company", "Title", "Location", "URL", "Category", "Fetched At", "Description",
   "Resume URL", "Cover Letter", "ATS Score", "Apply Status", "Applied At", "Notes",
   "Posted At", "ATS Match Summary", "Key Gaps", "Recommended Keywords",
+  "Resume Modified", "Pre-Tailor ATS",
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -188,13 +189,19 @@ function toSheetRow(row) {
     "", "", "", "", "", "",
     r[6],
     "", "", "",
+    "", "",
   ];
 }
 
-function padRowTo17(row) {
+function padRowTo19(row) {
   const out = [...row];
-  while (out.length < 17) out.push("");
+  while (out.length < 19) out.push("");
   return out;
+}
+
+/** @deprecated Use padRowTo19 */
+function padRowTo17(row) {
+  return padRowTo19(row);
 }
 
 /** Pause between company fetches to avoid hammering servers */

@@ -4,6 +4,8 @@ import {
   detectPlatformFromUrl,
   filterByTime,
   filterByAtsFriendly,
+  filterByResumeModified,
+  isResumeModified,
   jobTimeTimestamp,
   filterBySearch,
   filterByPlatform,
@@ -18,6 +20,7 @@ import {
   DEFAULT_TIME_FILTER,
   DEFAULT_COUNTRY_LOCATION,
   DEFAULT_ATS_MIN_SCORE,
+  DEFAULT_RESUME_MODIFIED_FILTER,
   type AllJobsRow,
 } from "@/lib/admin/allJobsFilters";
 
@@ -192,6 +195,16 @@ describe("toggleSortColumn", () => {
   });
 });
 
+describe("ATS thresholds", () => {
+  it("uses 75% as the default minimum ATS score", () => {
+    expect(DEFAULT_ATS_MIN_SCORE).toBe(75);
+  });
+
+  it("defaults resume filter to non-tailored base resumes", () => {
+    expect(DEFAULT_RESUME_MODIFIED_FILTER).toBe("non-modified");
+  });
+});
+
 describe("filterByAtsFriendly", () => {
   it("keeps jobs at or above the default ATS threshold", () => {
     const jobs = [
@@ -207,6 +220,36 @@ describe("filterByAtsFriendly", () => {
   it("is disabled when filter is off", () => {
     const jobs = [job({ atsScore: "40" })];
     expect(filterByAtsFriendly(jobs, false)).toHaveLength(1);
+  });
+});
+
+describe("filterByResumeModified", () => {
+  it("shows base-resume jobs at or above 75% for non-modified filter", () => {
+    const jobs = [
+      job({ atsScore: "80", resumeModified: "no" }),
+      job({ atsScore: "70", resumeModified: "no" }),
+      job({ atsScore: "82", resumeModified: "yes", resumeUrl: "https://x/r.pdf" }),
+    ];
+    const result = filterByResumeModified(jobs, "non-modified");
+    expect(result).toHaveLength(1);
+    expect(result[0].atsScore).toBe("80");
+  });
+
+  it("shows AI-tailored jobs for modified filter", () => {
+    const jobs = [
+      job({ atsScore: "80", resumeModified: "no" }),
+      job({ atsScore: "78", resumeModified: "yes" }),
+    ];
+    expect(filterByResumeModified(jobs, "modified")).toHaveLength(1);
+    expect(isResumeModified(jobs[1])).toBe(true);
+  });
+
+  it("returns all jobs when filter is all", () => {
+    const jobs = [
+      job({ atsScore: "40", resumeModified: "yes" }),
+      job({ atsScore: "90", resumeModified: "no" }),
+    ];
+    expect(filterByResumeModified(jobs, "all")).toHaveLength(2);
   });
 });
 
@@ -279,7 +322,7 @@ describe("applyAllJobsFilters", () => {
       search: "openai",
       timeFilter: "30m",
       hasDescription: true,
-      atsFriendly: false,
+      resumeModifiedFilter: "all",
       countryLocation: "all",
       sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,
@@ -288,7 +331,7 @@ describe("applyAllJobsFilters", () => {
     expect(result[0].company).toBe("OpenAI");
   });
 
-  it("shows search matches even when ATS-friendly filter is enabled", () => {
+  it("shows search matches even when resume filter is enabled", () => {
     const jobs = [
       job({
         company: "JPMorgan Chase",
@@ -301,6 +344,7 @@ describe("applyAllJobsFilters", () => {
         company: "Stripe",
         title: "Staff Engineer",
         atsScore: "80",
+        resumeModified: "no",
         location: "San Francisco, CA",
         fetchedAt: new Date(NOW - 10 * 60_000).toISOString(),
       }),
@@ -309,7 +353,7 @@ describe("applyAllJobsFilters", () => {
       search: "AEM Lead",
       timeFilter: "all",
       hasDescription: false,
-      atsFriendly: true,
+      resumeModifiedFilter: "non-modified",
       countryLocation: "all",
       sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,
@@ -328,7 +372,7 @@ describe("applyAllJobsFilters", () => {
       search: "",
       timeFilter: "all",
       hasDescription: false,
-      atsFriendly: false,
+      resumeModifiedFilter: "all",
       countryLocation: "us",
       sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,
@@ -345,7 +389,7 @@ describe("applyAllJobsFilters", () => {
       search: "",
       timeFilter: "all",
       hasDescription: false,
-      atsFriendly: false,
+      resumeModifiedFilter: "all",
       countryLocation: "all",
       sort: DEFAULT_ALL_JOBS_SORT,
       now: NOW,

@@ -6,6 +6,9 @@ import {
   filterByCountryLocation,
   type CountryLocationFilter,
 } from "@/lib/admin/jobLocationMatch";
+import { DEFAULT_ATS_MIN_SCORE } from "@/lib/admin/atsConfig";
+
+export { DEFAULT_ATS_MIN_SCORE } from "@/lib/admin/atsConfig";
 
 export {
   COUNTRY_LOCATION_FILTERS,
@@ -26,8 +29,19 @@ export const DEFAULT_TIME_FILTER: TimeFilter = "10m";
 /** Matches GHA cron and `npm run job:pipeline:loop`. */
 export const HC_PIPELINE_INTERVAL_MS = 10 * 60_000;
 
-/** Default minimum ATS score when "ATS-friendly" filter is enabled. */
-export const DEFAULT_ATS_MIN_SCORE = 65;
+/** Filter jobs by whether the resume was AI-tailored for that role. */
+export type ResumeModifiedFilter = "non-modified" | "modified" | "all";
+
+export const DEFAULT_RESUME_MODIFIED_FILTER: ResumeModifiedFilter = "non-modified";
+
+export const RESUME_MODIFIED_FILTER_OPTIONS: {
+  id: ResumeModifiedFilter;
+  label: string;
+}[] = [
+  { id: "non-modified", label: "Non-tailored (≥75% base resume)" },
+  { id: "modified", label: "AI-tailored resumes" },
+  { id: "all", label: "All jobs" },
+];
 
 export type SortColumn =
   | "company"
@@ -79,6 +93,11 @@ export interface AllJobsRow {
   atsMatchSummary?: string;
   keyGaps?: string;
   recommendedKeywords?: string;
+  /** Sheet column R — "yes" when resume was AI-tailored. */
+  resumeModified?: string;
+  /** Sheet column S — ATS score before tailoring (for comparison). */
+  preTailorAtsScore?: string;
+  resumeUrl?: string;
 }
 
 export const NEW_JOB_WINDOW_MS = 30 * 60_000;
@@ -202,6 +221,17 @@ export function parseAtsScore(value?: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+/** True when this job has an AI-tailored resume stored. */
+export function isResumeModified(job: {
+  resumeModified?: string;
+  resumeUrl?: string;
+}): boolean {
+  const flag = (job.resumeModified ?? "").trim().toLowerCase();
+  if (flag === "yes") return true;
+  if (flag === "no") return false;
+  return !!(job.resumeUrl ?? "").trim();
+}
+
 /** Keep jobs at or above the ATS threshold (requires a numeric ATS score). */
 export function filterByAtsFriendly<T extends AllJobsRow>(
   jobs: T[],
@@ -210,6 +240,28 @@ export function filterByAtsFriendly<T extends AllJobsRow>(
 ): T[] {
   if (!enabled) return jobs;
   return jobs.filter((j) => {
+    const score = parseAtsScore(j.atsScore);
+    return score !== null && score >= minScore;
+  });
+}
+
+/**
+ * Filter by base vs AI-tailored resume.
+ * - non-modified: base resume only, ATS ≥ minScore
+ * - modified: AI-tailored rows
+ * - all: no filter
+ */
+export function filterByResumeModified<T extends AllJobsRow>(
+  jobs: T[],
+  filter: ResumeModifiedFilter,
+  minScore = DEFAULT_ATS_MIN_SCORE
+): T[] {
+  if (filter === "all") return jobs;
+  if (filter === "modified") {
+    return jobs.filter((j) => isResumeModified(j));
+  }
+  return jobs.filter((j) => {
+    if (isResumeModified(j)) return false;
     const score = parseAtsScore(j.atsScore);
     return score !== null && score >= minScore;
   });
@@ -287,7 +339,7 @@ export interface AllJobsFilterOpts {
   search: string;
   timeFilter: TimeFilter;
   hasDescription: boolean;
-  atsFriendly: boolean;
+  resumeModifiedFilter: ResumeModifiedFilter;
   atsMinScore?: number;
   countryLocation: CountryLocationFilter;
   sort?: AllJobsSort;
@@ -303,9 +355,15 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
   result = filterByTime(result, opts.timeFilter, opts.now);
   result = filterByCountryLocation(result, opts.countryLocation);
   result = filterByHasDescription(result, opts.hasDescription);
-  // When cross-checking a specific title, don't hide low-ATS matches.
-  const applyAtsFilter = opts.atsFriendly && !opts.search.trim();
-  result = filterByAtsFriendly(result, applyAtsFilter, opts.atsMinScore);
+  // When cross-checking a specific title, show all matches regardless of resume filter.
+  const applyResumeFilter = opts.resumeModifiedFilter !== "all" && !opts.search.trim();
+  if (applyResumeFilter) {
+    result = filterByResumeModified(
+      result,
+      opts.resumeModifiedFilter,
+      opts.atsMinScore
+    );
+  }
   return sortAllJobs(result, opts.sort ?? DEFAULT_ALL_JOBS_SORT);
 }
 

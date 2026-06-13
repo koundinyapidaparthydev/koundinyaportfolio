@@ -155,9 +155,11 @@ export default function ResumePreview({ resume }: { resume: Resume }) {
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           {personalInfo.name}
         </h1>
-        <p className="mt-0.5 text-sm font-medium text-slate-600">
-          {personalInfo.title}
-        </p>
+        {personalInfo.title ? (
+          <p className="mt-0.5 text-sm font-medium text-slate-600">
+            {personalInfo.title}
+          </p>
+        ) : null}
         <div className="mt-2 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[10.5px] text-slate-500">
           {personalInfo.email && <span>{personalInfo.email}</span>}
           {personalInfo.phone && <span>·</span>}

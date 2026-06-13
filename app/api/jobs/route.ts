@@ -26,6 +26,10 @@ export interface Job {
   atsMatchSummary?: string;
   keyGaps?: string;
   recommendedKeywords?: string;
+  /** "yes" when resume was AI-tailored for this role. */
+  resumeModified?: string;
+  /** ATS score before tailoring (base resume). */
+  preTailorAtsScore?: string;
 }
 
 export async function GET(req: NextRequest) {
@@ -50,7 +54,7 @@ export async function GET(req: NextRequest) {
     const sheets = google.sheets({ version: "v4", auth });
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `${SHEET_NAME}!A:Q`,
+      range: `${SHEET_NAME}!A:S`,
     });
 
     const rows = response.data.values ?? [];
@@ -76,6 +80,8 @@ export async function GET(req: NextRequest) {
       atsMatchSummary: row[14] ?? "",
       keyGaps: row[15] ?? "",
       recommendedKeywords: row[16] ?? "",
+      resumeModified: row[17] ?? "",
+      preTailorAtsScore: row[18] ?? "",
     }));
 
     const jobs = includeLegacy ? allJobs : allJobs.filter(isHiringCafeJob);

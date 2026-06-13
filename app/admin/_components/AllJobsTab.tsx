@@ -15,16 +15,21 @@ import {
   DEFAULT_TIME_FILTER,
   DEFAULT_COUNTRY_LOCATION,
   DEFAULT_ATS_MIN_SCORE,
+  DEFAULT_RESUME_MODIFIED_FILTER,
+  RESUME_MODIFIED_FILTER_OPTIONS,
   applyAllJobsFilters,
   detectPlatformFromUrl,
   filterByTime,
   formatRelativeTime,
   formatOpenDate,
   toggleSortColumn,
+  isResumeModified,
   type TimeFilter,
   type SortColumn,
   type AllJobsSort,
+  type ResumeModifiedFilter,
 } from "@/lib/admin/allJobsFilters";
+import { ATS_STRONG_SCORE } from "@/lib/admin/atsConfig";
 import { glass, glassCn } from "@/lib/glass";
 import { resolveCompanyLogo, companyInitial } from "@/lib/admin/companyLogos";
 import { AdminPageHeader } from "./AdminShell";
@@ -236,14 +241,36 @@ function JobDetailPanel({
             <DetailRow
               label="ATS score"
               value={
-                <span
-                  className={
-                    Number(job.atsScore) >= DEFAULT_ATS_MIN_SCORE
-                      ? "font-semibold text-emerald-400"
-                      : undefined
-                  }
-                >
-                  {job.atsScore}%
+                <span className="space-y-1">
+                  <span
+                    className={
+                      Number(job.atsScore) >= DEFAULT_ATS_MIN_SCORE
+                        ? "font-semibold text-emerald-400"
+                        : undefined
+                    }
+                  >
+                    {job.atsScore}%
+                    {Number(job.atsScore) >= ATS_STRONG_SCORE && (
+                      <span className="ml-1 text-[10px] text-emerald-500/80">
+                        strong fit
+                      </span>
+                    )}
+                  </span>
+                  {job.preTailorAtsScore && (
+                    <span className="block text-[10px] text-slate-500">
+                      Was {job.preTailorAtsScore}% before AI tailoring
+                    </span>
+                  )}
+                </span>
+              }
+            />
+          )}
+          {isResumeModified(job) && (
+            <DetailRow
+              label="Resume"
+              value={
+                <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold text-violet-300">
+                  AI-tailored for this role
                 </span>
               }
             />
@@ -410,7 +437,8 @@ export default function AllJobsTab() {
   const [timeFilter, setTimeFilter] = useState<TimeFilter>(DEFAULT_TIME_FILTER);
   const [sort, setSort] = useState<AllJobsSort>(DEFAULT_ALL_JOBS_SORT);
   const [hasDescription, setHasDescription] = useState(false);
-  const [atsFriendly, setAtsFriendly] = useState(true);
+  const [resumeModifiedFilter, setResumeModifiedFilter] =
+    useState<ResumeModifiedFilter>(DEFAULT_RESUME_MODIFIED_FILTER);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [detailMinimized, setDetailMinimized] = useState(false);
 
@@ -439,11 +467,11 @@ export default function AllJobsTab() {
         search,
         timeFilter,
         hasDescription,
-        atsFriendly,
+        resumeModifiedFilter,
         countryLocation: DEFAULT_COUNTRY_LOCATION,
         sort,
       }),
-    [jobs, search, timeFilter, hasDescription, atsFriendly, sort]
+    [jobs, search, timeFilter, hasDescription, resumeModifiedFilter, sort]
   );
 
   const selectedJob = useMemo(
@@ -494,9 +522,9 @@ export default function AllJobsTab() {
         {filtered.length !== jobs.length
           ? `${filtered.length} of ${jobs.length} jobs`
           : `${jobs.length} job${jobs.length !== 1 ? "s" : ""} in sheet`}
-        {search.trim() && atsFriendly && (
+        {search.trim() && resumeModifiedFilter !== "all" && (
           <span className="ml-2 text-[11px] text-amber-400/90">
-            Search shows all matches (ATS filter paused)
+            Search shows all matches (resume filter paused)
           </span>
         )}
       </p>
@@ -524,15 +552,20 @@ export default function AllJobsTab() {
           />
           Has description
         </label>
-        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-xs text-emerald-300/90">
-          <input
-            type="checkbox"
-            checked={atsFriendly}
-            onChange={(e) => setAtsFriendly(e.target.checked)}
-            className="rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30"
-          />
-          ATS-friendly (≥{DEFAULT_ATS_MIN_SCORE}%)
-        </label>
+        <select
+          value={resumeModifiedFilter}
+          onChange={(e) =>
+            setResumeModifiedFilter(e.target.value as ResumeModifiedFilter)
+          }
+          className="glass-input h-9 min-w-[12rem] px-3 text-xs"
+          aria-label="Resume type filter"
+        >
+          {RESUME_MODIFIED_FILTER_OPTIONS.map(({ id, label }) => (
+            <option key={id} value={id}>
+              {label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

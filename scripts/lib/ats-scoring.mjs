@@ -85,6 +85,6 @@ export function calculateAtsScore(jobDescription, resume) {
     relevantJobKws.length > 0
       ? Math.min(100, Math.round((matched.length / relevantJobKws.length) * 100))
       : 0;
-  const label = score >= 65 ? "high" : score >= 35 ? "medium" : "low";
+  const label = score >= 75 ? "high" : score >= 35 ? "medium" : "low";
   return { score, matched: matched.slice(0, 20), missing: missing.slice(0, 20), label };
 }

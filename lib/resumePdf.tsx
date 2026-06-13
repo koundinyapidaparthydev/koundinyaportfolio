@@ -225,7 +225,9 @@ export function ResumePdfDocument({ resume }: { resume: Resume }) {
       <Page size="LETTER" style={styles.page}>
         <View style={styles.header}>
           <Text style={styles.name}>{personalInfo.name}</Text>
-          <Text style={styles.title}>{personalInfo.title}</Text>
+          {personalInfo.title ? (
+            <Text style={styles.title}>{personalInfo.title}</Text>
+          ) : null}
           <View style={styles.contactRow}>
             {contactParts.map((part, i) => (
               <React.Fragment key={i}>
@@ -340,7 +342,7 @@ export function CoverLetterPdfDocument({
       <Page size="LETTER" style={clStyles.page}>
         <View style={clStyles.sender}>
           <Text style={clStyles.senderName}>{name}</Text>
-          <Text style={clStyles.senderTitle}>{title}</Text>
+          {title ? <Text style={clStyles.senderTitle}>{title}</Text> : null}
           <Text style={clStyles.senderContact}>
             {email} | {phone}
           </Text>

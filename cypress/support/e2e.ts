@@ -6,8 +6,3 @@
  */
 
 import "./commands";
-
-// Stub the visitor tracker on every test so Cypress runs never pollute data/visitors.json
-beforeEach(() => {
-  cy.intercept("POST", "/api/track", { statusCode: 200, body: { ok: true } });
-});

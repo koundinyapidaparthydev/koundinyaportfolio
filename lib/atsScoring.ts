@@ -125,7 +125,7 @@ export function calculateAtsScore(
       : 0;
 
   const label: AtsResult["label"] =
-    score >= 65 ? "high" : score >= 35 ? "medium" : "low";
+    score >= 75 ? "high" : score >= 35 ? "medium" : "low";
 
   return { score, matched: matched.slice(0, 20), missing: missing.slice(0, 20), label };
 }

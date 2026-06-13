@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export const PersonalInfoSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  title: z.string().min(1, "Title is required"),
+  title: z.string().optional(),
   email: z.string().email("Valid email required"),
   phone: z.string().min(1, "Phone is required"),
   location: z.string().min(1, "Location is required"),
