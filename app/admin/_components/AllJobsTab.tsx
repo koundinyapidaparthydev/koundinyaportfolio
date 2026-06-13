@@ -28,6 +28,7 @@ import {
 import { glass, glassCn } from "@/lib/glass";
 import { resolveCompanyLogo, companyInitial } from "@/lib/admin/companyLogos";
 import { AdminPageHeader } from "./AdminShell";
+import { HIRING_CAFE_SEARCH_URL } from "@/lib/admin/hiringCafeJobs";
 
 async function fetchJobs(): Promise<Job[]> {
   const res = await fetch("/api/jobs", { cache: "no-store" });
@@ -464,13 +465,28 @@ export default function AllJobsTab() {
         title="Hiring Cafe Jobs"
         subtitle="Engineering + Software Development · US · last 2 days"
         actions={
-          <button
-            type="button"
-            onClick={() => void refetch()}
-            className={glassCn(glass.btn, "px-3 py-1.5 text-xs font-medium")}
-          >
-            Refresh
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={HIRING_CAFE_SEARCH_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={glassCn(
+                glass.btn,
+                "inline-flex items-center gap-1.5 border-orange-500/25 bg-orange-500/10 px-3 py-1.5 text-xs font-medium text-orange-300 hover:bg-orange-500/20"
+              )}
+              title="Open the same Hiring Cafe search used by the scrape pipeline"
+            >
+              Open Hiring Cafe
+              <span aria-hidden>↗</span>
+            </a>
+            <button
+              type="button"
+              onClick={() => void refetch()}
+              className={glassCn(glass.btn, "px-3 py-1.5 text-xs font-medium")}
+            >
+              Refresh
+            </button>
+          </div>
         }
       />
 

@@ -5,6 +5,7 @@ import { calculateAtsScore } from "@/lib/atsScoring";
 import type { Resume } from "@/types/resume";
 import type { AtsResult } from "@/lib/atsScoring";
 import { glass, glassCn } from "@/lib/glass";
+import { HIRING_CAFE_SEARCH_URL } from "@/lib/admin/hiringCafeJobs";
 import {
   CATEGORY_BADGE,
   CATEGORY_OPTIONS,
@@ -137,7 +138,7 @@ const HIRING_CAFE_KEY = "__hiring-cafe__";
 
 const HIRING_CAFE_VIRTUAL: CompanyWithCategory = {
   name: "Hiring Cafe",
-  url: "https://hiring.cafe/?searchState=%7B%22dateFetchedPastNDays%22%3A2%2C%22departments%22%3A%5B%22Engineering%22%2C%22Software+Development%22%5D%2C%22sortBy%22%3A%22date%22%7D",
+  url: HIRING_CAFE_SEARCH_URL,
   color: "from-amber-500/20 to-amber-600/10 border-amber-500/30 hover:border-amber-400/60",
   logo: "",
   category: "hiring-cafe",

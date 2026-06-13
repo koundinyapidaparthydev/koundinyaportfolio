@@ -2,7 +2,19 @@
  * @jest-environment node
  */
 
-import { isHiringCafeJob } from "@/lib/admin/hiringCafeJobs";
+import { buildHiringCafeSearchUrl, isHiringCafeJob } from "@/lib/admin/hiringCafeJobs";
+
+describe("buildHiringCafeSearchUrl", () => {
+  it("matches pipeline search filters", () => {
+    const url = buildHiringCafeSearchUrl();
+    expect(url).toMatch(/^https:\/\/hiring\.cafe\/\?searchState=/);
+    const parsed = JSON.parse(decodeURIComponent(url.split("searchState=")[1]!));
+    expect(parsed.departments).toEqual(["Engineering", "Software Development"]);
+    expect(parsed.dateFetchedPastNDays).toBe(2);
+    expect(parsed.sortBy).toBe("date");
+    expect(parsed).not.toHaveProperty("locations");
+  });
+});
 
 describe("isHiringCafeJob", () => {
   it("matches hiring-cafe category", () => {
