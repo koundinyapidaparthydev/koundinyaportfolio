@@ -29,11 +29,11 @@ export const resumeData: Resume = {
     },
     {
       id: "edu-2",
-      institution: "Jawaharlal Nehru Technological University",
+      institution: "Lovely Professional University",
       degree: "Bachelor of Technology",
       field: "Computer Science & Engineering",
       graduationDate: "May 2021",
-      location: "Hyderabad, India",
+      location: "Phagwara, India",
     },
   ],
 

@@ -32,8 +32,8 @@ Full content catalogue of what is shown on the live portfolio.
   - Dean's List — every semester
   - Graduate Teaching Assistant — Data Structures & Algorithms
 
-### Jawaharlal Nehru Technological University — B.Tech Computer Science & Engineering
-- **Location**: Hyderabad, India
+### Lovely Professional University — B.Tech Computer Science & Engineering
+- **Location**: Phagwara, India
 - **Graduated**: May 2021
 
 ---

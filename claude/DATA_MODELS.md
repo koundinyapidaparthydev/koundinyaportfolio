@@ -83,7 +83,7 @@ Current entries:
 | id | Institution | Degree | Year |
 |----|------------|--------|------|
 | edu-1 | Pace University | M.S. Computer Science | 2025 |
-| edu-2 | JNTU Hyderabad | B.Tech Computer Science & Engineering | 2021 |
+| edu-2 | Lovely Professional University | B.Tech Computer Science & Engineering | 2021 |
 
 ---
 
