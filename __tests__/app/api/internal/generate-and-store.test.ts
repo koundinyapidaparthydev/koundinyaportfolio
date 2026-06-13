@@ -347,14 +347,20 @@ describe("POST /api/internal/generate-and-store – Gemini tailoring", () => {
     expect(body.error).toBe("AI generation failed");
   });
 
-  it("returns 422 when quality gate fails", async () => {
+  it("returns 200 even when quality gate reports warnings", async () => {
     mockTailor.mockResolvedValue(
       tailorOk({
-        quality: { passed: false, score: 40, issues: ["summary too short"], errors: ["summary"] },
+        quality: {
+          passed: false,
+          score: 40,
+          issues: [{ code: "summary_short", message: "short", severity: "warning" }],
+          errors: [],
+          warnings: [{ code: "summary_short", message: "short", severity: "warning" }],
+        },
       })
     );
     const res = await POST(makeReq(VALID_BODY));
-    expect(res.status).toBe(422);
+    expect(res.status).toBe(200);
   });
 
   it("extracts coverLetter from tailor result correctly", async () => {

@@ -78,6 +78,44 @@ function baseSkillSet(resume) {
   return set;
 }
 
+/** Clamp Gemini output to base-resume facts — always keep a usable tailored PDF. */
+export function sanitizeTailoredResume(base, tailored) {
+  const tailoredByExpId = new Map((tailored.experience ?? []).map((e) => [e.id, e]));
+  const experience = (base.experience ?? []).map((exp) => {
+    const t = tailoredByExpId.get(exp.id);
+    const points = t?.points?.length ? t.points : exp.points;
+    return { ...exp, points };
+  });
+
+  const allowedSkills = baseSkillSet(base);
+  let skills = (tailored.skills ?? [])
+    .map((cat) => ({
+      ...cat,
+      skills: (cat.skills ?? []).filter((s) =>
+        allowedSkills.has(String(s).trim().toLowerCase())
+      ),
+    }))
+    .filter((cat) => cat.skills.length > 0);
+  if (skills.length === 0) skills = base.skills ?? [];
+
+  const summary = (tailored.personalInfo?.summary ?? "").trim();
+  const useSummary =
+    summary.length >= 40 ? summary : (base.personalInfo?.summary ?? "");
+
+  return {
+    ...base,
+    personalInfo: {
+      ...base.personalInfo,
+      title: "",
+      summary: useSummary,
+    },
+    education: base.education,
+    projects: base.projects,
+    experience,
+    skills,
+  };
+}
+
 export function validateTailoredResume(base, tailored, ctx) {
   const issues = [];
   const summary = (tailored.personalInfo?.summary ?? "").trim();
@@ -87,7 +125,7 @@ export function validateTailoredResume(base, tailored, ctx) {
     issues.push({
       code: "headline_title",
       message: "Remove generic headline title under the candidate name.",
-      severity: "error",
+      severity: "warning",
     });
   }
 
@@ -95,7 +133,7 @@ export function validateTailoredResume(base, tailored, ctx) {
     issues.push({
       code: "summary_short",
       message: "Summary is too short — aim for 2–3 specific sentences.",
-      severity: "error",
+      severity: "warning",
     });
   } else if (summary.length > 420) {
     issues.push({
@@ -119,7 +157,7 @@ export function validateTailoredResume(base, tailored, ctx) {
     issues.push({
       code: "ai_buzzwords_resume",
       message: `Remove AI-sounding phrases: ${buzzInResume.slice(0, 4).join(", ")}`,
-      severity: "error",
+      severity: "warning",
     });
   }
 
@@ -129,7 +167,7 @@ export function validateTailoredResume(base, tailored, ctx) {
       issues.push({
         code: "ai_buzzwords_cover",
         message: `Cover letter sounds templated — remove: ${buzzInLetter.slice(0, 4).join(", ")}`,
-        severity: "error",
+        severity: "warning",
       });
     }
   }
@@ -138,7 +176,7 @@ export function validateTailoredResume(base, tailored, ctx) {
     issues.push({
       code: "experience_structure",
       message: "Experience roles, companies, or dates were changed — only rephrase bullets.",
-      severity: "error",
+      severity: "warning",
     });
   }
 
@@ -146,7 +184,7 @@ export function validateTailoredResume(base, tailored, ctx) {
     issues.push({
       code: "education_structure",
       message: "Education entries must stay unchanged.",
-      severity: "error",
+      severity: "warning",
     });
   }
 
@@ -154,7 +192,7 @@ export function validateTailoredResume(base, tailored, ctx) {
     issues.push({
       code: "projects_structure",
       message: "Project names or dates were changed — projects must stay intact.",
-      severity: "error",
+      severity: "warning",
     });
   }
 
@@ -165,7 +203,7 @@ export function validateTailoredResume(base, tailored, ctx) {
         issues.push({
           code: "invented_skill",
           message: `Do not add skills not on the base resume: "${skill}"`,
-          severity: "error",
+          severity: "warning",
         });
         break;
       }
@@ -185,7 +223,7 @@ export function validateTailoredResume(base, tailored, ctx) {
       issues.push({
         code: "ats_no_lift",
         message: `ATS only moved ${ctx.preAtsScore}% → ${ctx.postAtsScore}% — need ≥${TARGET_TAILORED_ATS}% or +${MIN_ATS_IMPROVEMENT} points.`,
-        severity: "error",
+        severity: "warning",
       });
     }
   }

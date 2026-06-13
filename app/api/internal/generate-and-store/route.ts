@@ -62,15 +62,8 @@ export async function POST(req: NextRequest) {
     postAtsScore = result.postAtsScore;
 
     if (!quality.passed) {
-      return NextResponse.json(
-        {
-          error: "Tailored resume failed quality checks",
-          qualityScore: quality.score,
-          issues: quality.issues,
-          preAtsScore,
-          postAtsScore,
-        },
-        { status: 422 }
+      console.warn(
+        `[generate-and-store] Quality warnings for ${company} (score ${quality.score}) — storing anyway`
       );
     }
   } catch (err) {

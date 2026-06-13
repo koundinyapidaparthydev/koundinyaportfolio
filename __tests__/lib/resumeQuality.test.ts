@@ -1,5 +1,6 @@
 import {
   validateTailoredResume,
+  sanitizeTailoredResume,
   AI_BUZZWORDS,
   MIN_ATS_IMPROVEMENT,
   TARGET_TAILORED_ATS,
@@ -71,7 +72,7 @@ describe("validateTailoredResume", () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it("fails when headline title is present", () => {
+  it("flags headline title as a warning (non-blocking)", () => {
     const base = baseResume();
     const tailored: Resume = {
       ...base,
@@ -89,11 +90,11 @@ describe("validateTailoredResume", () => {
       postAtsScore: 80,
     });
 
-    expect(result.passed).toBe(false);
-    expect(result.errors.some((e) => e.code === "headline_title")).toBe(true);
+    expect(result.passed).toBe(true);
+    expect(result.warnings.some((e) => e.code === "headline_title")).toBe(true);
   });
 
-  it("fails on AI buzzwords", () => {
+  it("flags AI buzzwords as warnings (non-blocking)", () => {
     const base = baseResume();
     const tailored: Resume = {
       ...base,
@@ -111,11 +112,11 @@ describe("validateTailoredResume", () => {
       postAtsScore: 80,
     });
 
-    expect(result.passed).toBe(false);
-    expect(result.errors.some((e) => e.code === "ai_buzzwords_resume")).toBe(true);
+    expect(result.passed).toBe(true);
+    expect(result.warnings.some((e) => e.code === "ai_buzzwords_resume")).toBe(true);
   });
 
-  it("fails when ATS does not improve meaningfully", () => {
+  it("flags low ATS lift as a warning (non-blocking)", () => {
     const base = baseResume();
     const tailored: Resume = {
       ...base,
@@ -133,11 +134,11 @@ describe("validateTailoredResume", () => {
       postAtsScore: 72,
     });
 
-    expect(result.passed).toBe(false);
-    expect(result.errors.some((e) => e.code === "ats_no_lift")).toBe(true);
+    expect(result.passed).toBe(true);
+    expect(result.warnings.some((e) => e.code === "ats_no_lift")).toBe(true);
   });
 
-  it("fails when experience companies are invented", () => {
+  it("flags invented experience as a warning (non-blocking)", () => {
     const base = baseResume();
     const tailored: Resume = {
       ...base,
@@ -156,8 +157,38 @@ describe("validateTailoredResume", () => {
       postAtsScore: 80,
     });
 
-    expect(result.passed).toBe(false);
-    expect(result.errors.some((e) => e.code === "experience_structure")).toBe(true);
+    expect(result.passed).toBe(true);
+    expect(result.warnings.some((e) => e.code === "experience_structure")).toBe(true);
+  });
+
+  it("sanitizeTailoredResume strips invented skills and restores base structure", () => {
+    const base = baseResume();
+    const tailored: Resume = {
+      ...base,
+      personalInfo: {
+        ...base.personalInfo,
+        title: "SWE",
+        summary: "Tailored summary for Acme Corp focusing on React and TypeScript delivery.",
+      },
+      experience: [
+        {
+          ...base.experience[0],
+          companyName: "Wrong Co",
+          points: ["Rephrased bullet for the role."],
+        },
+      ],
+      skills: [
+        { id: "sk-1", title: "Frontend", skills: ["React", "Microsoft Excel"] },
+      ],
+      projects: [{ id: "p-1", name: "New Project", description: "x", date: "2024", points: [] }],
+    };
+
+    const clean = sanitizeTailoredResume(base, tailored);
+    expect(clean.personalInfo.title).toBe("");
+    expect(clean.experience[0].companyName).toBe("Anchor Operating System");
+    expect(clean.experience[0].points[0]).toBe("Rephrased bullet for the role.");
+    expect(clean.skills[0].skills).toEqual(["React"]);
+    expect(clean.projects).toEqual(base.projects);
   });
 
   it("exports expected ATS constants", () => {

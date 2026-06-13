@@ -8,6 +8,7 @@ import {
   validateTailoredResume,
   formatQualityFeedback,
   type TailorQualityResult,
+  sanitizeTailoredResume,
 } from "@/lib/resumeQuality";
 
 export const GEMINI_TAILOR_MODEL =
@@ -126,7 +127,10 @@ function normalizeTailored(
   const coverLetter = typeof parsed.coverLetter === "string" ? parsed.coverLetter : "";
   const { coverLetter: _cl, ...resumeOnly } = parsed;
   void _cl;
-  const tailoredResume = { ...baseResume, ...resumeOnly } as Resume;
+  const tailoredResume = sanitizeTailoredResume(baseResume, {
+    ...baseResume,
+    ...resumeOnly,
+  } as Resume);
   tailoredResume.personalInfo = {
     ...tailoredResume.personalInfo,
     title: "",

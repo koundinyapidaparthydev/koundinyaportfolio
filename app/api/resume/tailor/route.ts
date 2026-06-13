@@ -50,13 +50,8 @@ export async function POST(req: NextRequest) {
     quality = result.quality;
 
     if (!quality.passed) {
-      return NextResponse.json(
-        {
-          error: "Tailored resume failed quality checks",
-          qualityScore: quality.score,
-          issues: quality.issues,
-        },
-        { status: 422 }
+      console.warn(
+        `[tailor] Quality warnings for ${company} (score ${quality.score}) — returning PDF anyway`
       );
     }
   } catch (err) {

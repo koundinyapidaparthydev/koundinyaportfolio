@@ -7,6 +7,7 @@ import { scoreJobWithGemini, GEMINI_MODEL } from "./gemini-ats.mjs";
 import {
   validateTailoredResume,
   formatQualityFeedback,
+  sanitizeTailoredResume,
 } from "./resume-quality.mjs";
 
 const QUALITY_CHECKLIST = `
@@ -113,12 +114,12 @@ function normalizeTailored(baseResume, parsed) {
   const coverLetter = parsed.coverLetter ?? "";
   const { coverLetter: _cl, ...resumeOnly } = parsed;
   void _cl;
-  const tailoredResume = { ...baseResume, ...resumeOnly };
+  const tailoredResume = sanitizeTailoredResume(baseResume, {
+    ...baseResume,
+    ...resumeOnly,
+  });
   if (tailoredResume.personalInfo) {
-    tailoredResume.personalInfo = {
-      ...tailoredResume.personalInfo,
-      title: "",
-    };
+    tailoredResume.personalInfo.title = "";
   }
   return { tailoredResume, coverLetter };
 }

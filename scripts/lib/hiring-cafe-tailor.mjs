@@ -132,12 +132,11 @@ export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {
 
       if (!quality.passed) {
         console.warn(
-          `  ✗ ${company} — ${title}: quality gate failed (${quality.errors.length} errors) — skipped`
+          `  ⚠ ${company} — ${title}: quality notes (${quality.warnings.length} warnings) — saving anyway`
         );
-        for (const err of quality.errors) {
-          console.warn(`      · ${err.message}`);
+        for (const warn of quality.warnings.slice(0, 3)) {
+          console.warn(`      · ${warn.message}`);
         }
-        continue;
       }
 
       const postScore = String(postAtsScore);
