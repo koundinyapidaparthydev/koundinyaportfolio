@@ -24,6 +24,7 @@ import {
   DEFAULT_APPLIED_VISIBILITY_FILTER,
   filterByAppliedVisibility,
   isJobApplied,
+  formatAtsScoreDisplay,
   type AllJobsRow,
 } from "@/lib/admin/allJobsFilters";
 
@@ -204,7 +205,7 @@ describe("ATS thresholds", () => {
   });
 
   it("defaults resume filter to non-tailored base resumes", () => {
-    expect(DEFAULT_RESUME_MODIFIED_FILTER).toBe("non-modified");
+    expect(DEFAULT_RESUME_MODIFIED_FILTER).toBe("all");
   });
 });
 
@@ -398,6 +399,23 @@ describe("applyAllJobsFilters", () => {
       now: NOW,
     });
     expect(result.map((j) => j.company)).toEqual(["US Co"]);
+  });
+});
+
+describe("formatAtsScoreDisplay", () => {
+  it("shows pre-tailor delta for AI-tailored jobs", () => {
+    const display = formatAtsScoreDisplay({
+      atsScore: "55",
+      preTailorAtsScore: "40",
+      resumeModified: "yes",
+    });
+    expect(display.text).toBe("55%");
+    expect(display.preText).toBe("was 40%");
+    expect(display.improved).toBe(true);
+  });
+
+  it("returns dash when ATS score missing", () => {
+    expect(formatAtsScoreDisplay({}).text).toBe("—");
   });
 });
 

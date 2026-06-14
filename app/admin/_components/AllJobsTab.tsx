@@ -26,6 +26,7 @@ import {
   formatOpenDate,
   toggleSortColumn,
   isResumeModified,
+  formatAtsScoreDisplay,
   isJobApplied,
   type TimeFilter,
   type SortColumn,
@@ -132,6 +133,60 @@ function SortableHeader({
         {indicator}
       </button>
     </th>
+  );
+}
+
+function AtsScoreCell({ job }: { job: Job }) {
+  const display = formatAtsScoreDisplay(job);
+  const tailored = isResumeModified(job);
+
+  return (
+    <span className="space-y-0.5">
+      <span
+        className={
+          Number(job.atsScore) >= DEFAULT_ATS_MIN_SCORE
+            ? "font-semibold text-emerald-400"
+            : tailored
+              ? "font-semibold text-violet-300"
+              : "text-slate-400"
+        }
+      >
+        {display.text}
+      </span>
+      {display.preText && (
+        <span
+          className={[
+            "block text-[10px]",
+            display.improved ? "text-emerald-500/80" : "text-slate-500",
+          ].join(" ")}
+        >
+          {display.preText}
+          {display.improved ? " ↑" : ""}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function ResumeDownloadLink({ job }: { job: Job }) {
+  if (!job.resumeUrl?.trim()) return <span className="text-slate-600">—</span>;
+
+  return (
+    <a
+      href={job.resumeUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      download
+      onClick={(e) => e.stopPropagation()}
+      className={glassCn(
+        glass.btn,
+        "inline-flex items-center gap-1 border-violet-500/25 bg-violet-500/10 px-2 py-1 text-[10px] font-medium text-violet-300 hover:bg-violet-500/20"
+      )}
+      title="Download AI-tailored resume PDF"
+    >
+      PDF
+      <span aria-hidden>↓</span>
+    </a>
   );
 }
 
@@ -261,24 +316,9 @@ function JobDetailPanel({
               label="ATS score"
               value={
                 <span className="space-y-1">
-                  <span
-                    className={
-                      Number(job.atsScore) >= DEFAULT_ATS_MIN_SCORE
-                        ? "font-semibold text-emerald-400"
-                        : undefined
-                    }
-                  >
-                    {job.atsScore}%
-                    {Number(job.atsScore) >= ATS_STRONG_SCORE && (
-                      <span className="ml-1 text-[10px] text-emerald-500/80">
-                        strong fit
-                      </span>
-                    )}
-                  </span>
-                  {job.preTailorAtsScore && (
-                    <span className="block text-[10px] text-slate-500">
-                      Was {job.preTailorAtsScore}% before AI tailoring
-                    </span>
+                  <AtsScoreCell job={job} />
+                  {Number(job.atsScore) >= ATS_STRONG_SCORE && (
+                    <span className="block text-[10px] text-emerald-500/80">strong fit</span>
                   )}
                 </span>
               }
@@ -341,16 +381,7 @@ function JobDetailPanel({
             {job.resumeUrl && (
               <DetailRow
                 label="Resume"
-                value={
-                  <a
-                    href={job.resumeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-400 hover:underline"
-                  >
-                    Open resume
-                  </a>
-                }
+                value={<ResumeDownloadLink job={job} />}
               />
             )}
             {job.coverLetter && <DetailRow label="Cover letter" value={job.coverLetter} />}
@@ -453,11 +484,21 @@ function JobCard({
             </span>
           )}
           <p className="mt-1 truncate text-xs text-slate-400">{job.location || "—"}</p>
-          <div className="mt-2 flex flex-wrap gap-2 text-[10px] text-slate-500">
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] text-slate-500">
+            {job.atsScore && <AtsScoreCell job={job} />}
+            {isResumeModified(job) && (
+              <span className="rounded-full border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-violet-300">
+                Tailored
+              </span>
+            )}
             <span>Posted: {job.postedAt ? formatOpenDate(job.postedAt) : "—"}</span>
             {job.fetchedAt && <span>· Discovered {formatRelativeTime(job.fetchedAt)}</span>}
           </div>
         </div>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+        {job.resumeUrl && (
+          <ResumeDownloadLink job={job} />
+        )}
         <a
           href={job.url}
           target="_blank"
@@ -467,6 +508,7 @@ function JobCard({
         >
           Apply
         </a>
+        </div>
       </div>
     </motion.button>
   );
@@ -554,6 +596,7 @@ export default function AllJobsTab() {
   );
 
   const appliedCount = useMemo(() => jobs.filter(isJobApplied).length, [jobs]);
+  const tailoredCount = useMemo(() => jobs.filter(isResumeModified).length, [jobs]);
 
   const selectedJob = useMemo(
     () => (selectedUrl ? jobs.find((j) => j.url === selectedUrl) ?? null : null),
@@ -608,6 +651,11 @@ export default function AllJobsTab() {
             · {appliedCount} applied hidden
           </span>
         )}
+        {tailoredCount > 0 && resumeModifiedFilter === "non-modified" && (
+          <span className="ml-2 text-[11px] text-violet-400/90">
+            · {tailoredCount} AI-tailored hidden — tap &quot;AI-tailored resumes&quot; for PDFs
+          </span>
+        )}
         {search.trim() && resumeModifiedFilter !== "all" && (
           <span className="ml-2 text-[11px] text-amber-400/90">
             Search shows all matches (resume filter paused)
@@ -638,20 +686,30 @@ export default function AllJobsTab() {
           />
           Has description
         </label>
-        <select
-          value={resumeModifiedFilter}
-          onChange={(e) =>
-            setResumeModifiedFilter(e.target.value as ResumeModifiedFilter)
-          }
-          className="glass-input h-9 min-w-[12rem] px-3 text-xs"
-          aria-label="Resume type filter"
-        >
-          {RESUME_MODIFIED_FILTER_OPTIONS.map(({ id, label }) => (
-            <option key={id} value={id}>
-              {label}
-            </option>
-          ))}
-        </select>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+          Resume:
+        </span>
+        {RESUME_MODIFIED_FILTER_OPTIONS.map(({ id, label }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setResumeModifiedFilter(id)}
+            className={glassCn(
+              "inline-flex items-center gap-1.5",
+              resumeModifiedFilter === id
+                ? glassCn(glass.adminPillActive, "text-indigo-600 dark:text-indigo-300")
+                : glass.adminPill
+            )}
+          >
+            {label}
+            {id === "modified" && tailoredCount > 0 && (
+              <span className={glass.pillBadge}>{tailoredCount}</span>
+            )}
+          </button>
+        ))}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -743,6 +801,9 @@ export default function AllJobsTab() {
                         />
                       ))}
                       <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                        Resume
+                      </th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                         Applied
                       </th>
                       <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
@@ -782,19 +843,7 @@ export default function AllJobsTab() {
                             {job.location || "—"}
                           </td>
                           <td className="whitespace-nowrap px-3 py-2.5 text-xs font-semibold">
-                            {job.atsScore ? (
-                              <span
-                                className={
-                                  Number(job.atsScore) >= DEFAULT_ATS_MIN_SCORE
-                                    ? "text-emerald-400"
-                                    : "text-slate-400"
-                                }
-                              >
-                                {job.atsScore}%
-                              </span>
-                            ) : (
-                              "—"
-                            )}
+                            {job.atsScore ? <AtsScoreCell job={job} /> : "—"}
                           </td>
                           <td
                             className="whitespace-nowrap px-3 py-2.5 text-xs font-medium text-slate-300"
@@ -807,6 +856,9 @@ export default function AllJobsTab() {
                             title={job.fetchedAt ? formatAbsolute(job.fetchedAt) : undefined}
                           >
                             {job.fetchedAt ? formatRelativeTime(job.fetchedAt) : "—"}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5">
+                            <ResumeDownloadLink job={job} />
                           </td>
                           <td className="whitespace-nowrap px-3 py-2.5">
                             <label

@@ -32,7 +32,8 @@ export const HC_PIPELINE_INTERVAL_MS = 10 * 60_000;
 /** Filter jobs by whether the resume was AI-tailored for that role. */
 export type ResumeModifiedFilter = "non-modified" | "modified" | "all";
 
-export const DEFAULT_RESUME_MODIFIED_FILTER: ResumeModifiedFilter = "non-modified";
+/** Show all jobs by default so tailored resumes and downloads stay visible. */
+export const DEFAULT_RESUME_MODIFIED_FILTER: ResumeModifiedFilter = "all";
 
 export const RESUME_MODIFIED_FILTER_OPTIONS: {
   id: ResumeModifiedFilter;
@@ -247,6 +248,32 @@ export function parseAtsScore(value?: string): number | null {
   if (!value?.trim()) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
+}
+
+/** ATS display with optional pre-tailor delta for AI-tailored rows. */
+export function formatAtsScoreDisplay(job: {
+  atsScore?: string;
+  preTailorAtsScore?: string;
+  resumeModified?: string;
+  resumeUrl?: string;
+}): {
+  text: string;
+  preText?: string;
+  improved: boolean;
+} {
+  const score = job.atsScore?.trim();
+  if (!score) return { text: "—", improved: false };
+
+  const pre = parseAtsScore(job.preTailorAtsScore);
+  const post = parseAtsScore(score);
+  if (isResumeModified(job) && pre !== null && post !== null) {
+    return {
+      text: `${score}%`,
+      preText: `was ${pre}%`,
+      improved: post > pre,
+    };
+  }
+  return { text: `${score}%`, improved: false };
 }
 
 /** True when this job has an AI-tailored resume stored. */
