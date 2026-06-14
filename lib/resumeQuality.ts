@@ -3,6 +3,7 @@
  */
 
 import type { Resume } from "@/types/resume";
+import { asText, safeLower, normalizePoints, normalizeSkillCategories } from "./resumeNormalize";
 import { DEFAULT_ATS_MIN_SCORE } from "@/lib/admin/atsConfig";
 
 /** Minimum ATS point gain required after tailoring (vs pre-tailor score). */
@@ -63,19 +64,19 @@ export interface TailorQualityContext {
 function collectResumeText(resume: Resume): string {
   const parts: string[] = [];
   const pi = resume.personalInfo;
-  if (pi?.summary) parts.push(pi.summary);
-  if (pi?.title) parts.push(pi.title);
+  if (pi?.summary) parts.push(asText(pi.summary));
+  if (pi?.title) parts.push(asText(pi.title));
   for (const exp of resume.experience ?? []) {
-    parts.push(exp.role, exp.companyName, ...exp.points);
+    parts.push(asText(exp.role), asText(exp.companyName), ...normalizePoints(exp.points));
   }
   for (const proj of resume.projects ?? []) {
-    parts.push(proj.name, proj.description, ...proj.points);
+    parts.push(asText(proj.name), asText(proj.description), ...normalizePoints(proj.points));
   }
   return parts.join(" ").toLowerCase();
 }
 
-function findBuzzwords(text: string): string[] {
-  const lower = text.toLowerCase();
+function findBuzzwords(text: unknown): string[] {
+  const lower = safeLower(text);
   return AI_BUZZWORDS.filter((phrase) => lower.includes(phrase));
 }
 
@@ -97,9 +98,9 @@ function projectFingerprint(resume: Resume): string[] {
 
 function baseSkillSet(resume: Resume): Set<string> {
   const set = new Set<string>();
-  for (const cat of resume.skills ?? []) {
+  for (const cat of normalizeSkillCategories(resume.skills ?? [])) {
     for (const s of cat.skills ?? []) {
-      set.add(s.trim().toLowerCase());
+      set.add(safeLower(s));
     }
   }
   return set;
@@ -120,17 +121,15 @@ export function sanitizeTailoredResume(base: Resume, tailored: Resume): Resume {
   });
 
   const allowedSkills = baseSkillSet(base);
-  let skills = (tailored.skills ?? [])
+  let skills = normalizeSkillCategories(tailored.skills ?? [], base.skills ?? [])
     .map((cat) => ({
       ...cat,
-      skills: (cat.skills ?? []).filter((s) =>
-        allowedSkills.has(s.trim().toLowerCase())
-      ),
+      skills: (cat.skills ?? []).filter((s) => allowedSkills.has(safeLower(s))),
     }))
     .filter((cat) => cat.skills.length > 0);
   if (skills.length === 0) skills = base.skills ?? [];
 
-  const summary = (tailored.personalInfo?.summary ?? "").trim();
+  const summary = asText(tailored.personalInfo?.summary).trim();
   const useSummary =
     summary.length >= 40 ? summary : (base.personalInfo?.summary ?? "");
 
@@ -181,8 +180,9 @@ export function validateTailoredResume(
     });
   }
 
-  const companyLower = ctx.company.toLowerCase();
-  if (companyLower && !summary.toLowerCase().includes(companyLower.split(/\s+/)[0])) {
+  const companyLower = safeLower(ctx.company);
+  const summaryLower = safeLower(summary);
+  if (companyLower && !summaryLower.includes(companyLower.split(/\s+/)[0])) {
     issues.push({
       code: "summary_generic",
       message: `Summary should reference ${ctx.company} or the role focus — not read as a generic template.`,
@@ -200,7 +200,8 @@ export function validateTailoredResume(
   }
 
   if (ctx.coverLetter) {
-    const buzzInLetter = findBuzzwords(ctx.coverLetter);
+    const coverText = asText(ctx.coverLetter);
+    const buzzInLetter = findBuzzwords(coverText);
     if (buzzInLetter.length > 0) {
       issues.push({
         code: "ai_buzzwords_cover",
@@ -208,7 +209,7 @@ export function validateTailoredResume(
         severity: "warning",
       });
     }
-    const paragraphs = ctx.coverLetter.split(/\n\n+/).filter((p) => p.trim());
+    const paragraphs = coverText.split(/\n\n+/).filter((p) => p.trim());
     if (paragraphs.length < 2 || paragraphs.length > 5) {
       issues.push({
         code: "cover_structure",
@@ -249,9 +250,9 @@ export function validateTailoredResume(
   }
 
   const allowedSkills = baseSkillSet(base);
-  for (const cat of tailored.skills ?? []) {
+  for (const cat of normalizeSkillCategories(tailored.skills ?? [])) {
     for (const skill of cat.skills ?? []) {
-      if (!allowedSkills.has(skill.trim().toLowerCase())) {
+      if (!allowedSkills.has(safeLower(skill))) {
         issues.push({
           code: "invented_skill",
           message: `Do not add skills not on the base resume: "${skill}"`,

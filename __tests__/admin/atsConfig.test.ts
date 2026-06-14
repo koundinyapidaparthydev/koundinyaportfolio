@@ -31,8 +31,8 @@ describe("atsConfig", () => {
     expect(NON_TAILORED_MIN_SCORE).toBe(90);
   });
 
-  it("allows up to 12 tailor attempts", () => {
-    expect(MAX_TAILOR_ATTEMPTS).toBe(12);
+  it("allows up to 5 tailor attempts", () => {
+    expect(MAX_TAILOR_ATTEMPTS).toBe(5);
   });
 
   it("requires at least 3 skill matches to tailor", () => {

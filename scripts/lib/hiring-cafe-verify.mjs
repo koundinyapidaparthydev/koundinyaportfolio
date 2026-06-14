@@ -11,6 +11,7 @@ import {
   parseScore,
   isApplied,
   isResumeSaved,
+  hasSavedResume,
   MIN_DESCRIPTION,
 } from "./tailor-eligibility.mjs";
 
@@ -82,18 +83,21 @@ export async function verifyAtsComplianceOnSheet(sheets, spreadsheetId, options 
 
     if (newScore < TAILOR_SAVE_MIN_SCORE) {
       belowMin++;
-      updateData.push({ range: `${SHEET_NAME}!U${sheetRow}`, values: [["0"]] });
-      requeued++;
 
-      if (saved || resumeUrl) {
-        updateData.push(
-          { range: `${SHEET_NAME}!H${sheetRow}`, values: [[""]] },
-          { range: `${SHEET_NAME}!R${sheetRow}`, values: [["no"]] }
-        );
-        cleared++;
-        console.log(
-          `  ↻  ${company} — ${title}: re-score ${newScore}% < ${TAILOR_SAVE_MIN_SCORE}% — cleared saved PDF`
-        );
+      if (!hasSavedResume(row)) {
+        updateData.push({ range: `${SHEET_NAME}!U${sheetRow}`, values: [["0"]] });
+        requeued++;
+
+        if (saved || resumeUrl) {
+          updateData.push(
+            { range: `${SHEET_NAME}!H${sheetRow}`, values: [[""]] },
+            { range: `${SHEET_NAME}!R${sheetRow}`, values: [["no"]] }
+          );
+          cleared++;
+          console.log(
+            `  ↻  ${company} — ${title}: re-score ${newScore}% < ${TAILOR_SAVE_MIN_SCORE}% — cleared saved PDF`
+          );
+        }
       }
     }
   }

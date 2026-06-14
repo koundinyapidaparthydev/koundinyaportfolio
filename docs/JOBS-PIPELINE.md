@@ -74,7 +74,7 @@ Batch limits in GHA: `HC_ATS_BATCH_LIMIT=60`, `HC_TAILOR_BATCH_LIMIT=5` (scrape)
 | Descriptions | Full text from HC job detail API (`job_information.description`) |
 | ATS | Gemini scores base resume vs description → J, O–Q |
 | Verify | Every scrape re-scores eligible rows; rows below 90% reset column U |
-| Auto-tailor | Base ATS &lt;90% with ≥3 skill matches → single-phase Gemini tailor (max 12 tries) → PDF upload when ≥90% → H; R=`yes` only when upload succeeds |
+| Auto-tailor | Base ATS &lt;90% with ≥3 skill matches → single-phase Gemini tailor (max 5 tries) → PDF upload at ≥90% or best score after 5 tries → H; R=`yes` when upload succeeds |
 
 ### Tailoring thresholds
 
@@ -83,10 +83,10 @@ Batch limits in GHA: `HC_ATS_BATCH_LIMIT=60`, `HC_TAILOR_BATCH_LIMIT=5` (scrape)
 | `SKIP_TAILOR_INITIAL_ATS` | 90% | Skip tailoring when base resume already scores this high |
 | `TAILOR_TARGET_SCORE` | 90% | Single-phase loop target |
 | `TAILOR_SAVE_MIN_SCORE` | 90% | Minimum post-tailor score to upload PDF and set R=`yes` |
-| `MAX_TAILOR_ATTEMPTS` | 12 | Max tailor attempts per job |
+| `MAX_TAILOR_ATTEMPTS` | 5 | Max tailor attempts per job; saves highest-scoring draft if still below 90% |
 | `MIN_SKILL_MATCH_COUNT` | 3 | Minimum skill overlap required to tailor |
 
-Single-phase loop: attempt 1 from base resume, attempts 2+ refine the **best-scoring draft** with ATS gap feedback. A lower-scoring retry never replaces a better draft.
+Single-phase loop: attempt 1 from base resume, attempts 2+ refine the **best-scoring draft** with ATS gap feedback. A lower-scoring retry never replaces a better draft. Rows with **R=yes** and a resume URL are never re-tailored.
 
 Config lives in `scripts/lib/ats-config.mjs` (keep in sync with `lib/admin/atsConfig.ts`).
 

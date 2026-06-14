@@ -18,8 +18,8 @@ export const ATS_STRONG_SCORE = 80;
 /** Non-tailored resume filter bar (admin UI) — base resume strong enough to skip tailoring. */
 export const NON_TAILORED_MIN_SCORE = SKIP_TAILOR_INITIAL_ATS;
 
-/** Max Gemini tailor attempts per job (single-phase loop). */
-export const MAX_TAILOR_ATTEMPTS = 12;
+/** Max Gemini tailor attempts per job; after exhaustion, save the highest-scoring draft. */
+export const MAX_TAILOR_ATTEMPTS = 5;
 
 /** Minimum resume skills that must match the job description to tailor. */
 export const MIN_SKILL_MATCH_COUNT = 3;

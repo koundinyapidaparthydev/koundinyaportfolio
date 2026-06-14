@@ -7,7 +7,7 @@ import { spawn } from "child_process";
 import path from "path";
 import { fileURLToPath } from "url";
 import { loadResume } from "./resume-loader.mjs";
-import { tailorResumeUntilTarget } from "./resume-tailor.mjs";
+import { tailorResumeUntilTarget, normalizeGeminiTextField } from "./resume-tailor.mjs";
 import { uploadToGCS } from "./gcs-upload.mjs";
 import { countSkillMatches } from "./skill-match.mjs";
 import { mapConcurrent } from "./concurrency.mjs";
@@ -26,6 +26,7 @@ import {
   needsTailoring,
   isApplied,
   isResumeSaved,
+  hasSavedResume,
   MIN_DESCRIPTION,
 } from "./tailor-eligibility.mjs";
 
@@ -81,8 +82,11 @@ function buildSheetUpdate({
     { range: `${SHEET_NAME}!U${sheetRow}`, values: [[String(tailorAttempts)]] },
     { range: `${SHEET_NAME}!J${sheetRow}`, values: [[postScore]] },
     { range: `${SHEET_NAME}!O${sheetRow}`, values: [[postResult.matchSummary ?? ""]] },
-    { range: `${SHEET_NAME}!P${sheetRow}`, values: [[postResult.keyGaps ?? ""]] },
-    { range: `${SHEET_NAME}!Q${sheetRow}`, values: [[postResult.recommendedKeywords ?? ""]] },
+    { range: `${SHEET_NAME}!P${sheetRow}`, values: [[normalizeGeminiTextField(postResult.keyGaps)]] },
+    {
+      range: `${SHEET_NAME}!Q${sheetRow}`,
+      values: [[normalizeGeminiTextField(postResult.recommendedKeywords)]],
+    },
     { range: `${SHEET_NAME}!S${sheetRow}`, values: [[preScore]] },
     ...(savedToSheet
       ? [
@@ -137,11 +141,11 @@ async function tailorJobTarget({ row, sheetRow, baseResume }) {
   const postScore = result.postAtsScore ?? "?";
   let status;
   if (savedToSheet) {
-    status = "saved";
+    status = result.saveBestEffort ? `saved best effort` : "saved";
   } else if (reachedSaveMin) {
     status = `ATS ${postScore}% but upload failed`;
   } else {
-    status = `below ${TAILOR_SAVE_MIN_SCORE}% after ${totalAttempts} tries (best ${postScore}%)`;
+    status = `no save after ${totalAttempts} tries (best ${postScore}%)`;
   }
 
   console.log(
@@ -220,6 +224,7 @@ export async function resetExhaustedTailorAttemptsOnSheet(sheets, spreadsheetId)
       !saved;
 
     if (belowSaveMin || stuckUpload) {
+      if (hasSavedResume(row)) continue;
       updateData.push({
         range: `${SHEET_NAME}!U${idx + 2}`,
         values: [["0"]],
@@ -319,7 +324,7 @@ export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {
   }
 
   console.log(
-    `✅  Tailor pass: ${tailored} processed, ${reached} saved at ${TAILOR_SAVE_MIN_SCORE}%+`
+    `✅  Tailor pass: ${tailored} processed, ${reached} saved (≥${TAILOR_SAVE_MIN_SCORE}% or best effort)`
   );
   return { processed: tailored, reached };
 }

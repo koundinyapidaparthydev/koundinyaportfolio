@@ -25,7 +25,7 @@ async function main() {
   await sj.ensureSheetAndHeaders(sheets);
 
   const limit = Number(process.env.HC_TAILOR_BATCH_LIMIT) || 999;
-  const concurrency = Number(process.env.HC_TAILOR_CONCURRENCY) || 5;
+  const concurrency = Number(process.env.HC_TAILOR_CONCURRENCY) || 30;
 
   console.log(
     `\n🔄  Retailor all below 90% — batch ${limit}, concurrency ${concurrency}\n`
@@ -39,7 +39,7 @@ async function main() {
   });
 
   console.log(
-    `\nDone — ${result.processed} processed, ${result.reached} job(s) now at 90%+ ATS.\n`
+    `\nDone — ${result.processed} processed, ${result.reached} saved (90%+ or best effort after 5 tries).\n`
   );
 }
 

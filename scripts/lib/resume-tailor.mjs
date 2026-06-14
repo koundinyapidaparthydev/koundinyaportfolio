@@ -14,6 +14,7 @@ import {
   formatQualityFeedback,
   sanitizeTailoredResume,
 } from "./resume-quality.mjs";
+import { normalizeParsedTailorResponse } from "./resume-normalize.mjs";
 import {
   TAILOR_TARGET_SCORE,
   TAILOR_SAVE_MIN_SCORE,
@@ -201,8 +202,9 @@ function parseTailorJson(raw) {
 }
 
 function normalizeTailored(baseResume, parsed) {
-  const coverLetter = parsed.coverLetter ?? "";
-  const { coverLetter: _cl, ...resumeOnly } = parsed;
+  const shaped = normalizeParsedTailorResponse(baseResume, parsed);
+  const coverLetter = shaped.coverLetter ?? "";
+  const { coverLetter: _cl, ...resumeOnly } = shaped;
   void _cl;
   const tailoredResume = sanitizeTailoredResume(baseResume, {
     ...baseResume,
@@ -449,7 +451,7 @@ export async function tailorResumeUntilTarget(
     `  Tailor loop: target ${targetScore}%, save ≥${saveMinScore}%, up to ${maxAttempts} attempts`
   );
 
-  for (let i = 0; i < maxAttempts; i++) {
+  const runAttempt = async () => {
     const attempt = startAttempt + attemptsUsed;
     attemptsUsed++;
     const fromBase = !best;
@@ -469,6 +471,15 @@ export async function tailorResumeUntilTarget(
         `  ↻ ATS ${result.postAtsScore}% < best ${best.postAtsScore}% — keeping prior draft`
       );
     }
+    return result;
+  };
+
+  for (let i = 0; i < maxAttempts; i++) {
+    try {
+      await runAttempt();
+    } catch (err) {
+      console.warn(`  ⚠  Tailor attempt ${startAttempt + attemptsUsed - 1} failed: ${err.message}`);
+    }
 
     if ((best?.postAtsScore ?? 0) >= saveMinScore) {
       console.log(`  ✓ Reached save target ${saveMinScore}% (best ${best.postAtsScore}%)`);
@@ -477,18 +488,28 @@ export async function tailorResumeUntilTarget(
 
     if (i < maxAttempts - 1) {
       console.log(
-        `  ↻ ATS ${best.postAtsScore}% < ${targetScore}% — retry ${attempt + 1}`
+        `  ↻ ATS ${best?.postAtsScore ?? "?"}% < ${targetScore}% — retry ${startAttempt + attemptsUsed}`
       );
       await delay(retryDelayMs);
     }
   }
 
   const reachedSaveMin = (best?.postAtsScore ?? 0) >= saveMinScore;
+  const exhausted = attemptsUsed >= maxAttempts;
+  const saveBestEffort =
+    !reachedSaveMin && exhausted && !!best?.tailoredResume;
+
+  if (saveBestEffort) {
+    console.log(
+      `  ✓ Saving best effort ${best.postAtsScore}% after ${attemptsUsed} attempts (target ${saveMinScore}% not reached)`
+    );
+  }
 
   return {
     ...best,
     attempts: attemptsUsed,
-    reachedTarget: reachedSaveMin,
+    reachedTarget: reachedSaveMin || saveBestEffort,
+    saveBestEffort,
     reachedAspirational: reachedSaveMin,
     targetScore,
     saveMinScore,

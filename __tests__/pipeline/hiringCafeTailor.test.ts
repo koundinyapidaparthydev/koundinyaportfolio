@@ -70,6 +70,26 @@ describe("needsTailoring", () => {
     expect(needsTailoring(r, baseResume)).toBe(false);
   });
 
+  it("skips when a tailored PDF is already saved (any score)", () => {
+    const r = row({
+      9: "72",
+      7: "https://storage.example/resume.pdf",
+      17: "yes",
+      20: "2",
+    });
+    expect(needsTailoring(r, baseResume)).toBe(false);
+  });
+
+  it("skips when best-effort PDF saved after max attempts below 90%", () => {
+    const r = row({
+      9: "82",
+      7: "https://storage.example/resume.pdf",
+      17: "yes",
+      20: String(MAX_TAILOR_ATTEMPTS),
+    });
+    expect(needsTailoring(r, baseResume)).toBe(false);
+  });
+
   it("skips applied jobs", () => {
     const r = row({ 10: "applied" });
     expect(needsTailoring(r, baseResume)).toBe(false);
@@ -85,6 +105,6 @@ describe("ats-config.mjs tailoring constants", () => {
   it("exports aligned 90% skip, target, and save thresholds", () => {
     expect(SKIP_TAILOR_INITIAL_ATS).toBe(90);
     expect(TAILOR_SAVE_MIN_SCORE).toBe(90);
-    expect(MAX_TAILOR_ATTEMPTS).toBe(12);
+    expect(MAX_TAILOR_ATTEMPTS).toBe(5);
   });
 });

@@ -19,8 +19,8 @@ export const ATS_STRONG_SCORE = 80;
 /** Non-tailored resume filter in All Jobs admin (base resume ATS bar). */
 export const NON_TAILORED_MIN_SCORE = SKIP_TAILOR_INITIAL_ATS;
 
-/** Max AI tailor attempts per job (single-phase loop). */
-export const MAX_TAILOR_ATTEMPTS = 12;
+/** Max AI tailor attempts per job; after exhaustion, save the highest-scoring draft. */
+export const MAX_TAILOR_ATTEMPTS = 5;
 
 /** Minimum resume skills matching the JD before tailoring is allowed. */
 export const MIN_SKILL_MATCH_COUNT = 3;

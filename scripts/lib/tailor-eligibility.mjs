@@ -38,6 +38,12 @@ export function isResumeSaved(row) {
   return (row[17] ?? "").trim().toLowerCase() === "yes";
 }
 
+/** Row has a completed tailor upload — never re-tailor. */
+export function hasSavedResume(row) {
+  const padded = padRow(row);
+  return isResumeSaved(padded) && !!(padded[7] ?? "").trim();
+}
+
 /** Pre-tailor base ATS from column S, falling back to column J. */
 export function preTailorScore(row) {
   return parseScore(row[18]) ?? parseScore(row[9]);
@@ -48,6 +54,8 @@ export function needsTailoring(row, baseResume) {
   const desc = (padded[6] ?? "").trim();
   if (desc.length < MIN_DESCRIPTION) return false;
   if (isApplied(padded)) return false;
+
+  if (hasSavedResume(padded)) return false;
 
   const postScore = parseScore(padded[9]);
   const resumeUrl = (padded[7] ?? "").trim();
@@ -69,13 +77,10 @@ export function needsTailoring(row, baseResume) {
   const preScore = preTailorScore(padded);
   if (preScore !== null && preScore >= SKIP_TAILOR_INITIAL_ATS) return false;
 
-  if (saved && resumeUrl && postScore !== null && postScore >= TAILOR_SAVE_MIN_SCORE) {
-    return false;
-  }
+  const prevAttempts = parseAttempts(padded[20]);
 
   if (postScore !== null && postScore >= TAILOR_SAVE_MIN_SCORE) return false;
 
-  const prevAttempts = parseAttempts(padded[20]);
   if (prevAttempts >= MAX_TAILOR_ATTEMPTS) return false;
 
   const { passes } = countSkillMatches(desc, baseResume);
