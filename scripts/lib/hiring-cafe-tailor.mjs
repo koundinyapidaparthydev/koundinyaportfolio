@@ -1,5 +1,5 @@
 /**
- * Auto-tailor resumes until ATS >= 87% (max 5 attempts per job).
+ * Auto-tailor resumes using two-phase strategy (82% milestone → 95% target, save at 91%+).
  * Requires >= 3 resume skills matching the job description. Skips applied jobs.
  */
 
@@ -11,65 +11,29 @@ import { tailorResumeUntilTarget } from "./resume-tailor.mjs";
 import { uploadToGCS } from "./gcs-upload.mjs";
 import { countSkillMatches } from "./skill-match.mjs";
 import {
+  SKIP_TAILOR_INITIAL_ATS,
+  INTERMEDIATE_MILESTONE_SCORE,
   TAILOR_TARGET_SCORE,
+  TAILOR_SAVE_MIN_SCORE,
   MAX_TAILOR_ATTEMPTS,
   MIN_SKILL_MATCH_COUNT,
 } from "./ats-config.mjs";
+import {
+  padRow,
+  parseScore,
+  parseAttempts,
+  preTailorScore,
+  needsTailoring,
+  isApplied,
+  isResumeSaved,
+  MIN_DESCRIPTION,
+} from "./tailor-eligibility.mjs";
 
+export { needsTailoring };
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SHEET_NAME = "Jobs";
-const SHEET_COLS = 21;
 const DEFAULT_BATCH = Number(process.env.HC_TAILOR_BATCH_LIMIT) || 5;
-const MIN_DESCRIPTION = 120;
 const TAILOR_DELAY_MS = Number(process.env.HC_TAILOR_DELAY_MS) || 2000;
-
-function padRow(row) {
-  const out = [...(row ?? [])];
-  while (out.length < SHEET_COLS) out.push("");
-  return out;
-}
-
-function parseScore(value) {
-  const n = Number(String(value ?? "").trim());
-  return Number.isFinite(n) ? n : null;
-}
-
-function parseAttempts(value) {
-  const n = Number.parseInt(String(value ?? "").trim(), 10);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
-}
-
-function isApplied(row) {
-  return (row[10] ?? "").trim().toLowerCase() === "applied";
-}
-
-function isResumeSaved(row) {
-  return (row[17] ?? "").trim().toLowerCase() === "yes";
-}
-
-function needsTailoring(row, baseResume) {
-  const padded = padRow(row);
-  const desc = (padded[6] ?? "").trim();
-  if (desc.length < MIN_DESCRIPTION) return false;
-  if (isApplied(padded)) return false;
-
-  const score = parseScore(padded[9]);
-  const resumeUrl = (padded[7] ?? "").trim();
-  const saved = isResumeSaved(padded);
-  const stuckUpload =
-    score !== null &&
-    score >= TAILOR_TARGET_SCORE &&
-    !resumeUrl &&
-    !saved;
-
-  if (score !== null && score >= TAILOR_TARGET_SCORE && !stuckUpload) return false;
-
-  const prevAttempts = parseAttempts(padded[20]);
-  if (prevAttempts >= MAX_TAILOR_ATTEMPTS && !stuckUpload) return false;
-
-  const { passes } = countSkillMatches(desc, baseResume);
-  return passes;
-}
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -106,7 +70,7 @@ function buildSheetUpdate({
   result,
   resumeUrl,
 }) {
-  const preScoreNum = parseScore(row[18]) ?? parseScore(row[9]);
+  const preScoreNum = preTailorScore(row);
   const preScore = String(preScoreNum ?? "");
   const postScore = String(result?.postAtsScore ?? parseScore(row[9]) ?? "");
   const postResult = result?.postResult ?? {};
@@ -138,7 +102,7 @@ async function tailorJobTarget({ row, sheetRow, baseResume }) {
   const desc = row[6] ?? "";
   const prevAttempts = parseAttempts(row[20]);
   const { count: skillMatchCount } = countSkillMatches(desc, baseResume);
-  const preScoreNum = parseScore(row[18]) ?? parseScore(row[9]);
+  const preScoreNum = preTailorScore(row);
 
   const remaining = MAX_TAILOR_ATTEMPTS - prevAttempts;
   const result = await tailorResumeUntilTarget(
@@ -147,16 +111,15 @@ async function tailorJobTarget({ row, sheetRow, baseResume }) {
     {
       preAtsScore: preScoreNum,
       maxAttempts: remaining,
-      startAttempt: 1,
-      targetScore: TAILOR_TARGET_SCORE,
+      startAttempt: prevAttempts + 1,
     }
   );
 
   const totalAttempts = prevAttempts + (result.attempts ?? 0);
-  const reachedTarget = result.reachedTarget === true;
+  const reachedSaveMin = result.reachedTarget === true;
 
   let resumeUrl = "";
-  if (reachedTarget) {
+  if (reachedSaveMin) {
     try {
       const pdfBuffer = await renderResumePdf(result.tailoredResume);
       const safeCompany = company.replace(/[^a-zA-Z0-9]/g, "_");
@@ -169,14 +132,21 @@ async function tailorJobTarget({ row, sheetRow, baseResume }) {
     }
   }
 
-  const savedToSheet = reachedTarget && !!resumeUrl;
-  const status = savedToSheet
-    ? "saved"
-    : reachedTarget
-      ? `ATS ${result.postAtsScore}% but upload failed`
-      : `below ${TAILOR_TARGET_SCORE}% after ${totalAttempts} tries`;
+  const savedToSheet = reachedSaveMin && !!resumeUrl;
+  const postScore = result.postAtsScore ?? "?";
+  let status;
+  if (savedToSheet) {
+    status = "saved";
+  } else if (reachedSaveMin) {
+    status = `ATS ${postScore}% but upload failed`;
+  } else if ((result.postAtsScore ?? 0) >= INTERMEDIATE_MILESTONE_SCORE) {
+    status = `phase 2 incomplete — below save min ${TAILOR_SAVE_MIN_SCORE}% after ${totalAttempts} tries (best ${postScore}%)`;
+  } else {
+    status = `below ${INTERMEDIATE_MILESTONE_SCORE}% milestone after ${totalAttempts} tries (best ${postScore}%)`;
+  }
+
   console.log(
-    `  ${savedToSheet ? "✓" : "○"} ${company} — ${title}: ATS ${preScoreNum ?? "?"}% → ${result.postAtsScore}% (${status}, skills ${skillMatchCount})`
+    `  ${savedToSheet ? "✓" : "○"} ${company} — ${title}: ATS ${preScoreNum ?? "?"}% → ${postScore}% (${status}, skills ${skillMatchCount})`
   );
 
   return {
@@ -224,7 +194,7 @@ export async function syncSkillMatchCountsOnSheet(sheets, spreadsheetId, options
   return updateData.length;
 }
 
-/** Zero column U for rows eligible to retry (J<87 or stuck upload without saved resume). */
+/** Zero column U for rows eligible to retry (J below save min or stuck upload without saved resume). */
 export async function resetExhaustedTailorAttemptsOnSheet(sheets, spreadsheetId) {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -243,14 +213,14 @@ export async function resetExhaustedTailorAttemptsOnSheet(sheets, spreadsheetId)
     const attempts = parseAttempts(row[20]);
     if (attempts === 0) continue;
 
-    const belowTarget = score === null || score < TAILOR_TARGET_SCORE;
+    const belowSaveMin = score === null || score < TAILOR_SAVE_MIN_SCORE;
     const stuckUpload =
       score !== null &&
-      score >= TAILOR_TARGET_SCORE &&
+      score >= TAILOR_SAVE_MIN_SCORE &&
       !resumeUrl &&
       !saved;
 
-    if (belowTarget || stuckUpload) {
+    if (belowSaveMin || stuckUpload) {
       updateData.push({
         range: `${SHEET_NAME}!U${idx + 2}`,
         values: [["0"]],
@@ -272,7 +242,7 @@ export async function resetExhaustedTailorAttemptsOnSheet(sheets, spreadsheetId)
 export const resetExhaustedTailorAttempts = resetExhaustedTailorAttemptsOnSheet;
 
 /**
- * Tailor jobs below 87% ATS with >= 3 skill overlap (max 5 attempts each).
+ * Tailor jobs below skip threshold with >= 3 skill overlap (two-phase, max 7 attempts each).
  * @returns {{ processed: number, reached: number }}
  */
 export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {}) {
@@ -299,7 +269,7 @@ export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {
   if (targets.length === 0) return { processed: 0, reached: 0 };
 
   console.log(
-    `✍️  Tailoring up to ${targets.length} jobs (target ${TAILOR_TARGET_SCORE}%, ≥${MIN_SKILL_MATCH_COUNT} skills, max ${MAX_TAILOR_ATTEMPTS} tries)…`
+    `✍️  Tailoring up to ${targets.length} jobs (phase 1 → ${INTERMEDIATE_MILESTONE}%, phase 2 → ${TAILOR_TARGET_SCORE}%, save ≥${TAILOR_SAVE_MIN_SCORE}%, skip base ≥${SKIP_TAILOR_INITIAL_ATS}%, ≥${MIN_SKILL_MATCH_COUNT} skills, max ${MAX_TAILOR_ATTEMPTS} tries)…`
   );
 
   const updateData = [];
@@ -330,7 +300,9 @@ export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {
     });
   }
 
-  console.log(`✅  Tailor pass: ${tailored} processed, ${reached} reached ${TAILOR_TARGET_SCORE}%+`);
+  console.log(
+    `✅  Tailor pass: ${tailored} processed, ${reached} saved at ${TAILOR_SAVE_MIN_SCORE}%+`
+  );
   return { processed: tailored, reached };
 }
 

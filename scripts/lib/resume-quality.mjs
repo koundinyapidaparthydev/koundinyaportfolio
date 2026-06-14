@@ -2,10 +2,10 @@
  * Quality checks for AI-tailored resumes (pipeline mirror of lib/resumeQuality.ts).
  */
 
-import { TAILOR_TARGET_SCORE } from "./ats-config.mjs";
+import { TAILOR_SAVE_MIN_SCORE } from "./ats-config.mjs";
 
 export const MIN_ATS_IMPROVEMENT = 5;
-export const TARGET_TAILORED_ATS = TAILOR_TARGET_SCORE;
+export const TARGET_TAILORED_ATS = TAILOR_SAVE_MIN_SCORE;
 
 export const AI_BUZZWORDS = [
   "leveraged",

@@ -19,7 +19,7 @@ flowchart LR
   Filter --> Refresh[Refresh discovered-at for existing rows]
   Refresh --> Dedup[Dedup HC id + company/title]
   Dedup --> Sheet[Append new jobs to Jobs A–U]
-  Sheet --> ATS[Gemini ATS score + tailor below 87%]
+  Sheet --> ATS[Gemini ATS score + two-phase tailor]
   ATS --> Archive[Archive rows older than 12h → Old Jobs]
   Archive --> Notify[WhatsApp optional]
 ```
@@ -28,7 +28,7 @@ flowchart LR
 |-------|--------|-------------|
 | **HC pipeline** (default) | `scripts/run-hiring-cafe-pipeline.mjs` | `npm run job:pipeline` |
 | **Local 10-min loop** | `scripts/run-hiring-cafe-loop.mjs` | Disabled by default — use GHA. Dev: `ALLOW_LOCAL_PIPELINE_LOOP=1 npm run job:pipeline:loop` |
-| **Re-tailor below 87%** | `scripts/retailor-below-target.mjs` | `node scripts/retailor-below-target.mjs` |
+| **Re-tailor below save min** | `scripts/retailor-below-target.mjs` | `node scripts/retailor-below-target.mjs` |
 | **Purge legacy rows** | `scripts/purge-jobs-sheet.mjs` | `npm run job:purge` |
 | **Diagnose sheet** | `scripts/diagnose-sheet.mjs` | `npm run job:diagnose` |
 | **Env check** | `scripts/validate-pipeline-env.mjs` | `npm run job:validate-env` |
@@ -53,7 +53,19 @@ flowchart LR
 | Pagination | Pages 1–5 each run via HC `&page=` param (0-based) |
 | Descriptions | Full text from HC job detail API (`job_information.description`) |
 | ATS | Gemini scores base resume vs description → J, O–Q |
-| Auto-tailor | Jobs &lt;87% with ≥3 skill matches → Gemini tailor (up to 5 tries) → PDF upload → H; R=`yes` only when upload succeeds |
+| Auto-tailor | Base ATS &lt;87% with ≥3 skill matches → two-phase Gemini tailor (max 7 tries) → PDF upload when ≥91% → H; R=`yes` only when upload succeeds |
+
+### Tailoring thresholds
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `SKIP_TAILOR_INITIAL_ATS` | 87% | Skip tailoring when base resume already scores this high |
+| `INTERMEDIATE_MILESTONE_SCORE` | 82% | Phase 1 target — iterate best draft until reached |
+| `TAILOR_TARGET_SCORE` | 95% | Phase 2 aspirational loop target |
+| `TAILOR_SAVE_MIN_SCORE` | 91% | Minimum post-tailor score to upload PDF and set R=`yes` |
+| `MAX_TAILOR_ATTEMPTS` | 7 | Combined phase 1 + phase 2 attempts per job |
+
+Phase 1 tailors from the base resume on attempt 1, then always refines the **best-scoring draft** (never restarts from base). Phase 2 continues from the 82%+ draft toward 95%. A lower-scoring retry never replaces a better draft.
 
 Config lives in `scripts/lib/hiring-cafe.mjs`.
 
@@ -69,7 +81,7 @@ Config lives in `scripts/lib/hiring-cafe.mjs`.
 | O | ATS Match Summary | Gemini ATS analysis |
 | P | Key Gaps | Gemini ATS analysis |
 | Q | Recommended Keywords | Gemini ATS analysis |
-| R | Resume Modified | `no` = base or below target; `yes` = AI-tailored PDF saved |
+| R | Resume Modified | `no` = base or below save min; `yes` = AI-tailored PDF saved (post-tailor ≥91%) |
 | S | Pre-Tailor ATS | Base-resume score before tailoring (for comparison) |
 | T | Skill Match | Count of resume skills found in job description |
 | U | Tailor Attempts | Cumulative Gemini tailor attempts for this row |
@@ -119,7 +131,7 @@ npm run job:pipeline:hc:dry     # DRY_RUN — no sheet writes
 npm run job:pipeline            # HC scrape + sheet update
 npm run job:purge:dry           # preview purge counts
 npm run job:diagnose
-node scripts/retailor-below-target.mjs   # re-tailor rows below 87%
+node scripts/retailor-below-target.mjs   # re-tailor rows below 91% save min
 ```
 
 ---

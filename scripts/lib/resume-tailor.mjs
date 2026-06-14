@@ -9,7 +9,12 @@ import {
   formatQualityFeedback,
   sanitizeTailoredResume,
 } from "./resume-quality.mjs";
-import { TAILOR_TARGET_SCORE, MAX_TAILOR_ATTEMPTS } from "./ats-config.mjs";
+import {
+  TAILOR_TARGET_SCORE,
+  TAILOR_SAVE_MIN_SCORE,
+  INTERMEDIATE_MILESTONE_SCORE,
+  MAX_TAILOR_ATTEMPTS,
+} from "./ats-config.mjs";
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -276,74 +281,185 @@ export async function tailorResumeWithQualityGate(
   };
 }
 
+function splitPhaseAttempts(total) {
+  if (total <= 1) return { phase1: total, phase2: 0 };
+  const phase1 = Math.max(1, Math.min(Math.ceil(total * 0.55), total - 1));
+  return { phase1, phase2: total - phase1 };
+}
+
+async function attemptTailor(baseResume, job, { best, attempt, preAtsScore, targetScore, fromBase }) {
+  const { title, company, description } = job;
+
+  if (!fromBase && best?.tailoredResume) {
+    const atsGuidance = buildAtsTargetGuidance(targetScore, best.postResult, attempt);
+    return tailorResumeWithQualityGate(
+      baseResume,
+      { title, company, description },
+      {
+        preAtsScore,
+        draftResume: best.tailoredResume,
+        refineFeedback: atsGuidance,
+        atsGaps: best.postResult?.keyGaps ?? best.postResult?.recommendedKeywords ?? "",
+        isRetryAttempt: true,
+        targetScore,
+      }
+    );
+  }
+
+  const extraGuidance = `Target ATS score: at least ${targetScore}% for this role.`;
+  return tailorResumeWithQualityGate(
+    baseResume,
+    { title, company, description },
+    { preAtsScore, extraGuidance, targetScore }
+  );
+}
+
+async function runTailorPhase(baseResume, job, options) {
+  const {
+    best: initialBest,
+    startAttempt,
+    maxAttempts,
+    phaseTarget,
+    preAtsScore,
+    retryDelayMs,
+    phaseLabel,
+  } = options;
+
+  let best = initialBest;
+  let attemptsUsed = 0;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const attempt = startAttempt + attemptsUsed;
+    attemptsUsed++;
+    const fromBase = !best;
+
+    const result = await attemptTailor(baseResume, job, {
+      best,
+      attempt,
+      preAtsScore,
+      targetScore: phaseTarget,
+      fromBase,
+    });
+
+    if (!best || result.postAtsScore > best.postAtsScore) {
+      best = { ...result, attempts: attempt };
+    } else if (result.postAtsScore < best.postAtsScore) {
+      console.log(
+        `  ↻ Phase ${phaseLabel}: ${result.postAtsScore}% < best ${best.postAtsScore}% — keeping prior draft`
+      );
+    }
+
+    if (best.postAtsScore >= phaseTarget) {
+      console.log(
+        `  ✓ Phase ${phaseLabel}: reached ${phaseTarget}% milestone (best ${best.postAtsScore}%)`
+      );
+      return { best, attemptsUsed, reachedPhaseTarget: true };
+    }
+
+    if (i < maxAttempts - 1) {
+      console.log(
+        `  ↻ Phase ${phaseLabel}: ATS ${best.postAtsScore}% < ${phaseTarget}% — retry ${attempt + 1}`
+      );
+      await delay(retryDelayMs);
+    }
+  }
+
+  return { best, attemptsUsed, reachedPhaseTarget: false };
+}
+
 /**
- * Tailor up to maxAttempts times until ATS >= targetScore (default 87%).
+ * Two-phase tailor loop:
+ * - Phase 1: from base (attempt 1) then best draft until ≥ INTERMEDIATE_MILESTONE_SCORE (82%)
+ * - Phase 2: from best draft (must be ≥82%) toward TAILOR_TARGET_SCORE (95%)
+ * - Save/upload when postAtsScore ≥ TAILOR_SAVE_MIN_SCORE (91%)
+ * Never replaces best draft with a lower-scoring attempt.
  */
 export async function tailorResumeUntilTarget(
   baseResume,
   { title, company, description },
   options = {}
 ) {
-  const targetScore = options.targetScore ?? TAILOR_TARGET_SCORE;
+  const aspirationalTarget = options.targetScore ?? TAILOR_TARGET_SCORE;
+  const saveMinScore = options.saveMinScore ?? TAILOR_SAVE_MIN_SCORE;
+  const intermediateMilestone = options.intermediateMilestone ?? INTERMEDIATE_MILESTONE_SCORE;
   const maxAttempts = options.maxAttempts ?? MAX_TAILOR_ATTEMPTS;
   const preAtsScore = options.preAtsScore ?? null;
   const startAttempt = options.startAttempt ?? 1;
   const retryDelayMs = options.retryDelayMs ?? 1500;
 
-  let best = null;
-  let attempts = 0;
+  const { phase1: phase1Budget, phase2: phase2Budget } = splitPhaseAttempts(maxAttempts);
+  let totalAttemptsUsed = 0;
+  let currentAttempt = startAttempt;
 
-  for (let attempt = startAttempt; attempt <= maxAttempts; attempt++) {
-    attempts = attempt;
-    let result;
-
-    if (attempt > 1 && best?.tailoredResume) {
-      const atsGuidance = buildAtsTargetGuidance(targetScore, best.postResult, attempt);
-      result = await tailorResumeWithQualityGate(
-        baseResume,
-        { title, company, description },
-        {
-          preAtsScore,
-          draftResume: best.tailoredResume,
-          refineFeedback: atsGuidance,
-          atsGaps: best.postResult?.keyGaps ?? best.postResult?.recommendedKeywords ?? "",
-          isRetryAttempt: true,
-          targetScore,
-        }
-      );
-    } else {
-      const extraGuidance = `Target ATS score: at least ${targetScore}% for this role.`;
-      result = await tailorResumeWithQualityGate(
-        baseResume,
-        { title, company, description },
-        {
-          preAtsScore,
-          extraGuidance,
-          targetScore,
-        }
-      );
+  console.log(
+    `  Phase 1: targeting ${intermediateMilestone}% (up to ${phase1Budget} of ${maxAttempts} attempts)`
+  );
+  const phase1 = await runTailorPhase(
+    baseResume,
+    { title, company, description },
+    {
+      best: null,
+      startAttempt: currentAttempt,
+      maxAttempts: phase1Budget,
+      phaseTarget: intermediateMilestone,
+      preAtsScore,
+      retryDelayMs,
+      phaseLabel: "1",
     }
+  );
 
-    if (!best || result.postAtsScore > best.postAtsScore) {
-      best = { ...result, attempts };
-    }
+  totalAttemptsUsed += phase1.attemptsUsed;
+  currentAttempt += phase1.attemptsUsed;
+  let best = phase1.best;
 
-    if (result.postAtsScore >= targetScore) {
-      return { ...result, attempts, reachedTarget: true, targetScore };
-    }
-
-    if (attempt < maxAttempts) {
-      console.log(
-        `  ↻ ATS ${result.postAtsScore}% < ${targetScore}% — retry ${attempt + 1}/${maxAttempts}`
-      );
-      await delay(retryDelayMs);
-    }
+  if (!best) {
+    return {
+      attempts: totalAttemptsUsed,
+      reachedTarget: false,
+      reachedAspirational: false,
+      targetScore: aspirationalTarget,
+      saveMinScore,
+      intermediateMilestone,
+    };
   }
+
+  if (phase1.reachedPhaseTarget && phase2Budget > 0) {
+    console.log(
+      `  Phase 2: targeting ${aspirationalTarget}% (save ≥${saveMinScore}%, up to ${phase2Budget} attempts)`
+    );
+    const phase2 = await runTailorPhase(
+      baseResume,
+      { title, company, description },
+      {
+        best,
+        startAttempt: currentAttempt,
+        maxAttempts: phase2Budget,
+        phaseTarget: aspirationalTarget,
+        preAtsScore,
+        retryDelayMs,
+        phaseLabel: "2",
+      }
+    );
+    totalAttemptsUsed += phase2.attemptsUsed;
+    if (phase2.best && phase2.best.postAtsScore >= (best?.postAtsScore ?? 0)) {
+      best = phase2.best;
+    }
+  } else if (!phase1.reachedPhaseTarget) {
+    console.log(
+      `  Phase 2 skipped: best ${best.postAtsScore}% < ${intermediateMilestone}% milestone`
+    );
+  }
+
+  const reachedSaveMin = (best?.postAtsScore ?? 0) >= saveMinScore;
+  const reachedAspirational = (best?.postAtsScore ?? 0) >= aspirationalTarget;
 
   return {
     ...best,
-    attempts,
-    reachedTarget: (best?.postAtsScore ?? 0) >= targetScore,
-    targetScore,
+    attempts: totalAttemptsUsed,
+    reachedTarget: reachedSaveMin,
+    reachedAspirational,
+    targetScore: aspirationalTarget,
+    saveMinScore,
+    intermediateMilestone,
   };
 }

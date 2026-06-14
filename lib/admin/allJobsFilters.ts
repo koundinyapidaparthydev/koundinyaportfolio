@@ -314,7 +314,7 @@ export function filterByAtsFriendly<T extends AllJobsRow>(
 
 /**
  * Filter by base vs all resumes.
- * - non-modified: base resume only, ATS ≥ NON_TAILORED_MIN_SCORE (87%)
+ * - non-modified: base resume only, ATS ≥ NON_TAILORED_MIN_SCORE (skip-tailor threshold, 87%)
  * - all: every job including AI-tailored rows
  */
 export function filterByResumeModified<T extends AllJobsRow>(

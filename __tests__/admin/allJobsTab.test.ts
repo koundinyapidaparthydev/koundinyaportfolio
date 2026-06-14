@@ -206,7 +206,7 @@ describe("ATS thresholds", () => {
     expect(DEFAULT_ATS_MIN_SCORE).toBe(75);
   });
 
-  it("uses 87% as the non-tailored resume filter bar", () => {
+  it("uses 87% as the non-tailored resume filter bar (skip-tailor threshold)", () => {
     expect(NON_TAILORED_MIN_SCORE).toBe(87);
   });
 

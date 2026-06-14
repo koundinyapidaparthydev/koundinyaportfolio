@@ -5,7 +5,7 @@
 import { loadResume } from "./resume-loader.mjs";
 import { scoreJobWithGemini } from "./gemini-ats.mjs";
 import { countSkillMatches } from "./skill-match.mjs";
-import { TAILOR_TARGET_SCORE } from "./ats-config.mjs";
+import { SKIP_TAILOR_INITIAL_ATS } from "./ats-config.mjs";
 
 const SHEET_NAME = "Jobs";
 const SHEET_COLS = 21;
@@ -53,7 +53,7 @@ export async function scoreHcJobsOnSheet(sheets, spreadsheetId, options = {}) {
     const desc = row[6] ?? "";
     const result = await scoreJobWithGemini(title, desc, resume);
     const { count: skillMatchCount } = countSkillMatches(desc, resume);
-    const modifiedFlag = result.score >= TAILOR_TARGET_SCORE ? "no" : "";
+    const modifiedFlag = result.score >= SKIP_TAILOR_INITIAL_ATS ? "no" : "";
     updateData.push(
       { range: `${SHEET_NAME}!J${sheetRow}`, values: [[String(result.score)]] },
       { range: `${SHEET_NAME}!O${sheetRow}`, values: [[result.matchSummary ?? ""]] },
