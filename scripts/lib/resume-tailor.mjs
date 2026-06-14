@@ -197,6 +197,7 @@ export async function tailorResumeWithQualityGate(
   const preAtsScore = options.preAtsScore ?? null;
   const extraGuidance = options.extraGuidance ?? "";
   const draftResume = options.draftResume ?? null;
+  const targetScore = options.targetScore ?? TAILOR_TARGET_SCORE;
 
   let parsed;
   if (draftResume && options.refineFeedback) {
@@ -229,9 +230,18 @@ export async function tailorResumeWithQualityGate(
     postAtsScore: postResult.score,
   });
 
-  if (!quality.passed && !options.skipQualityRefine) {
-    console.log(`  ↻ Quality refine for ${company} (${quality.errors.length} issues)`);
-    const feedback = formatQualityFeedback(quality);
+  const needsRefine =
+    !options.isRetryAttempt &&
+    (postResult.score < targetScore || !quality.passed);
+
+  if (needsRefine) {
+    const reason = !quality.passed
+      ? `${quality.errors.length} quality issues`
+      : `ATS ${postResult.score}% < ${targetScore}%`;
+    console.log(`  ↻ Refine pass for ${company} (${reason})`);
+    const feedback = quality.passed
+      ? "Improve ATS alignment for this role while keeping human tone and truthful facts."
+      : formatQualityFeedback(quality);
     const atsGaps = postResult.keyGaps ?? postResult.recommendedKeywords ?? "";
     parsed = await callGemini(
       apiKey,
@@ -285,20 +295,34 @@ export async function tailorResumeUntilTarget(
 
   for (let attempt = startAttempt; attempt <= maxAttempts; attempt++) {
     attempts = attempt;
-    const extraGuidance =
-      attempt === 1
-        ? `Target ATS score: at least ${targetScore}% for this role.`
-        : buildAtsTargetGuidance(targetScore, best?.postResult, attempt);
+    let result;
 
-    const result = await tailorResumeWithQualityGate(
-      baseResume,
-      { title, company, description },
-      {
-        preAtsScore,
-        extraGuidance,
-        skipQualityRefine: attempt > 1,
-      }
-    );
+    if (attempt > 1 && best?.tailoredResume) {
+      const atsGuidance = buildAtsTargetGuidance(targetScore, best.postResult, attempt);
+      result = await tailorResumeWithQualityGate(
+        baseResume,
+        { title, company, description },
+        {
+          preAtsScore,
+          draftResume: best.tailoredResume,
+          refineFeedback: atsGuidance,
+          atsGaps: best.postResult?.keyGaps ?? best.postResult?.recommendedKeywords ?? "",
+          isRetryAttempt: true,
+          targetScore,
+        }
+      );
+    } else {
+      const extraGuidance = `Target ATS score: at least ${targetScore}% for this role.`;
+      result = await tailorResumeWithQualityGate(
+        baseResume,
+        { title, company, description },
+        {
+          preAtsScore,
+          extraGuidance,
+          targetScore,
+        }
+      );
+    }
 
     if (!best || result.postAtsScore > best.postAtsScore) {
       best = { ...result, attempts };

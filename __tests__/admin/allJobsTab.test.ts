@@ -25,6 +25,7 @@ import {
   DEFAULT_APPLIED_VISIBILITY_FILTER,
   filterByAppliedVisibility,
   isJobApplied,
+  isJobSkipped,
   formatAtsScoreDisplay,
   type AllJobsRow,
 } from "@/lib/admin/allJobsFilters";
@@ -426,6 +427,22 @@ describe("applied job visibility", () => {
     const jobs = [
       job({ company: "Open", applyStatus: "" }),
       job({ company: "Done", applyStatus: "applied" }),
+    ];
+    expect(filterByAppliedVisibility(jobs, "hide-applied")).toHaveLength(1);
+    expect(filterByAppliedVisibility(jobs, "hide-applied")[0].company).toBe("Open");
+    expect(filterByAppliedVisibility(jobs, "include-applied")).toHaveLength(2);
+  });
+
+  it("detects skip status from sheet column V", () => {
+    expect(isJobSkipped({ skipApply: "yes" })).toBe(true);
+    expect(isJobSkipped({ skipApply: "Yes" })).toBe(true);
+    expect(isJobSkipped({ skipApply: "" })).toBe(false);
+  });
+
+  it("filters out skipped jobs in active view", () => {
+    const jobs = [
+      job({ company: "Open", skipApply: "" }),
+      job({ company: "Intern", skipApply: "yes" }),
     ];
     expect(filterByAppliedVisibility(jobs, "hide-applied")).toHaveLength(1);
     expect(filterByAppliedVisibility(jobs, "hide-applied")[0].company).toBe("Open");

@@ -33,6 +33,8 @@ export interface Job {
   /** Resume skills matching the job description. */
   skillMatchCount?: string;
   tailorAttempts?: string;
+  /** Sheet column V — "yes" when job should not be applied to. */
+  skipApply?: string;
 }
 
 export async function GET(req: NextRequest) {
@@ -57,7 +59,7 @@ export async function GET(req: NextRequest) {
     const sheets = google.sheets({ version: "v4", auth });
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `${SHEET_NAME}!A:U`,
+      range: `${SHEET_NAME}!A:V`,
     });
 
     const rows = response.data.values ?? [];
@@ -87,6 +89,7 @@ export async function GET(req: NextRequest) {
       preTailorAtsScore: row[18] ?? "",
       skillMatchCount: row[19] ?? "",
       tailorAttempts: row[20] ?? "",
+      skipApply: row[21] ?? "",
     }));
 
     const jobs = includeLegacy ? allJobs : allJobs.filter(isHiringCafeJob);

@@ -48,5 +48,35 @@ export function validatePipelineEnv(stage = "scrape") {
   }
 
   parseServiceAccountJson(process.env.GOOGLE_SERVICE_ACCOUNT_JSON, "Google Sheets");
+
+  if (stage === "scrape") {
+    warnOptionalPipelineEnv();
+  }
+
   return true;
+}
+
+function warnOptionalPipelineEnv() {
+  const warnings = [];
+
+  if (!normalizeEnvValue(process.env.GEMINI_API_KEY ?? "")) {
+    warnings.push("GEMINI_API_KEY — ATS scoring and resume tailoring will be skipped");
+  }
+
+  const hasGcsCreds = normalizeEnvValue(process.env.GCS_SERVICE_ACCOUNT_JSON ?? "");
+  const hasGcsBucket = normalizeEnvValue(process.env.GCS_BUCKET_NAME ?? "");
+  if (!hasGcsCreds || !hasGcsBucket) {
+    warnings.push(
+      "GCS_SERVICE_ACCOUNT_JSON / GCS_BUCKET_NAME — tailored resume PDFs cannot be uploaded"
+    );
+  }
+
+  for (const msg of warnings) {
+    console.warn(`⚠️  Pipeline optional env missing: ${msg}`);
+  }
+}
+
+/** Warn when optional scrape-stage env is missing (ATS scoring / resume upload). */
+export function warnOptionalEnv(stage = "scrape") {
+  if (stage === "scrape") warnOptionalPipelineEnv();
 }

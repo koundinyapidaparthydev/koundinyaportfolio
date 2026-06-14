@@ -9,7 +9,10 @@
 import { pathToFileURL } from "url";
 import { loadEnvLocal } from "./lib/load-env.mjs";
 import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
-import { retailorAllBelowTargetOnSheet } from "./lib/hiring-cafe-tailor.mjs";
+import {
+  retailorAllBelowTargetOnSheet,
+  resetExhaustedTailorAttemptsOnSheet,
+} from "./lib/hiring-cafe-tailor.mjs";
 
 loadEnvLocal();
 validatePipelineEnv("scrape");
@@ -21,8 +24,17 @@ async function main() {
   const sheets = await sj.getSheets();
   await sj.ensureSheetAndHeaders(sheets);
   const limit = Number(process.env.HC_TAILOR_BATCH_LIMIT) || 50;
-  const reached = await retailorAllBelowTargetOnSheet(sheets, GOOGLE_SHEET_ID, { limit });
-  console.log(`\nDone — ${reached} job(s) now at 87%+ ATS.\n`);
+  const resetAttempts = process.env.HC_RESET_TAILOR_ATTEMPTS !== "0";
+  if (resetAttempts) {
+    await resetExhaustedTailorAttemptsOnSheet(sheets, GOOGLE_SHEET_ID);
+  }
+  const result = await retailorAllBelowTargetOnSheet(sheets, GOOGLE_SHEET_ID, {
+    limit,
+    resetAttempts: false,
+  });
+  console.log(
+    `\nDone — ${result.processed} processed, ${result.reached} job(s) now at 87%+ ATS.\n`
+  );
 }
 
 const isMain =

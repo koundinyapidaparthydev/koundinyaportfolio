@@ -24,6 +24,7 @@ import {
   isResumeModified,
   formatAtsScoreDisplay,
   isJobApplied,
+  isJobSkipped,
   type SortColumn,
   type AllJobsSort,
   type ResumeModifiedFilter,
@@ -200,16 +201,19 @@ function JobDetailPanel({
   onClose,
   onMinimize,
   onToggleApplied,
+  onToggleSkipApply,
 }: {
   job: Job;
   onClose: () => void;
   onMinimize: () => void;
   onToggleApplied: (applied: boolean) => void;
+  onToggleSkipApply: (skipped: boolean) => void;
 }) {
   const [copied, setCopied] = useState(false);
   const platform = detectPlatformFromUrl(job.url);
   const now = Date.now();
   const applied = isJobApplied(job);
+  const skipped = isJobSkipped(job);
 
   const copyUrl = useCallback(async () => {
     try {
@@ -254,6 +258,20 @@ function JobDetailPanel({
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
+        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
+          <input
+            type="checkbox"
+            checked={skipped}
+            onChange={(e) => onToggleSkipApply(e.target.checked)}
+            className="h-4 w-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/30"
+          />
+          <span className="text-xs font-medium text-slate-300">
+            {skipped
+              ? "No need to apply — uncheck to move back to active list"
+              : "Mark as no need to apply"}
+          </span>
+        </label>
+
         <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5">
           <input
             type="checkbox"
@@ -437,13 +455,16 @@ function JobCard({
   isSelected,
   onSelect,
   onToggleApplied,
+  onToggleSkipApply,
 }: {
   job: Job;
   isSelected: boolean;
   onSelect: () => void;
   onToggleApplied: (applied: boolean) => void;
+  onToggleSkipApply: (skipped: boolean) => void;
 }) {
   const applied = isJobApplied(job);
+  const skipped = isJobSkipped(job);
 
   return (
     <motion.button
@@ -458,18 +479,32 @@ function JobCard({
       )}
     >
       <div className="flex items-start gap-3">
-        <label
-          className="flex shrink-0 cursor-pointer items-center pt-1"
-          title={applied ? "Mark as not applied" : "Mark as applied"}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <input
-            type="checkbox"
-            checked={applied}
-            onChange={(e) => onToggleApplied(e.target.checked)}
-            className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30"
-          />
-        </label>
+        <div className="flex shrink-0 flex-col gap-2 pt-1">
+          <label
+            className="flex cursor-pointer items-center"
+            title={skipped ? "Mark as active" : "Mark as no need to apply"}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={skipped}
+              onChange={(e) => onToggleSkipApply(e.target.checked)}
+              className="h-4 w-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/30"
+            />
+          </label>
+          <label
+            className="flex cursor-pointer items-center"
+            title={applied ? "Mark as not applied" : "Mark as applied"}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              type="checkbox"
+              checked={applied}
+              onChange={(e) => onToggleApplied(e.target.checked)}
+              className="h-4 w-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500/30"
+            />
+          </label>
+        </div>
         <CompanyLogo company={job.company} url={job.url} size="md" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{job.title}</p>
@@ -477,6 +512,11 @@ function JobCard({
           {applied && (
             <span className="mt-1 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-emerald-400">
               Applied
+            </span>
+          )}
+          {skipped && (
+            <span className="mt-1 inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-400">
+              Skipped
             </span>
           )}
           <p className="mt-1 truncate text-xs text-slate-400">{job.location || "—"}</p>
@@ -561,6 +601,37 @@ export default function AllJobsTab() {
     [appliedVisibility, queryClient, selectedUrl]
   );
 
+  const handleToggleSkipApply = useCallback(
+    async (job: Job, skipped: boolean) => {
+      if (!job.rowIndex) {
+        alert("Cannot update — job row index missing. Refresh and try again.");
+        return;
+      }
+      const skipApply = skipped ? "yes" : "";
+      const prevJobs = queryClient.getQueryData<Job[]>(["all-jobs"]) ?? [];
+
+      queryClient.setQueryData<Job[]>(["all-jobs"], (list = []) =>
+        list.map((j) => (j.url === job.url ? { ...j, skipApply } : j))
+      );
+
+      try {
+        const res = await fetch("/api/jobs/skip-apply", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rowIndex: job.rowIndex, skipApply }),
+        });
+        if (!res.ok) throw new Error("Update failed");
+        if (skipped && appliedVisibility === "hide-applied" && selectedUrl === job.url) {
+          setSelectedUrl(null);
+        }
+      } catch {
+        queryClient.setQueryData(["all-jobs"], prevJobs);
+        alert("Failed to save skip status. Try again.");
+      }
+    },
+    [appliedVisibility, queryClient, selectedUrl]
+  );
+
   const {
     data: jobs = [],
     isLoading,
@@ -589,6 +660,7 @@ export default function AllJobsTab() {
   );
 
   const appliedCount = useMemo(() => jobs.filter(isJobApplied).length, [jobs]);
+  const skippedCount = useMemo(() => jobs.filter(isJobSkipped).length, [jobs]);
 
   const selectedJob = useMemo(
     () => (selectedUrl ? jobs.find((j) => j.url === selectedUrl) ?? null : null),
@@ -607,7 +679,7 @@ export default function AllJobsTab() {
     <div className="space-y-5">
       <AdminPageHeader
         title="Hiring Cafe Jobs"
-        subtitle="Engineering + Software Development · US"
+        subtitle="Engineering + Software Development · US · apply manually via job link"
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <a
@@ -643,6 +715,14 @@ export default function AllJobsTab() {
             · {appliedCount} applied hidden
           </span>
         )}
+        {skippedCount > 0 && appliedVisibility === "hide-applied" && (
+          <span className="ml-2 text-[11px] text-slate-500">
+            · {skippedCount} skipped hidden
+          </span>
+        )}
+        <span className="ml-2 text-[11px] text-slate-500">
+          · Apply is manual — check Mark as applied after you submit
+        </span>
         <span className="ml-2 text-[11px] text-slate-500">
           · Low skill-fit (&lt;3 matches) pinned to bottom
         </span>
@@ -707,8 +787,8 @@ export default function AllJobsTab() {
             )}
           >
             {label}
-            {id === "include-applied" && appliedCount > 0 && (
-              <span className={glass.pillBadge}>{appliedCount}</span>
+            {id === "include-applied" && appliedCount + skippedCount > 0 && (
+              <span className={glass.pillBadge}>{appliedCount + skippedCount}</span>
             )}
           </button>
         ))}
@@ -735,6 +815,7 @@ export default function AllJobsTab() {
                     isSelected={selectedUrl === job.url}
                     onSelect={() => selectJob(job.url)}
                     onToggleApplied={(applied) => void handleToggleApplied(job, applied)}
+                    onToggleSkipApply={(skipped) => void handleToggleSkipApply(job, skipped)}
                   />
                 ))}
               </div>
@@ -757,6 +838,9 @@ export default function AllJobsTab() {
                         Resume
                       </th>
                       <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                        Skip
+                      </th>
+                      <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                         Applied
                       </th>
                       <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-slate-500">
@@ -768,6 +852,7 @@ export default function AllJobsTab() {
                     {filtered.map((job, i) => {
                       const isSelected = selectedUrl === job.url;
                       const applied = isJobApplied(job);
+                      const skipped = isJobSkipped(job);
                       const lowSkill = isLowSkillFit(job);
                       return (
                         <motion.tr
@@ -779,7 +864,7 @@ export default function AllJobsTab() {
                           className={[
                             "cursor-pointer transition-colors",
                             isSelected ? "bg-indigo-500/10" : "hover:bg-white/3",
-                            applied ? "opacity-80" : "",
+                            applied || skipped ? "opacity-80" : "",
                             lowSkill ? "opacity-50" : "",
                           ].join(" ")}
                         >
@@ -814,6 +899,22 @@ export default function AllJobsTab() {
                           </td>
                           <td className="whitespace-nowrap px-3 py-2.5">
                             <ResumeDownloadLink job={job} />
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5">
+                            <label
+                              className="inline-flex cursor-pointer items-center"
+                              title={skipped ? "Mark as active" : "Mark as no need to apply"}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={skipped}
+                                onChange={(e) =>
+                                  void handleToggleSkipApply(job, e.target.checked)
+                                }
+                                className="h-4 w-4 rounded border-white/20 bg-white/5 text-amber-500 focus:ring-amber-500/30"
+                              />
+                            </label>
                           </td>
                           <td className="whitespace-nowrap px-3 py-2.5">
                             <label
@@ -872,6 +973,7 @@ export default function AllJobsTab() {
                 onClose={() => setSelectedUrl(null)}
                 onMinimize={() => setDetailMinimized(true)}
                 onToggleApplied={(applied) => void handleToggleApplied(selectedJob, applied)}
+                onToggleSkipApply={(skipped) => void handleToggleSkipApply(selectedJob, skipped)}
               />
             )}
           </div>

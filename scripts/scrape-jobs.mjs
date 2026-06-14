@@ -182,7 +182,7 @@ function normalizeScrapeRow(row) {
   return [company, title, location, url, category, fetchedAt, postedAt, description];
 }
 
-/** Map in-memory row → 17-column sheet row (A–Q). */
+/** Map in-memory row → 21-column sheet row (A–U). */
 function toSheetRow(row) {
   const r = normalizeScrapeRow(row);
   return [
@@ -191,18 +191,24 @@ function toSheetRow(row) {
     r[6],
     "", "", "",
     "", "",
+    "", "",
   ];
 }
 
-function padRowTo19(row) {
+function padRowTo21(row) {
   const out = [...row];
-  while (out.length < 19) out.push("");
+  while (out.length < 21) out.push("");
   return out;
 }
 
-/** @deprecated Use padRowTo19 */
+/** @deprecated Use padRowTo21 */
+function padRowTo19(row) {
+  return padRowTo21(row);
+}
+
+/** @deprecated Use padRowTo21 */
 function padRowTo17(row) {
-  return padRowTo19(row);
+  return padRowTo21(row);
 }
 
 /** Pause between company fetches to avoid hammering servers */
@@ -1542,15 +1548,15 @@ async function writeNewJobs(sheets, newJobs) {
   // Fetch descriptions only for the genuinely new jobs
   const enriched = await enrichWithDescriptions(deduped);
 
-  // Append A–G + N scraped fields; H–M empty, K blank until generate sets pending
-  const rows14 = enriched.map((row) => toSheetRow(row));
+  // Append A–U scraped fields; H–M empty until tailor/apply
+  const rows21 = enriched.map((row) => toSheetRow(row));
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A:S`,
+    range: `${SHEET_NAME}!A:U`,
     valueInputOption: "RAW",
     insertDataOption: "INSERT_ROWS",
-    requestBody: { values: rows14 },
+    requestBody: { values: rows21 },
   });
 
   console.log(`✅  Added ${enriched.length} new jobs to Google Sheets`);
@@ -1660,7 +1666,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
       spreadsheetId: GOOGLE_SHEET_ID,
       range: `${SHEET_NAME}!A2:U`,
     });
-    const dataRows = (resp.data.values ?? []).map(padRowTo17);
+    const dataRows = (resp.data.values ?? []).map(padRowTo21);
     if (dataRows.length === 0) return;
 
     const now = Date.now();
@@ -1700,10 +1706,10 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
       console.log(`📄  Created archive sheet "${ARCHIVE_SHEET}"`);
     }
 
-    // Append full rows to archive (A–N)
+    // Append full rows to archive (A–U)
     await sheets.spreadsheets.values.append({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${ARCHIVE_SHEET}!A:S`,
+      range: `${ARCHIVE_SHEET}!A:U`,
       valueInputOption: "RAW",
       insertDataOption: "INSERT_ROWS",
       requestBody: { values: oldRows },

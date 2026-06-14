@@ -89,7 +89,7 @@ async function main() {
 
   const descriptionsBackfilled = await backfillHcDescriptionsOnSheet(sheets, GOOGLE_SHEET_ID);
   const atsScored = await scoreHcJobsOnSheet(sheets, GOOGLE_SHEET_ID);
-  const tailored = await tailorLowAtsJobsOnSheet(sheets, GOOGLE_SHEET_ID);
+  const tailorResult = await tailorLowAtsJobsOnSheet(sheets, GOOGLE_SHEET_ID);
 
   await sj.archiveOldJobs(sheets, { maxAgeMs: APPLY_NOW_WINDOW_MS });
 
@@ -102,7 +102,9 @@ async function main() {
     status: "OK",
     notes:
       `HC US · pages 1-${5} · refreshed ${refreshed} · dupes ${dupesRemoved} · ` +
-      `desc ${descriptionsBackfilled} · ATS ${atsScored} · tailored ${tailored} · window ${APPLY_NOW_WINDOW_MS / 3_600_000}h`,
+      `desc ${descriptionsBackfilled} · ATS ${atsScored} · ` +
+      `tailor ${tailorResult.processed} processed / ${tailorResult.reached} at 87%+ · ` +
+      `window ${APPLY_NOW_WINDOW_MS / 3_600_000}h`,
   });
 
   if (newJobRows.length > 0) {
@@ -110,7 +112,7 @@ async function main() {
   }
 
   console.log(
-    `\n📊  HC pipeline: ${normalized.length} fetched | ${refreshed} refreshed | ${newJobRows.length} new | ${dupesRemoved} dupes | ${descriptionsBackfilled} desc | ${atsScored} ATS | ${tailored} tailored | ${beforeCount} in sheet before`
+    `\n📊  HC pipeline: ${normalized.length} fetched | ${refreshed} refreshed | ${newJobRows.length} new | ${dupesRemoved} dupes | ${descriptionsBackfilled} desc | ${atsScored} ATS | tailor ${tailorResult.processed} processed / ${tailorResult.reached} at 87%+ | ${beforeCount} in sheet before`
   );
   console.log(`═══════════════════════════════════════════════════════════\n`);
 }

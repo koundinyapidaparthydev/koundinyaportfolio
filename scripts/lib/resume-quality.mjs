@@ -2,12 +2,10 @@
  * Quality checks for AI-tailored resumes (pipeline mirror of lib/resumeQuality.ts).
  */
 
-import {
-  DEFAULT_ATS_MIN_SCORE,
-} from "./ats-config.mjs";
+import { TAILOR_TARGET_SCORE } from "./ats-config.mjs";
 
 export const MIN_ATS_IMPROVEMENT = 5;
-export const TARGET_TAILORED_ATS = DEFAULT_ATS_MIN_SCORE;
+export const TARGET_TAILORED_ATS = TAILOR_TARGET_SCORE;
 
 export const AI_BUZZWORDS = [
   "leveraged",
@@ -223,7 +221,13 @@ export function validateTailoredResume(base, tailored, ctx) {
       issues.push({
         code: "ats_no_lift",
         message: `ATS only moved ${ctx.preAtsScore}% → ${ctx.postAtsScore}% — need ≥${TARGET_TAILORED_ATS}% or +${MIN_ATS_IMPROVEMENT} points.`,
-        severity: "warning",
+        severity: "error",
+      });
+    } else if (!hitTarget) {
+      issues.push({
+        code: "ats_below_target",
+        message: `ATS ${ctx.postAtsScore}% is below ${TARGET_TAILORED_ATS}% — refine summary and bullets for this role.`,
+        severity: "error",
       });
     }
   }

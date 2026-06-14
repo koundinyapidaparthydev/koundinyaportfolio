@@ -4,14 +4,13 @@
  * app/admin/page.tsx — Admin dashboard.
  *
  * Protected by the NextAuth middleware in middleware.ts (role === "admin" required).
- * Renders a dedicated admin shell with sidebar + animated tab content.
+ * Renders a dedicated admin shell with horizontal tabs + animated tab content.
  */
 
 import { useState, useCallback } from "react";
-import { useSession } from "next-auth/react";
 import { useQueryClient } from "@tanstack/react-query";
 import dynamic from "next/dynamic";
-import AdminSidebar, { type AdminTab } from "./_components/Sidebar";
+import AdminTabNav, { type AdminTab } from "./_components/Sidebar";
 import { AdminTopBar, AdminTabPanel } from "./_components/AdminShell";
 
 const AllJobsTab = dynamic(() => import("./_components/AllJobsTab"), {
@@ -32,7 +31,6 @@ function TabLoader() {
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<AdminTab>("all-jobs");
   const [refreshing, setRefreshing] = useState(false);
-  const { data: session } = useSession();
   const queryClient = useQueryClient();
 
   const handleRefresh = useCallback(async () => {
@@ -46,26 +44,17 @@ export default function AdminPage() {
 
   return (
     <div className="relative flex min-h-screen flex-col pt-24">
-      <div className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="w-full flex-1 px-3 py-4 sm:px-4 lg:px-6">
         <AdminTopBar activeTab={activeTab} onRefresh={handleRefresh} refreshing={refreshing} />
 
-        {session?.user?.email && (
-          <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-            Signed in as{" "}
-            <span className="text-slate-600 dark:text-slate-300">{session.user.email}</span>
-          </p>
-        )}
+        <AdminTabNav activeTab={activeTab} onSelect={setActiveTab} />
 
-        <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
-          <AdminSidebar activeTab={activeTab} onSelect={setActiveTab} />
-
-          <main className="min-w-0 flex-1">
-            <AdminTabPanel tabKey={activeTab}>
-              {activeTab === "all-jobs" && <AllJobsTab />}
-              {activeTab === "edit-resume" && <EditResumeTab />}
-            </AdminTabPanel>
-          </main>
-        </div>
+        <main className="min-w-0">
+          <AdminTabPanel tabKey={activeTab}>
+            {activeTab === "all-jobs" && <AllJobsTab />}
+            {activeTab === "edit-resume" && <EditResumeTab />}
+          </AdminTabPanel>
+        </main>
       </div>
     </div>
   );

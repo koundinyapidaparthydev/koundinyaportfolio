@@ -50,7 +50,7 @@ Job title: ${jobTitle}
 Complete job description:
 ${fullDescription}
 
-Resume summary (skills, roles, technologies, projects):
+Resume summary (summary paragraph, experience bullets, skills, roles, technologies, projects):
 ${resumeContext}`;
 
   try {

@@ -105,6 +105,8 @@ export interface AllJobsRow {
   skillMatchCount?: string;
   /** Sheet column U — AI tailor attempts consumed. */
   tailorAttempts?: string;
+  /** Sheet column V — "yes" when job should not be applied to. */
+  skipApply?: string;
 }
 
 /** Whether applied jobs appear in the list (hidden by default). */
@@ -117,7 +119,7 @@ export const APPLIED_VISIBILITY_OPTIONS: {
   label: string;
 }[] = [
   { id: "hide-applied", label: "Active jobs" },
-  { id: "include-applied", label: "All jobs + applied" },
+  { id: "include-applied", label: "All jobs + hidden" },
 ];
 
 /** True when the job was marked applied in the sheet (column K). */
@@ -125,12 +127,18 @@ export function isJobApplied(job: { applyStatus?: string }): boolean {
   return job.applyStatus?.trim().toLowerCase() === "applied";
 }
 
+/** True when the job was marked as not worth applying (column V). */
+export function isJobSkipped(job: { skipApply?: string }): boolean {
+  const flag = (job.skipApply ?? "").trim().toLowerCase();
+  return flag === "yes" || flag === "skip" || flag === "no-need";
+}
+
 export function filterByAppliedVisibility<T extends AllJobsRow>(
   jobs: T[],
   filter: AppliedVisibilityFilter
 ): T[] {
   if (filter === "include-applied") return jobs;
-  return jobs.filter((j) => !isJobApplied(j));
+  return jobs.filter((j) => !isJobApplied(j) && !isJobSkipped(j));
 }
 
 export const NEW_JOB_WINDOW_MS = 30 * 60_000;

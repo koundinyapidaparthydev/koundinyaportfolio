@@ -3,10 +3,7 @@
 import { glass, glassCn } from "@/lib/glass";
 
 /**
- * AdminSidebar — vertical nav for the admin dashboard.
- *
- * Renders as a fixed left column on desktop and as a top scrollable bar on mobile.
- * Highlights the active tab and fires onSelect when a nav item is clicked.
+ * AdminTabNav — horizontal tab navigation for the admin dashboard.
  */
 
 export type AdminTab = "edit-resume" | "all-jobs";
@@ -57,69 +54,50 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
   },
 ];
 
-interface SidebarProps {
+interface AdminTabNavProps {
   activeTab: AdminTab;
   onSelect: (tab: AdminTab) => void;
 }
 
-export default function AdminSidebar({ activeTab, onSelect }: SidebarProps) {
+export default function AdminTabNav({ activeTab, onSelect }: AdminTabNavProps) {
   return (
-    <>
-      {/* ── Desktop sidebar ── */}
-      <aside className={glassCn(glass.adminPanel, "hidden w-56 shrink-0 flex-col gap-1 p-3 lg:flex")}>
-        <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-          Dashboard
-        </p>
-        {NAV_ITEMS.map(({ id, label, icon }) => {
-          const active = activeTab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onSelect(id)}
-              className={[
-                "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors",
+    <nav
+      className={glassCn(
+        glass.adminPanel,
+        "mb-6 flex gap-1 overflow-x-auto p-1.5"
+      )}
+      aria-label="Admin sections"
+    >
+      {NAV_ITEMS.map(({ id, label, icon }) => {
+        const active = activeTab === id;
+        return (
+          <button
+            key={id}
+            type="button"
+            onClick={() => onSelect(id)}
+            className={[
+              "flex shrink-0 items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors",
+              active
+                ? glassCn(glass.adminPillActive, "text-indigo-600 dark:text-indigo-300")
+                : "text-slate-600 hover:bg-muted/50 dark:text-slate-400",
+            ].join(" ")}
+          >
+            <span
+              className={
                 active
-                  ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300"
-                  : "text-slate-600 hover:bg-muted/50 dark:text-slate-400",
-              ].join(" ")}
+                  ? "text-indigo-600 dark:text-indigo-400"
+                  : "text-slate-400 dark:text-slate-500 transition-colors"
+              }
             >
-              <span
-                className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500 transition-colors"}
-              >
-                {icon}
-              </span>
-              {label}
-            </button>
-          );
-        })}
-
-      </aside>
-
-      {/* ── Mobile tab strip ── */}
-      <nav className="flex gap-1 overflow-x-auto pb-1 lg:hidden">
-        {NAV_ITEMS.map(({ id, label, icon }) => {
-          const active = activeTab === id;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => onSelect(id)}
-              className={[
-                "flex shrink-0 items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-colors",
-                active
-                  ? glassCn(glass.adminPillActive, "text-indigo-600 dark:text-indigo-300")
-                  : glass.adminPill,
-              ].join(" ")}
-            >
-              <span className={active ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400 dark:text-slate-500"}>
-                {icon}
-              </span>
-              {label}
-            </button>
-          );
-        })}
-      </nav>
-    </>
+              {icon}
+            </span>
+            {label}
+          </button>
+        );
+      })}
+    </nav>
   );
 }
+
+/** @deprecated Use AdminTabNav */
+export const AdminSidebar = AdminTabNav;
