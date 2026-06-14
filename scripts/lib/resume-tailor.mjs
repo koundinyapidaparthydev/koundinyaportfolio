@@ -3,7 +3,12 @@
  * Includes humanized prompts, quality validation, and one refinement pass.
  */
 
-import { scoreJobWithGemini, GEMINI_TAILOR_MODEL } from "./gemini-ats.mjs";
+import {
+  scoreJobWithGemini,
+  GEMINI_TAILOR_MODEL,
+  GEMINI_MODEL,
+  tailorModelCandidates,
+} from "./gemini-ats.mjs";
 import {
   validateTailoredResume,
   formatQualityFeedback,
@@ -165,30 +170,42 @@ function normalizePostResult(postResult) {
 }
 
 async function callGemini(apiKey, prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TAILOR_MODEL}:generateContent?key=${apiKey}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 8192,
-        responseMimeType: "application/json",
-      },
-    }),
-    signal: AbortSignal.timeout(60_000),
-  });
+  const models = tailorModelCandidates();
+  let lastError = null;
 
-  if (!res.ok) {
-    const detail = await res.text().catch(() => "");
-    throw new Error(`Gemini request failed (${res.status}): ${detail.slice(0, 200)}`);
+  for (const model of models) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 8192,
+          responseMimeType: "application/json",
+        },
+      }),
+      signal: AbortSignal.timeout(60_000),
+    });
+
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      lastError = new Error(`Gemini request failed (${res.status}): ${detail.slice(0, 200)}`);
+      if (res.status === 404 && models.length > 1) {
+        console.warn(`  ⚠  Tailor model ${model} unavailable — trying ${GEMINI_MODEL}`);
+        continue;
+      }
+      throw lastError;
+    }
+
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    if (!text.trim()) throw new Error("Empty response from Gemini");
+    return extractJsonObject(text);
   }
 
-  const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  if (!text.trim()) throw new Error("Empty response from Gemini");
-  return extractJsonObject(text);
+  throw lastError ?? new Error("Gemini request failed");
 }
 
 async function scoreTailored(title, description, tailoredResume) {

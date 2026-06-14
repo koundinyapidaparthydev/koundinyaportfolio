@@ -98,7 +98,7 @@ Config lives in `scripts/lib/ats-config.mjs` (keep in sync with `lib/admin/atsCo
 | `HC_TAILOR_CONCURRENCY` | 5 | Parallel Gemini tailor workers |
 | `HC_TAILOR_DELAY_MS` | 2000 | Delay between jobs when concurrency = 1 |
 | `GEMINI_MODEL` | `gemini-3.1-flash-lite` | Bulk initial ATS scoring |
-| `GEMINI_TAILOR_MODEL` | `gemini-2.0-flash` | Tailor + post-tailor scoring + verify |
+| `GEMINI_TAILOR_MODEL` | `gemini-2.5-flash` | Tailor + post-tailor scoring + verify (falls back to `GEMINI_MODEL` on 404) |
 
 ---
 
@@ -151,7 +151,7 @@ Optional (warned at scrape time if missing):
 - `HC_ATS_BATCH_LIMIT` — ATS scoring batch per run (default 60 in GHA)
 - `HC_TAILOR_BATCH_LIMIT` — tailor batch per run (default 5 in scrape GHA, 30 in tailor GHA)
 - `HC_TAILOR_CONCURRENCY` — parallel tailor workers (default 5)
-- `GEMINI_TAILOR_MODEL` — model for tailor + verify scoring (default `gemini-2.0-flash`)
+- `GEMINI_TAILOR_MODEL` — model for tailor + verify scoring (default `gemini-2.5-flash`, auto-fallback to `GEMINI_MODEL`)
 - `HC_RESET_TAILOR_ATTEMPTS` — retailor script resets column U (default on; set `0` to skip)
 
 ---

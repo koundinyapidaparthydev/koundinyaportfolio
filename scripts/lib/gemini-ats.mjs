@@ -14,7 +14,14 @@ export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
 
 /** Higher-quality model for post-tailor scoring and resume tailoring loops. */
 export const GEMINI_TAILOR_MODEL =
-  process.env.GEMINI_TAILOR_MODEL ?? "gemini-2.0-flash";
+  process.env.GEMINI_TAILOR_MODEL ?? "gemini-2.5-flash";
+
+/** Models to try for tailor/scoring (primary → fallback). */
+export function tailorModelCandidates() {
+  const primary = GEMINI_TAILOR_MODEL.trim();
+  const fallback = GEMINI_MODEL.trim();
+  return primary === fallback ? [primary] : [primary, fallback];
+}
 
 export async function scoreJobWithGemini(jobTitle, jobDescription, resume, options = {}) {
   const model = options.useTailorModel
@@ -60,24 +67,37 @@ ${fullDescription}
 Resume summary (summary paragraph, experience bullets, skills, roles, technologies, projects):
 ${resumeContext}`;
 
-  try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 1024,
-          responseMimeType: "application/json",
-        },
-      }),
-      signal: AbortSignal.timeout(45_000),
-    });
+  const modelsToTry = options.useTailorModel ? tailorModelCandidates() : [model];
 
-    if (!res.ok) {
-      console.warn(`  ⚠  Gemini ATS HTTP ${res.status} — using local keywords`);
+  try {
+    let res = null;
+    let usedModel = model;
+    for (const candidate of modelsToTry) {
+      usedModel = candidate;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${candidate}:generateContent?key=${apiKey}`;
+      res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 1024,
+            responseMimeType: "application/json",
+          },
+        }),
+        signal: AbortSignal.timeout(45_000),
+      });
+      if (res.ok) break;
+      if (res.status === 404 && modelsToTry.length > 1) {
+        console.warn(`  ⚠  Gemini ATS model ${candidate} unavailable — trying fallback`);
+        continue;
+      }
+      break;
+    }
+
+    if (!res?.ok) {
+      console.warn(`  ⚠  Gemini ATS HTTP ${res?.status} (${usedModel}) — using local keywords`);
       return fallback();
     }
 
