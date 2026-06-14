@@ -37,8 +37,12 @@ describe("needsTailoring", () => {
     expect(needsTailoring(r, baseResume)).toBe(false);
   });
 
-  it("skips when base score (column J) is at or above skip threshold and S is empty", () => {
-    const r = row({ 9: String(SKIP_TAILOR_INITIAL_ATS) });
+  it("skips when base score (column J) is at or above skip threshold with saved PDF", () => {
+    const r = row({
+      9: String(SKIP_TAILOR_INITIAL_ATS),
+      7: "https://storage.example/resume.pdf",
+      17: "yes",
+    });
     expect(needsTailoring(r, baseResume)).toBe(false);
   });
 

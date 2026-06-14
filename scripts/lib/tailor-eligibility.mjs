@@ -57,8 +57,7 @@ export function needsTailoring(row, baseResume) {
     postScore !== null &&
     postScore >= TAILOR_SAVE_MIN_SCORE &&
     !resumeUrl &&
-    !saved &&
-    parseAttempts(padded[20]) > 0;
+    !saved;
 
   if (stuckUpload) {
     const prevAttempts = parseAttempts(padded[20]);
