@@ -12,8 +12,11 @@ cypress/screenshots/
 cypress/videos/
 cypress/downloads/
 
-# local pipeline / form-intelligence data
-/data/
+# local pipeline / form-intelligence data (keep resume source files tracked for CI)
+/data/*
+!/data/resume.json
+!/data/resume.ts
+!/data/index.ts
 
 # next.js
 /.next/
