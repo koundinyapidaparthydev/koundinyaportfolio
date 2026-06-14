@@ -269,7 +269,7 @@ export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {
   if (targets.length === 0) return { processed: 0, reached: 0 };
 
   console.log(
-    `✍️  Tailoring up to ${targets.length} jobs (phase 1 → ${INTERMEDIATE_MILESTONE}%, phase 2 → ${TAILOR_TARGET_SCORE}%, save ≥${TAILOR_SAVE_MIN_SCORE}%, skip base ≥${SKIP_TAILOR_INITIAL_ATS}%, ≥${MIN_SKILL_MATCH_COUNT} skills, max ${MAX_TAILOR_ATTEMPTS} tries)…`
+    `✍️  Tailoring up to ${targets.length} jobs (phase 1 → ${INTERMEDIATE_MILESTONE_SCORE}%, phase 2 → ${TAILOR_TARGET_SCORE}%, save ≥${TAILOR_SAVE_MIN_SCORE}%, skip base ≥${SKIP_TAILOR_INITIAL_ATS}%, ≥${MIN_SKILL_MATCH_COUNT} skills, max ${MAX_TAILOR_ATTEMPTS} tries)…`
   );
 
   const updateData = [];
