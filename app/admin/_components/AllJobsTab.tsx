@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * AllJobsTab — Hiring Cafe job board with search, location, and time filters.
- * Data from GET /api/jobs (Google Sheet columns A–Q).
+ * AllJobsTab — Hiring Cafe job board with search and resume/applied filters.
+ * Data from GET /api/jobs (Google Sheet).
  */
 
 import { useState, useMemo, useCallback } from "react";
@@ -10,31 +10,26 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import type { Job } from "@/app/api/jobs/route";
 import {
-  TIME_FILTERS,
   DEFAULT_ALL_JOBS_SORT,
-  DEFAULT_TIME_FILTER,
   DEFAULT_COUNTRY_LOCATION,
-  DEFAULT_ATS_MIN_SCORE,
   DEFAULT_RESUME_MODIFIED_FILTER,
   RESUME_MODIFIED_FILTER_OPTIONS,
   DEFAULT_APPLIED_VISIBILITY_FILTER,
   APPLIED_VISIBILITY_OPTIONS,
   applyAllJobsFilters,
   detectPlatformFromUrl,
-  filterByTime,
   formatRelativeTime,
   formatOpenDate,
   toggleSortColumn,
   isResumeModified,
   formatAtsScoreDisplay,
   isJobApplied,
-  type TimeFilter,
   type SortColumn,
   type AllJobsSort,
   type ResumeModifiedFilter,
   type AppliedVisibilityFilter,
 } from "@/lib/admin/allJobsFilters";
-import { ATS_STRONG_SCORE } from "@/lib/admin/atsConfig";
+import { ATS_STRONG_SCORE, NON_TAILORED_MIN_SCORE } from "@/lib/admin/atsConfig";
 import { glass, glassCn } from "@/lib/glass";
 import { resolveCompanyLogo, companyInitial } from "@/lib/admin/companyLogos";
 import { AdminPageHeader } from "./AdminShell";
@@ -144,7 +139,7 @@ function AtsScoreCell({ job }: { job: Job }) {
     <span className="space-y-0.5">
       <span
         className={
-          Number(job.atsScore) >= DEFAULT_ATS_MIN_SCORE
+          Number(job.atsScore) >= NON_TAILORED_MIN_SCORE
             ? "font-semibold text-emerald-400"
             : tailored
               ? "font-semibold text-violet-300"
@@ -517,9 +512,7 @@ function JobCard({
 export default function AllJobsTab() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>(DEFAULT_TIME_FILTER);
   const [sort, setSort] = useState<AllJobsSort>(DEFAULT_ALL_JOBS_SORT);
-  const [hasDescription, setHasDescription] = useState(false);
   const [resumeModifiedFilter, setResumeModifiedFilter] =
     useState<ResumeModifiedFilter>(DEFAULT_RESUME_MODIFIED_FILTER);
   const [appliedVisibility, setAppliedVisibility] = useState<AppliedVisibilityFilter>(
@@ -585,18 +578,16 @@ export default function AllJobsTab() {
     () =>
       applyAllJobsFilters(jobs, {
         search,
-        timeFilter,
-        hasDescription,
+        hasDescription: false,
         resumeModifiedFilter,
         appliedVisibility,
         countryLocation: DEFAULT_COUNTRY_LOCATION,
         sort,
       }),
-    [jobs, search, timeFilter, hasDescription, resumeModifiedFilter, appliedVisibility, sort]
+    [jobs, search, resumeModifiedFilter, appliedVisibility, sort]
   );
 
   const appliedCount = useMemo(() => jobs.filter(isJobApplied).length, [jobs]);
-  const tailoredCount = useMemo(() => jobs.filter(isResumeModified).length, [jobs]);
 
   const selectedJob = useMemo(
     () => (selectedUrl ? jobs.find((j) => j.url === selectedUrl) ?? null : null),
@@ -615,7 +606,7 @@ export default function AllJobsTab() {
     <div className="space-y-5">
       <AdminPageHeader
         title="Hiring Cafe Jobs"
-        subtitle="Engineering + Software Development · US · last 2 days"
+        subtitle="Engineering + Software Development · US"
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <a
@@ -651,11 +642,6 @@ export default function AllJobsTab() {
             · {appliedCount} applied hidden
           </span>
         )}
-        {tailoredCount > 0 && resumeModifiedFilter === "non-modified" && (
-          <span className="ml-2 text-[11px] text-violet-400/90">
-            · {tailoredCount} AI-tailored hidden — tap &quot;AI-tailored resumes&quot; for PDFs
-          </span>
-        )}
         {search.trim() && resumeModifiedFilter !== "all" && (
           <span className="ml-2 text-[11px] text-amber-400/90">
             Search shows all matches (resume filter paused)
@@ -669,7 +655,7 @@ export default function AllJobsTab() {
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-3">
         <input
           type="search"
           value={search}
@@ -677,15 +663,6 @@ export default function AllJobsTab() {
           placeholder="Search company, title, location, URL…"
           className="glass-input h-9 min-w-[200px] flex-1 px-3 text-xs"
         />
-        <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400">
-          <input
-            type="checkbox"
-            checked={hasDescription}
-            onChange={(e) => setHasDescription(e.target.checked)}
-            className="rounded border-white/20 bg-white/5 text-indigo-500 focus:ring-indigo-500/30"
-          />
-          Has description
-        </label>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -705,9 +682,6 @@ export default function AllJobsTab() {
             )}
           >
             {label}
-            {id === "modified" && tailoredCount > 0 && (
-              <span className={glass.pillBadge}>{tailoredCount}</span>
-            )}
           </button>
         ))}
       </div>
@@ -734,31 +708,6 @@ export default function AllJobsTab() {
             )}
           </button>
         ))}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="mr-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-          Discovered within:
-        </span>
-        {TIME_FILTERS.map(({ id, label }) => {
-          const count = filterByTime(jobs, id).length;
-          return (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTimeFilter(id)}
-              className={glassCn(
-                "inline-flex items-center gap-1.5",
-                timeFilter === id
-                  ? glassCn(glass.adminPillActive, "text-indigo-600 dark:text-indigo-300")
-                  : glass.adminPill
-              )}
-            >
-              {label}
-              {count > 0 && <span className={glass.pillBadge}>{count}</span>}
-            </button>
-          );
-        })}
       </div>
 
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start">

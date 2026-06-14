@@ -6,3 +6,6 @@ export const TAILOR_ATS_THRESHOLD = 75;
 
 /** Strong-fit label tier (display copy). */
 export const ATS_STRONG_SCORE = 80;
+
+/** Non-tailored resume filter in All Jobs admin (base resume ATS bar). */
+export const NON_TAILORED_MIN_SCORE = 87;

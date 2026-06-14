@@ -20,6 +20,7 @@ import {
   DEFAULT_TIME_FILTER,
   DEFAULT_COUNTRY_LOCATION,
   DEFAULT_ATS_MIN_SCORE,
+  NON_TAILORED_MIN_SCORE,
   DEFAULT_RESUME_MODIFIED_FILTER,
   DEFAULT_APPLIED_VISIBILITY_FILTER,
   filterByAppliedVisibility,
@@ -204,7 +205,11 @@ describe("ATS thresholds", () => {
     expect(DEFAULT_ATS_MIN_SCORE).toBe(75);
   });
 
-  it("defaults resume filter to non-tailored base resumes", () => {
+  it("uses 87% as the non-tailored resume filter bar", () => {
+    expect(NON_TAILORED_MIN_SCORE).toBe(87);
+  });
+
+  it("defaults resume filter to all jobs", () => {
     expect(DEFAULT_RESUME_MODIFIED_FILTER).toBe("all");
   });
 });
@@ -228,24 +233,15 @@ describe("filterByAtsFriendly", () => {
 });
 
 describe("filterByResumeModified", () => {
-  it("shows base-resume jobs at or above 75% for non-modified filter", () => {
+  it("shows base-resume jobs at or above 87% for non-modified filter", () => {
     const jobs = [
-      job({ atsScore: "80", resumeModified: "no" }),
-      job({ atsScore: "70", resumeModified: "no" }),
+      job({ atsScore: "90", resumeModified: "no" }),
+      job({ atsScore: "85", resumeModified: "no" }),
       job({ atsScore: "82", resumeModified: "yes", resumeUrl: "https://x/r.pdf" }),
     ];
     const result = filterByResumeModified(jobs, "non-modified");
     expect(result).toHaveLength(1);
-    expect(result[0].atsScore).toBe("80");
-  });
-
-  it("shows AI-tailored jobs for modified filter", () => {
-    const jobs = [
-      job({ atsScore: "80", resumeModified: "no" }),
-      job({ atsScore: "78", resumeModified: "yes" }),
-    ];
-    expect(filterByResumeModified(jobs, "modified")).toHaveLength(1);
-    expect(isResumeModified(jobs[1])).toBe(true);
+    expect(result[0].atsScore).toBe("90");
   });
 
   it("returns all jobs when filter is all", () => {
@@ -304,7 +300,7 @@ describe("sortAllJobs", () => {
 });
 
 describe("applyAllJobsFilters", () => {
-  it("combines search, time, location, and description filters", () => {
+  it("combines search, location, and description filters", () => {
     const jobs = [
       job({
         company: "OpenAI",
@@ -324,7 +320,6 @@ describe("applyAllJobsFilters", () => {
     ];
     const result = applyAllJobsFilters(jobs, {
       search: "openai",
-      timeFilter: "30m",
       hasDescription: true,
       resumeModifiedFilter: "all",
       countryLocation: "all",
@@ -355,7 +350,6 @@ describe("applyAllJobsFilters", () => {
     ];
     const result = applyAllJobsFilters(jobs, {
       search: "AEM Lead",
-      timeFilter: "all",
       hasDescription: false,
       resumeModifiedFilter: "non-modified",
       countryLocation: "all",
@@ -374,7 +368,6 @@ describe("applyAllJobsFilters", () => {
     ];
     const usOnly = applyAllJobsFilters(jobs, {
       search: "",
-      timeFilter: "all",
       hasDescription: false,
       resumeModifiedFilter: "all",
       countryLocation: "us",
@@ -391,7 +384,6 @@ describe("applyAllJobsFilters", () => {
     ];
     const result = applyAllJobsFilters(jobs, {
       search: "",
-      timeFilter: "all",
       hasDescription: false,
       resumeModifiedFilter: "all",
       countryLocation: "all",
@@ -447,7 +439,6 @@ describe("applied job visibility", () => {
     ];
     const result = applyAllJobsFilters(jobs, {
       search: "",
-      timeFilter: "all",
       hasDescription: false,
       resumeModifiedFilter: "all",
       countryLocation: "all",

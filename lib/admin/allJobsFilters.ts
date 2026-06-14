@@ -6,9 +6,9 @@ import {
   filterByCountryLocation,
   type CountryLocationFilter,
 } from "@/lib/admin/jobLocationMatch";
-import { DEFAULT_ATS_MIN_SCORE } from "@/lib/admin/atsConfig";
+import { DEFAULT_ATS_MIN_SCORE, NON_TAILORED_MIN_SCORE } from "@/lib/admin/atsConfig";
 
-export { DEFAULT_ATS_MIN_SCORE } from "@/lib/admin/atsConfig";
+export { DEFAULT_ATS_MIN_SCORE, NON_TAILORED_MIN_SCORE } from "@/lib/admin/atsConfig";
 
 export {
   COUNTRY_LOCATION_FILTERS,
@@ -30,17 +30,16 @@ export const DEFAULT_TIME_FILTER: TimeFilter = "10m";
 export const HC_PIPELINE_INTERVAL_MS = 10 * 60_000;
 
 /** Filter jobs by whether the resume was AI-tailored for that role. */
-export type ResumeModifiedFilter = "non-modified" | "modified" | "all";
+export type ResumeModifiedFilter = "non-modified" | "all";
 
-/** Show all jobs by default so tailored resumes and downloads stay visible. */
+/** Show every job (tailored and non-tailored) by default on Active jobs. */
 export const DEFAULT_RESUME_MODIFIED_FILTER: ResumeModifiedFilter = "all";
 
 export const RESUME_MODIFIED_FILTER_OPTIONS: {
   id: ResumeModifiedFilter;
   label: string;
 }[] = [
-  { id: "non-modified", label: "Non-tailored (≥75% base resume)" },
-  { id: "modified", label: "AI-tailored resumes" },
+  { id: "non-modified", label: `Non-tailored (≥${NON_TAILORED_MIN_SCORE}% base resume)` },
   { id: "all", label: "All jobs" },
 ];
 
@@ -301,20 +300,16 @@ export function filterByAtsFriendly<T extends AllJobsRow>(
 }
 
 /**
- * Filter by base vs AI-tailored resume.
- * - non-modified: base resume only, ATS ≥ minScore
- * - modified: AI-tailored rows
- * - all: no filter
+ * Filter by base vs all resumes.
+ * - non-modified: base resume only, ATS ≥ NON_TAILORED_MIN_SCORE (87%)
+ * - all: every job including AI-tailored rows
  */
 export function filterByResumeModified<T extends AllJobsRow>(
   jobs: T[],
   filter: ResumeModifiedFilter,
-  minScore = DEFAULT_ATS_MIN_SCORE
+  minScore = NON_TAILORED_MIN_SCORE
 ): T[] {
   if (filter === "all") return jobs;
-  if (filter === "modified") {
-    return jobs.filter((j) => isResumeModified(j));
-  }
   return jobs.filter((j) => {
     if (isResumeModified(j)) return false;
     const score = parseAtsScore(j.atsScore);
@@ -392,7 +387,7 @@ export function sortAllJobs<T extends AllJobsRow>(
 
 export interface AllJobsFilterOpts {
   search: string;
-  timeFilter: TimeFilter;
+  timeFilter?: TimeFilter;
   hasDescription: boolean;
   resumeModifiedFilter: ResumeModifiedFilter;
   appliedVisibility?: AppliedVisibilityFilter;
@@ -408,7 +403,6 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
 ): T[] {
   let result = jobs;
   result = filterBySearch(result, opts.search);
-  result = filterByTime(result, opts.timeFilter, opts.now);
   result = filterByCountryLocation(result, opts.countryLocation);
   result = filterByHasDescription(result, opts.hasDescription);
   result = filterByAppliedVisibility(
