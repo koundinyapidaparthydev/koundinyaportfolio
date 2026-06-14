@@ -1,0 +1,259 @@
+{
+  "jobId": "row-124",
+  "rowIndex": 124,
+  "url": "https://job-boards.greenhouse.io/discord/jobs/8136321002",
+  "platform": "greenhouse",
+  "company": "Discord",
+  "title": "Senior Software Engineer - Platform Infrastructure",
+  "capturedAt": "2026-06-03T07:08:17.687Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": [
+    {
+      "label": "First Name*",
+      "name": "first_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya",
+      "source": "script"
+    },
+    {
+      "label": "Last Name*",
+      "name": "last_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Pidaparthy",
+      "source": "script"
+    },
+    {
+      "label": "Email*",
+      "name": "email",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Country*",
+      "name": "country",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "United States",
+      "source": "generic-cache"
+    },
+    {
+      "label": "",
+      "name": "",
+      "type": "input",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "ai"
+    },
+    {
+      "label": "Phone*",
+      "name": "phone",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Location (City)*",
+      "name": "candidate-location",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "Attach",
+      "name": "resume",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Attach",
+      "name": "cover_letter",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "optional-skipped"
+    },
+    {
+      "label": "School",
+      "name": "school--0",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Degree",
+      "name": "degree--0",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Discipline",
+      "name": "discipline--0",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Engineering",
+      "source": "company-cache"
+    },
+    {
+      "label": "Why do you want to work at Discord?*",
+      "name": "question_32906942002",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": "I'm drawn to Discord's mission of building the platform where it's easy to talk every day. With 8 years of infrastructure engineering experience, I'm excited to contribute to systems that reliably serve hundreds of millions of users. Discord's challenges in scaling infrastructure, optimizing performance, and building resilient distributed systems align perfectly with my expertise. I'm particularly interested in working on problems that directly impact user experience and community building at scale.",
+      "source": "company-cache"
+    },
+    {
+      "label": "How did you hear about this job?",
+      "name": "question_32906945002",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "LinkedIn",
+      "source": "script"
+    },
+    {
+      "label": "Are you legally authorized to work in the United States for our Company?*",
+      "name": "question_32906946002",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Yes",
+      "source": "script"
+    },
+    {
+      "label": "Are you currently located in the US?*",
+      "name": "question_32906947002",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Yes",
+      "source": "company-cache"
+    },
+    {
+      "label": "Are you currently based in or willing to relocate to the Bay Area for this position?*",
+      "name": "question_32906948002",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "I am currently based in New York, NY and would be willing to relocate to the Bay Area for this position.",
+      "source": "company-cache"
+    },
+    {
+      "label": "This role requires professional experience writing production level code (not just scripting). Tell us about your software engineering/coding experience.*",
+      "name": "question_33064078002",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": "With 8 years of professional software engineering experience, I have built and maintained production systems at scale. My expertise spans backend infrastructure, distributed systems, and platform development. I have written production-grade code in multiple languages, focusing on reliability, performance, and maintainability. My work includes designing scalable architectures, optimizing critical services, and collaborating with teams to deliver robust solutions. My portfolio and LinkedIn profile demonstrate my technical depth and project contributions.",
+      "source": "ai"
+    },
+    {
+      "label": "Website",
+      "name": "question_32906944002",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "script"
+    },
+    {
+      "label": "LinkedIn Profile",
+      "name": "question_32906943002",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Gender*",
+      "name": "4033064002",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Race and Ethnicity*",
+      "name": "4033065002",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Veteran Status*",
+      "name": "4033066002",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Disability Status*",
+      "name": "4033067002",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Gender Identity",
+      "name": "4033068002",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Race or Ethnicity",
+      "name": "4033069002",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "I consider myself a member of the LGBTQ+ community.",
+      "name": "4033070002",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Prefer not to say",
+      "source": "company-cache"
+    }
+  ]
+}

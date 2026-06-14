@@ -1,0 +1,239 @@
+{
+  "jobId": "row-475",
+  "rowIndex": 475,
+  "url": "https://jobs.ashbyhq.com/replit/12635a4d-290e-4b50-a2ae-11b3bbb74fe5",
+  "platform": "ashby",
+  "company": "Replit",
+  "title": "Field Engineer (London)",
+  "capturedAt": "2026-06-03T07:34:06.414Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": [
+      "What is your desired salary range?"
+    ]
+  },
+  "fields": [
+    {
+      "label": "",
+      "name": "",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Full Name",
+      "name": "_systemfield_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "script"
+    },
+    {
+      "label": "Email",
+      "name": "_systemfield_email",
+      "type": "email",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Phone Number",
+      "name": "dfae6b32-be5c-442b-afc2-5ab7bb465fab",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Resume",
+      "name": "_systemfield_resume",
+      "type": "file",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Replit Profile URL",
+      "name": "e950a857-818a-4d34-bfbe-65c0d8c90eb4",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Linkedin Profile URL",
+      "name": "62295e1b-c826-4aae-9866-223b6fd9b964",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Portfolio URL",
+      "name": "e284f2f8-68c7-40cd-836d-5aeebf42f136",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "script"
+    },
+    {
+      "label": "Github Profile URL",
+      "name": "fea6c8d0-5a72-4b67-bf67-889b7903c1e5",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Start typing...",
+      "name": "",
+      "type": "input",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "company-cache"
+    },
+    {
+      "label": "What excites you about Replit?",
+      "name": "4d2dd895-9ed4-4ad4-b37f-be01d2f8ad8b",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": "I'm excited about Replit's mission to democratize programming and make coding accessible to everyone. The opportunity to work on Anti-Abuse & Security at scale appeals to me—building systems that protect a global community of developers while maintaining platform integrity is both technically challenging and impactful. With 8 years of experience, I'm particularly drawn to tackling complex security problems in a collaborative environment that values innovation.",
+      "source": "company-cache"
+    },
+    {
+      "label": "If you want to share something you built with Replit please share below.",
+      "name": "3a25be48-40c9-422e-8393-972eec08bd47",
+      "type": "textarea",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "1-2 years",
+      "name": "237ffad1-a068-427f-a2f4-f6c3f6add2d9_ba50cb81-911e-44bd-bbb1-9108099d63fe",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "3-5 years",
+      "name": "237ffad1-a068-427f-a2f4-f6c3f6add2d9_ba50cb81-911e-44bd-bbb1-9108099d63fe",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "6-8 years",
+      "name": "237ffad1-a068-427f-a2f4-f6c3f6add2d9_ba50cb81-911e-44bd-bbb1-9108099d63fe",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "8+",
+      "name": "237ffad1-a068-427f-a2f4-f6c3f6add2d9_ba50cb81-911e-44bd-bbb1-9108099d63fe",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "What is your desired salary range?",
+      "name": "ea423331-1198-4cd0-904c-fbd213e085af",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    }
+  ]
+}

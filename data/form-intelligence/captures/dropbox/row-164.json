@@ -1,0 +1,15 @@
+{
+  "jobId": "row-164",
+  "rowIndex": 164,
+  "url": "https://jobs.dropbox.com/listing/7739568?gh_jid=7739568",
+  "platform": "unknown",
+  "company": "Dropbox",
+  "title": "Staff Data Engineer",
+  "capturedAt": "2026-06-03T07:10:13.532Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

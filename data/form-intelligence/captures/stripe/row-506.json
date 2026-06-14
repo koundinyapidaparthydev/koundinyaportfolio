@@ -1,0 +1,1141 @@
+{
+  "jobId": "row-506",
+  "rowIndex": 506,
+  "url": "https://stripe.com/jobs/search?gh_jid=7737237",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Backend / API Engineer, Billing",
+  "capturedAt": "2026-06-03T07:41:52.630Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": [
+    {
+      "label": "Search for a job",
+      "name": "jobsQueryInput",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Account Executive, Platforms (Italian Speaking) - Grower at Stripe",
+      "source": "company-cache"
+    },
+    {
+      "label": "Administrative",
+      "name": "Administrative",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Communications",
+      "name": "Communications",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Corporate Development",
+      "name": "Corporate Development",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Corporate Security",
+      "name": "Corporate Security",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Corporate Strategy",
+      "name": "Corporate Strategy",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Data & Data Science",
+      "name": "Data & Data Science",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Data Platform",
+      "name": "Data Platform",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Design",
+      "name": "Design",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Executive",
+      "name": "Executive",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Finance",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Controllership",
+      "name": "Controllership",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Finance & Strategy",
+      "name": "Finance & Strategy",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Internal Audit",
+      "name": "Internal Audit",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Investor Relations",
+      "name": "Investor Relations",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Tax",
+      "name": "Tax",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Treasury",
+      "name": "Treasury",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Workplace",
+      "name": "Workplace",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Global Partnerships",
+      "name": "Global Partnerships",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Go-to-Market",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Customer Success",
+      "name": "Customer Success",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Global Strategic Pursuits",
+      "name": "Global Strategic Pursuits",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "GTM Partnerships",
+      "name": "GTM Partnerships",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Marketing",
+      "name": "Marketing",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Revenue Operations",
+      "name": "Revenue Operations",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Sales",
+      "name": "Sales",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Scaled Sales",
+      "name": "Scaled Sales",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Solutions Architect",
+      "name": "Solutions Architect",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Infrastructure & Corporate Tech",
+      "name": "Infrastructure & Corporate Tech",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Legal",
+      "name": "Legal",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Machine Learning",
+      "name": "Machine Learning",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Operations",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Technical Account Management",
+      "name": "Technical Account Management",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "People",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Recruiting",
+      "name": "Recruiting",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "People Functions",
+      "name": "People Functions",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Products",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Banking as a Service",
+      "name": "Banking as a Service",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Climate",
+      "name": "Climate",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Connect",
+      "name": "Connect",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Crypto",
+      "name": "Crypto",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Mobile",
+      "name": "Mobile",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Link",
+      "name": "Link",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Metronome",
+      "name": "Metronome",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Money Movement and Storage",
+      "name": "Money Movement and Storage",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "New Financial Products",
+      "name": "New Financial Products",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Payments",
+      "name": "Payments",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Platform",
+      "name": "Platform",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Professional Services",
+      "name": "Professional Services",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Privy",
+      "name": "Privy",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Revenue & Financial Automation",
+      "name": "Revenue & Financial Automation",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Stripe Tax",
+      "name": "Stripe Tax",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Terminal",
+      "name": "Terminal",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Risk & Financial Crimes",
+      "name": "Risk & Financial Crimes",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Security",
+      "name": "Security",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Tech Programs",
+      "name": "Tech Programs",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "University",
+      "name": "University",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "North America",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": "yes",
+      "source": "ai"
+    },
+    {
+      "label": "Atlanta",
+      "name": "North America--Atlanta",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Chicago",
+      "name": "North America--Chicago",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "New York",
+      "name": "North America--New York",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Seattle",
+      "name": "North America--Seattle",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "South San Francisco HQ",
+      "name": "North America--South San Francisco",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "San Francisco Bridge HQ",
+      "name": "North America--San Francisco Bridge HQ",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Washington DC",
+      "name": "North America--Washington DC",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Toronto",
+      "name": "North America--Toronto",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Mexico City",
+      "name": "North America--Mexico City",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "Europe",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Paris",
+      "name": "Europe--Paris",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Berlin",
+      "name": "Europe--Berlin",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "London",
+      "name": "Europe--London",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Dublin HQ",
+      "name": "Europe--Dublin",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Amsterdam",
+      "name": "Europe--Amsterdam",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Warsaw",
+      "name": "Europe--Warsaw",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Bucharest",
+      "name": "Europe--Bucharest",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Madrid",
+      "name": "Europe--Madrid",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Barcelona",
+      "name": "Europe--Barcelona",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Stockholm",
+      "name": "Europe--Stockholm",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Luxembourg",
+      "name": "Europe--Luxembourg",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Asia Pacific",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Sydney",
+      "name": "Asia Pacific--Sydney",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Melbourne",
+      "name": "Asia Pacific--Melbourne",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Jakarta",
+      "name": "Asia Pacific--Jakarta",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Bengaluru",
+      "name": "Asia Pacific--Bengaluru",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Tokyo",
+      "name": "Asia Pacific--Tokyo",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Singapore",
+      "name": "Asia Pacific--Singapore",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Bangkok",
+      "name": "Asia Pacific--Bangkok",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Latin America",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "São Paulo",
+      "name": "Latin America--Sao Paulo",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Mexico City",
+      "name": "Latin America--Mexico City",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "Middle East",
+      "name": "name",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Dubai",
+      "name": "Middle East--Dubai",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "United States",
+      "name": "North America--US Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": "yes",
+      "source": "ai"
+    },
+    {
+      "label": "Canada",
+      "name": "North America--Canada Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Mexico",
+      "name": "North America--Mexico Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Austria",
+      "name": "Europe--Austria Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Belgium",
+      "name": "Europe--Belgium Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Czechia",
+      "name": "Europe--Czechia Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Estonia",
+      "name": "Europe--Estonia Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "France",
+      "name": "Europe--France Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Germany",
+      "name": "Europe--Germany Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Great Britain",
+      "name": "Europe--Great Britain Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Ireland",
+      "name": "Europe--Ireland Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Israel",
+      "name": "Europe--Israel Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Italy",
+      "name": "Europe--Italy Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Netherlands",
+      "name": "Europe--Netherlands Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Poland",
+      "name": "Europe--Poland Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Portugal",
+      "name": "Europe--Portugal Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Romania",
+      "name": "Europe--Romania Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Spain",
+      "name": "Europe--Spain Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Sweden",
+      "name": "Europe--Sweden Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Switzerland",
+      "name": "Europe--Switzerland Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Australia",
+      "name": "Asia Pacific--Australia Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Hong Kong",
+      "name": "Asia Pacific--Hong Kong Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Indonesia",
+      "name": "Asia Pacific--Indonesia Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "India",
+      "name": "Asia Pacific--India Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Japan",
+      "name": "Asia Pacific--Japan Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Malaysia",
+      "name": "Asia Pacific--Malaysia Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "New Zealand",
+      "name": "Asia Pacific--New Zealand Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "South Korea",
+      "name": "Asia Pacific--South Korea Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Thailand",
+      "name": "Asia Pacific--Thailand Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Argentina",
+      "name": "Latin America--Argentina Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Brazil",
+      "name": "Latin America--Brazil Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Chile",
+      "name": "Latin America--Chile Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Mexico",
+      "name": "Latin America--Mexico Remote",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    }
+  ]
+}

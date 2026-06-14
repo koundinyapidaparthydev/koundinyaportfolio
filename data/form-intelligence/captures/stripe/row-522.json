@@ -1,0 +1,15 @@
+{
+  "jobId": "row-522",
+  "rowIndex": 522,
+  "url": "https://stripe.com/jobs/search?gh_jid=7736482",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Corporate Network Engineering Manager",
+  "capturedAt": "2026-06-03T07:42:15.041Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

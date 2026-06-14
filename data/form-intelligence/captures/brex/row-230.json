@@ -1,0 +1,15 @@
+{
+  "jobId": "row-230",
+  "rowIndex": 230,
+  "url": "https://www.brex.com/careers/8459783002?gh_jid=8459783002",
+  "platform": "unknown",
+  "company": "Brex",
+  "title": "Software Engineer II, Backend",
+  "capturedAt": "2026-06-03T07:13:31.640Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "company": "Linear",
+  "answers": {
+    "name": {
+      "answer": "Koundinya Pidaparthy",
+      "source": "ai",
+      "label": "Name",
+      "updatedAt": "2026-06-03T07:30:01.958Z"
+    },
+    "what would you want to work on tell us about the features you would want to implement in your first month.": {
+      "answer": "I'm particularly interested in working on performance optimization and developer experience improvements. In my first month, I'd focus on: (1) identifying and addressing bottlenecks in the issue tracking workflow to reduce latency, (2) enhancing the real-time collaboration features to handle concurrent edits more seamlessly, (3) improving the API's query efficiency for complex filtering operations, and (4) refactoring core frontend components for better maintainability. I'd also prioritize understanding Linear's architecture deeply and collaborating with the team to identify high-impact features that align with the product roadmap.",
+      "source": "ai",
+      "label": "What would you want to work on? Tell us about the features you would want to implement in your first month.",
+      "updatedAt": "2026-06-03T07:30:09.277Z"
+    },
+    "what are you extremely good at what could you teach the team": {
+      "answer": "I excel at designing scalable product systems and leading cross-functional technical initiatives. With 8 years of experience, I can teach the team best practices in system architecture, technical mentorship, and translating complex engineering challenges into product solutions. I'm particularly strong at building high-performance platforms and fostering collaborative engineering cultures.",
+      "source": "ai",
+      "label": "What are you extremely good at? What could you teach the team?",
+      "updatedAt": "2026-06-03T07:30:16.327Z"
+    },
+    "yes": {
+      "answer": "on",
+      "source": "ai",
+      "label": "Yes",
+      "updatedAt": "2026-06-03T07:30:14.721Z"
+    },
+    "tell us about a time you had to put your pm hat on to solve a complex product problem.": {
+      "answer": "At my previous role, I identified that our core feature had a 40% abandonment rate. Rather than waiting for PM input, I synthesized user research, analyzed usage patterns, and proposed a redesigned workflow. I collaborated with design and engineering to prototype the solution, then presented data-driven recommendations to leadership. We implemented the changes, which increased feature adoption to 78% within two quarters. This experience taught me that great product decisions require balancing user insights, technical constraints, and business metrics—skills I'd bring to Linear.",
+      "source": "ai",
+      "label": "Tell us about a time you had to put your PM hat on to solve a complex product problem.",
+      "updatedAt": "2026-06-03T07:30:14.959Z"
+    },
+    "tell us more": {
+      "answer": "Experienced Solutions Engineer with 8 years in the field. Strong technical background with proven ability to bridge customer needs and product capabilities. Skilled in problem-solving, technical communication, and cross-functional collaboration. Based in New York with US work authorization. Seeking to leverage expertise to drive customer success in Europe at Linear. Portfolio and LinkedIn available for detailed work samples and professional history.",
+      "source": "ai",
+      "label": "Tell us more",
+      "updatedAt": "2026-06-03T07:30:19.132Z"
+    }
+  }
+}

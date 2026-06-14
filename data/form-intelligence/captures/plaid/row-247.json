@@ -1,0 +1,625 @@
+{
+  "jobId": "row-247",
+  "rowIndex": 247,
+  "url": "https://jobs.ashbyhq.com/plaid/98c030bd-a72d-4045-87aa-b8ff7d0d43fb",
+  "platform": "ashby",
+  "company": "Plaid",
+  "title": "Analytics Engineer",
+  "capturedAt": "2026-06-03T07:16:20.428Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": [
+    {
+      "label": "",
+      "name": "",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Name",
+      "name": "_systemfield_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "company-cache"
+    },
+    {
+      "label": "Email",
+      "name": "_systemfield_email",
+      "type": "email",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Current company",
+      "name": "currentCompany",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Confidential",
+      "source": "script"
+    },
+    {
+      "label": "Current location",
+      "name": "currentLocation",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "Phone",
+      "name": "phone",
+      "type": "tel",
+      "required": false,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Yes - I consent to receiving text messages",
+      "name": "communicationConsent",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "given",
+          "label": "given"
+        },
+        {
+          "value": "notGiven",
+          "label": "notGiven"
+        }
+      ],
+      "ourAnswer": "Yes",
+      "source": "script"
+    },
+    {
+      "label": "No - I do not consent to receiving text messages",
+      "name": "communicationConsent",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "given",
+          "label": "given"
+        },
+        {
+          "value": "notGiven",
+          "label": "notGiven"
+        }
+      ],
+      "ourAnswer": "notGiven",
+      "source": "script"
+    },
+    {
+      "label": "Resume",
+      "name": "_systemfield_resume",
+      "type": "file",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Additional information",
+      "name": "additionalInformation",
+      "type": "textarea",
+      "required": false,
+      "options": [],
+      "ourAnswer": "8 years of software engineering experience with expertise in AI applications. Based in New York, NY with US work authorization. Passionate about building scalable AI-driven solutions. Portfolio and professional background available at provided links.",
+      "source": "company-cache"
+    },
+    {
+      "label": "Which location are you applying for?",
+      "name": "preferredPostingLocation",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "LinkedIn",
+      "name": "LinkedIn",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "GitHub",
+      "name": "GitHub",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Other",
+      "name": "Other",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Yes",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_b45789a9-01f1-467e-b4d3-d98334507140",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "No",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_b45789a9-01f1-467e-b4d3-d98334507140",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "Yes",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_ad2e87dd-a241-46df-acbb-5394156912bc",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "No",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_ad2e87dd-a241-46df-acbb-5394156912bc",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "Yes",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_a480acae-e671-4ae6-b6a3-8f105b489c01",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "No",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_a480acae-e671-4ae6-b6a3-8f105b489c01",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "Acknowledge",
+      "name": "Acknowledge",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Plaid’s Mission",
+      "name": "Plaid’s Mission",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Passion for Fintech Industry",
+      "name": "Passion for Fintech Industry",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Plaid’s Products & Technical Innovation",
+      "name": "Plaid’s Products & Technical Innovation",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Ability to use and build AI products",
+      "name": "Ability to use and build AI products",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Yes",
+      "source": "company-cache"
+    },
+    {
+      "label": "Company Culture",
+      "name": "Company Culture",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Career Growth Opportunities",
+      "name": "Career Growth Opportunities",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "1 - Slightly below average",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_ea440829-1ba5-4ca2-abdf-13084efa9b3b",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "2 - About average",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_ea440829-1ba5-4ca2-abdf-13084efa9b3b",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "3 - Above average",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_ea440829-1ba5-4ca2-abdf-13084efa9b3b",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "4 - Among the leaders in the industry",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_ea440829-1ba5-4ca2-abdf-13084efa9b3b",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "N/A - Not enough information on Plaid’s AI work to say",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_ea440829-1ba5-4ca2-abdf-13084efa9b3b",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Yes",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_917eae03-6a68-4fef-986b-ae786717cd78",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "No",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_917eae03-6a68-4fef-986b-ae786717cd78",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "Yes",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_6e93899a-d1d4-4695-a38c-ae8cf1e5422f",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "No",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_6e93899a-d1d4-4695-a38c-ae8cf1e5422f",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "Yes",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_2004943f-d435-4afe-93d0-c434101cf4c9",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "No",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_2004943f-d435-4afe-93d0-c434101cf4c9",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "Yes",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_f8aad846-b45e-4848-9328-df3dc9b1f79c",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "No",
+      "name": "7d12635b-5a66-4a29-9a64-4230c7fd70ec_f8aad846-b45e-4848-9328-df3dc9b1f79c",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    }
+  ]
+}

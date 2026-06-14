@@ -1,0 +1,708 @@
+{
+  "jobId": "row-444",
+  "rowIndex": 444,
+  "url": "https://jobs.ashbyhq.com/replit/8fbbe594-596a-4a4f-844b-dc00111e717f",
+  "platform": "ashby",
+  "company": "Replit",
+  "title": "Software Engineer, Mobile",
+  "capturedAt": "2026-06-03T07:31:23.756Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": [
+      "What excites you about Replit?",
+      "What is your desired salary range?"
+    ]
+  },
+  "fields": [
+    {
+      "label": "",
+      "name": "",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Full Name",
+      "name": "_systemfield_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "script"
+    },
+    {
+      "label": "Email",
+      "name": "_systemfield_email",
+      "type": "email",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Phone Number",
+      "name": "e4197ade-2b17-45c7-8cca-a2ad772e1dce",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Resume",
+      "name": "_systemfield_resume",
+      "type": "file",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Replit Profile URL",
+      "name": "e6d21c84-8743-4de3-afff-365035b9508f",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Linkedin Profile URL",
+      "name": "d3cb94e9-34e1-497b-8da8-1f0a313ed6c8",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Portfolio URL",
+      "name": "20746d08-f090-47dd-a2a8-ec3b01cd3e5c",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "script"
+    },
+    {
+      "label": "Github Profile URL",
+      "name": "93ef361f-a0cd-42d7-af8c-ad4903a0100c",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Start typing...",
+      "name": "",
+      "type": "input",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "company-cache"
+    },
+    {
+      "label": "What excites you about Replit?",
+      "name": "90456d1d-541c-4e76-b82f-49e4840847d6",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "If you want to share something you built with Replit please share below.",
+      "name": "36d24fe3-cca5-4817-811e-1c3699ebedb2",
+      "type": "textarea",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "1-2 years",
+      "name": "68133b40-e853-44dd-8c81-51cd9bc1a1a5_15472de4-f47a-4806-83ce-c3e2d4037ea1",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "3-5 years",
+      "name": "68133b40-e853-44dd-8c81-51cd9bc1a1a5_15472de4-f47a-4806-83ce-c3e2d4037ea1",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "company-cache"
+    },
+    {
+      "label": "6-8 years",
+      "name": "68133b40-e853-44dd-8c81-51cd9bc1a1a5_15472de4-f47a-4806-83ce-c3e2d4037ea1",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "ai"
+    },
+    {
+      "label": "8+",
+      "name": "68133b40-e853-44dd-8c81-51cd9bc1a1a5_15472de4-f47a-4806-83ce-c3e2d4037ea1",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "What is your desired salary range?",
+      "name": "8bf68e7b-237f-40fb-84bc-2c8dd24e482b",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Male",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_gender",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Female",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_gender",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Decline to self-identify",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_gender",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Hispanic or Latino",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "White (Not Hispanic or Latino)",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Black or African American (Not Hispanic or Latino)",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Native Hawaiian or Other Pacific Islander (Not Hispanic or Latino)",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Asian (Not Hispanic or Latino)",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "American Indian or Alaska Native (Not Hispanic or Latino)",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Two or More Races (Not Hispanic or Latino)",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Decline to self-identify",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "I identify as one or more of the classifications of protected veteran listed above",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_veteran_status",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "I am not a protected veteran",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_veteran_status",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "I decline to self-identify for protected veteran status",
+      "name": "6f49b3f2-0739-4ee3-9e7b-f1005992a580__systemfield_eeoc_veteran_status",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    }
+  ]
+}

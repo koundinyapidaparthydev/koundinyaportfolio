@@ -1,0 +1,154 @@
+{
+  "jobId": "row-437",
+  "rowIndex": 437,
+  "url": "https://jobs.ashbyhq.com/linear/b4a7764e-c680-4bdf-9956-dc78f2ca94d5",
+  "platform": "ashby",
+  "company": "Linear",
+  "title": "Senior / Staff Product Engineer, AI",
+  "capturedAt": "2026-06-03T07:30:18.241Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": [
+      "GitHub",
+      "Describe an AI-powered product feature you’ve recently shipped. Which techniques and technologies were used to build the feature? How did you evaluate the outcome quality?"
+    ]
+  },
+  "fields": [
+    {
+      "label": "",
+      "name": "",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Name",
+      "name": "_systemfield_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "company-cache"
+    },
+    {
+      "label": "Email",
+      "name": "_systemfield_email",
+      "type": "email",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Resume",
+      "name": "_systemfield_resume",
+      "type": "file",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Cover letter",
+      "name": "08ad475a-3644-4a43-b752-e852bcb8b0cb",
+      "type": "textarea",
+      "required": false,
+      "options": [],
+      "ourAnswer": "With 8 years of fullstack engineering experience and a proven track record building scalable products, I'm excited to contribute to Linear's mission of making software development more efficient. My expertise spans modern web technologies and distributed systems, and I'm particularly drawn to Linear's commitment to developer experience and product excellence. I'm based in New York, fully authorized to work in the US, and ready to make an immediate impact on your team.",
+      "source": "generic-cache"
+    },
+    {
+      "label": "LinkedIn Profile",
+      "name": "c9ac1998-5399-4019-9ca2-05faa257a2ef",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "GitHub",
+      "name": "GitHub",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Twitter Handle",
+      "name": "02e9f1f6-b23e-4872-93a6-3e6c52984223",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Portfolio",
+      "name": "Portfolio",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "script"
+    },
+    {
+      "label": "Yes",
+      "name": "69b53779-f044-44af-a89d-c6a8fbe621fa_2d52f0cf-350e-48bc-ab35-70607a070528",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "on",
+      "source": "ai"
+    },
+    {
+      "label": "No",
+      "name": "69b53779-f044-44af-a89d-c6a8fbe621fa_2d52f0cf-350e-48bc-ab35-70607a070528",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "What country are you based in?",
+      "name": "ca27849b-b555-4d24-a705-3f944fafe1f4",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "United States",
+      "source": "generic-cache"
+    },
+    {
+      "label": "Describe an AI-powered product feature you’ve recently shipped. Which techniques and technologies were used to build the feature? How did you evaluate the outcome quality?",
+      "name": "e073cc21-64a3-40f0-a3b6-eb162cde7e97",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    }
+  ]
+}

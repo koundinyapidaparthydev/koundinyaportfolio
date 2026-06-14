@@ -1,0 +1,15 @@
+{
+  "jobId": "row-507",
+  "rowIndex": 507,
+  "url": "https://stripe.com/jobs/search?gh_jid=6176758",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Backend/API Engineer, Money as a Service",
+  "capturedAt": "2026-06-03T07:36:03.861Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

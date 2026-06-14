@@ -1,0 +1,15 @@
+{
+  "jobId": "row-561",
+  "rowIndex": 561,
+  "url": "https://stripe.com/jobs/search?gh_jid=7760773",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Head of Platform Sales, AUNZ",
+  "capturedAt": "2026-06-03T07:47:24.415Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

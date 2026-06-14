@@ -1,0 +1,15 @@
+{
+  "jobId": "row-535",
+  "rowIndex": 535,
+  "url": "https://stripe.com/jobs/search?gh_jid=7556256",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Engineering Manager - Payments",
+  "capturedAt": "2026-06-03T07:43:00.625Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

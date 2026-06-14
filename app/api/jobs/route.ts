@@ -30,6 +30,9 @@ export interface Job {
   resumeModified?: string;
   /** ATS score before tailoring (base resume). */
   preTailorAtsScore?: string;
+  /** Resume skills matching the job description. */
+  skillMatchCount?: string;
+  tailorAttempts?: string;
 }
 
 export async function GET(req: NextRequest) {
@@ -54,7 +57,7 @@ export async function GET(req: NextRequest) {
     const sheets = google.sheets({ version: "v4", auth });
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: sheetId,
-      range: `${SHEET_NAME}!A:S`,
+      range: `${SHEET_NAME}!A:U`,
     });
 
     const rows = response.data.values ?? [];
@@ -82,6 +85,8 @@ export async function GET(req: NextRequest) {
       recommendedKeywords: row[16] ?? "",
       resumeModified: row[17] ?? "",
       preTailorAtsScore: row[18] ?? "",
+      skillMatchCount: row[19] ?? "",
+      tailorAttempts: row[20] ?? "",
     }));
 
     const jobs = includeLegacy ? allJobs : allJobs.filter(isHiringCafeJob);

@@ -1,0 +1,15 @@
+{
+  "jobId": "row-153",
+  "rowIndex": 153,
+  "url": "https://jobs.dropbox.com/listing/7872745?gh_jid=7872745",
+  "platform": "unknown",
+  "company": "Dropbox",
+  "title": "Senior Data Engineer, AI and Systems Engineering",
+  "capturedAt": "2026-06-03T07:09:40.388Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

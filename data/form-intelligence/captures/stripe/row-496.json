@@ -1,0 +1,15 @@
+{
+  "jobId": "row-496",
+  "rowIndex": 496,
+  "url": "https://stripe.com/jobs/search?gh_jid=7857010",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Account Executive, Platforms (Hunter)",
+  "capturedAt": "2026-06-03T07:35:31.257Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

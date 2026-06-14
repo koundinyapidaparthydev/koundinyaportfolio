@@ -1,0 +1,137 @@
+{
+  "jobId": "row-435",
+  "rowIndex": 435,
+  "url": "https://jobs.ashbyhq.com/linear/069c4628-88d7-4e4d-b393-c996fc7f3076",
+  "platform": "ashby",
+  "company": "Linear",
+  "title": "Senior / Staff Product Engineer",
+  "capturedAt": "2026-06-03T07:30:16.329Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": [
+      "Github",
+      "Notice Period",
+      "What would you want to work on? Tell us about the features you would want to implement in your first month."
+    ]
+  },
+  "fields": [
+    {
+      "label": "",
+      "name": "",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Name",
+      "name": "_systemfield_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "company-cache"
+    },
+    {
+      "label": "Email",
+      "name": "_systemfield_email",
+      "type": "email",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Resume",
+      "name": "_systemfield_resume",
+      "type": "file",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Cover letter",
+      "name": "72f650a7-9b69-4111-8f5e-658c06d82278",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": "I am a fullstack engineer with 8 years of experience building scalable web applications and developer tools. I'm drawn to Linear's mission of creating the best issue tracking platform because I deeply understand the pain points of engineering teams. My background spans both frontend and backend development, with a focus on performance, user experience, and developer ergonomics—qualities that align with Linear's product philosophy. I'm excited to contribute to a product used by thousands of teams and help shape the future of how engineers collaborate.",
+      "source": "generic-cache"
+    },
+    {
+      "label": "Github",
+      "name": "54eb0eff-0632-482a-b172-574ac42bfd8e",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "LinkedIn",
+      "name": "4ccb8cdc-4f21-4d5d-8941-4b9b87363e2f",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Twitter",
+      "name": "e91068c0-4dde-4292-bc29-9fa19139de2e",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "What country are you based in?",
+      "name": "e544a913-c07d-41e6-ad3f-26b08fecd65b",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "United States",
+      "source": "ai"
+    },
+    {
+      "label": "Notice Period",
+      "name": "68b92593-8cf6-4b69-a4bd-fd08e4fa8712",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "What would you want to work on? Tell us about the features you would want to implement in your first month.",
+      "name": "52c6d51b-ef78-4820-80a9-3cf80138e93a",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Tell us about a time you had to put your PM hat on to solve a complex product problem.",
+      "name": "684eec2a-485d-49f1-9451-c91b9c36df20",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": "At my previous role, I identified that our core feature had a 40% abandonment rate. Rather than waiting for PM input, I synthesized user research, analyzed usage patterns, and proposed a redesigned workflow. I collaborated with design and engineering to prototype the solution, then presented data-driven recommendations to leadership. We implemented the changes, which increased feature adoption to 78% within two quarters. This experience taught me that great product decisions require balancing user insights, technical constraints, and business metrics—skills I'd bring to Linear.",
+      "source": "ai"
+    },
+    {
+      "label": "What are you extremely good at? What could you teach the team?",
+      "name": "99508347-32a6-4d44-93d4-27e684ddaac5",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": "I excel at designing scalable product systems and leading cross-functional technical initiatives. With 8 years of experience, I can teach the team best practices in system architecture, technical mentorship, and translating complex engineering challenges into product solutions. I'm particularly strong at building high-performance platforms and fostering collaborative engineering cultures.",
+      "source": "ai"
+    }
+  ]
+}

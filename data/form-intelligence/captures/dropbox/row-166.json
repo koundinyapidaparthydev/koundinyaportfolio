@@ -1,0 +1,15 @@
+{
+  "jobId": "row-166",
+  "rowIndex": 166,
+  "url": "https://jobs.dropbox.com/listing/7595183?gh_jid=7595183",
+  "platform": "unknown",
+  "company": "Dropbox",
+  "title": "Staff Data Engineer, Analytics Data Engineering",
+  "capturedAt": "2026-06-03T07:10:19.430Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

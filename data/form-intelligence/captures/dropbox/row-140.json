@@ -1,0 +1,15 @@
+{
+  "jobId": "row-140",
+  "rowIndex": 140,
+  "url": "https://jobs.dropbox.com/listing/7752395?gh_jid=7752395",
+  "platform": "unknown",
+  "company": "Dropbox",
+  "title": "Infrastructure Software Engineer",
+  "capturedAt": "2026-06-03T07:09:01.396Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

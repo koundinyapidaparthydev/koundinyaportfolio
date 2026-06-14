@@ -1,0 +1,15 @@
+{
+  "jobId": "row-195",
+  "rowIndex": 195,
+  "url": "https://www.brex.com/careers/8461598002?gh_jid=8461598002",
+  "platform": "unknown",
+  "company": "Brex",
+  "title": "Engineering Manager, Onboarding",
+  "capturedAt": "2026-06-03T07:11:46.737Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

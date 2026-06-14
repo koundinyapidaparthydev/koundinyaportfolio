@@ -1,0 +1,15 @@
+{
+  "jobId": "row-180",
+  "rowIndex": 180,
+  "url": "https://careers.duolingo.com/jobs/8526793002?gh_jid=8526793002",
+  "platform": "unknown",
+  "company": "Duolingo",
+  "title": "Software Engineer I",
+  "capturedAt": "2026-06-03T07:11:01.542Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

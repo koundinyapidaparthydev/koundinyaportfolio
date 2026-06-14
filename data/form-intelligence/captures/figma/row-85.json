@@ -1,0 +1,322 @@
+{
+  "jobId": "row-85",
+  "rowIndex": 85,
+  "url": "https://boards.greenhouse.io/figma/jobs/5552530004?gh_jid=5552530004",
+  "platform": "greenhouse",
+  "company": "Figma",
+  "title": "Software Engineer, C++",
+  "capturedAt": "2026-06-03T07:06:35.569Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": [
+      "JavaScript/TypeScript",
+      "Python",
+      "Go",
+      "Java",
+      "Ruby",
+      "Swift",
+      "Kotlin",
+      "Other"
+    ]
+  },
+  "fields": [
+    {
+      "label": "First Name*",
+      "name": "first_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya",
+      "source": "script"
+    },
+    {
+      "label": "Last Name*",
+      "name": "last_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Pidaparthy",
+      "source": "script"
+    },
+    {
+      "label": "Email*",
+      "name": "email",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Country*",
+      "name": "country",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "United States",
+      "source": "generic-cache"
+    },
+    {
+      "label": "",
+      "name": "",
+      "type": "input",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "ai"
+    },
+    {
+      "label": "Phone*",
+      "name": "phone",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Location (City)*",
+      "name": "candidate-location",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "Attach",
+      "name": "resume",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "LinkedIn Profile",
+      "name": "question_13373080004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Other Website",
+      "name": "question_13373081004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "script"
+    },
+    {
+      "label": "Why do you want to join Figma?*",
+      "name": "question_13373082004",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": "I am drawn to Figma because of its mission to democratize design and empower creative teams worldwide. With 8 years of software engineering experience, I'm excited to lead a team that bridges the gap between design and engineering—an area where I've seen firsthand how better collaboration drives product excellence. Figma's collaborative platform, innovative approach to design tooling, and commitment to building world-class products align with my passion for creating intuitive, impactful software. I'm eager to contribute to a team that's shaping the future of design technology.",
+      "source": "company-cache"
+    },
+    {
+      "label": "Pronouns",
+      "name": "question_13373083004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "company-cache"
+    },
+    {
+      "label": "Additional Information",
+      "name": "question_13373084004",
+      "type": "textarea",
+      "required": false,
+      "options": [],
+      "ourAnswer": "UK work authorization: I am a US citizen with valid passport and will require visa sponsorship (Skilled Worker visa) to work in the United Kingdom. I have 8 years of IT engineering experience and am relocating to London. Portfolio: https://koundinyapidaparhty.vercel.app",
+      "source": "company-cache"
+    },
+    {
+      "label": "From where do you intend to work? *",
+      "name": "question_13373085004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "company-cache"
+    },
+    {
+      "label": "Preferred First Name",
+      "name": "question_13373086004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Koundinya",
+      "source": "script"
+    },
+    {
+      "label": "Are you authorized to work in the country for which you applied? *",
+      "name": "question_13373087004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Yes",
+      "source": "script"
+    },
+    {
+      "label": "Have you ever worked for Figma before, as an employee or a contractor/consultant? *",
+      "name": "question_13373088004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "No",
+      "source": "company-cache"
+    },
+    {
+      "label": "How many years of professional experience do you have in this type of role (excluding internships)?*",
+      "name": "question_14230940004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "8",
+      "source": "ai"
+    },
+    {
+      "label": "Have you worked as a full-time software engineer in a professional setting (excluding internships)?*",
+      "name": "question_14230941004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Yes, I have 8 years of professional full-time software engineering experience.",
+      "source": "ai"
+    },
+    {
+      "label": "Which of the following best describes your primary technical expertise?*",
+      "name": "question_14230942004[]",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "C++ Software Engineering",
+      "source": "ai"
+    },
+    {
+      "label": "JavaScript/TypeScript",
+      "name": "question_14230943004[]",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Python",
+      "name": "question_14230943004[]",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Go",
+      "name": "question_14230943004[]",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "C++",
+      "name": "question_14230943004[]",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": "true",
+      "source": "ai"
+    },
+    {
+      "label": "Java",
+      "name": "question_14230943004[]",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Ruby",
+      "name": "question_14230943004[]",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Swift",
+      "name": "question_14230943004[]",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Kotlin",
+      "name": "question_14230943004[]",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Other",
+      "name": "question_14230943004[]",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Gender",
+      "name": "gender",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Are you Hispanic/Latino?",
+      "name": "hispanic_ethnicity",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "company-cache"
+    },
+    {
+      "label": "Veteran Status",
+      "name": "veteran_status",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Disability Status",
+      "name": "disability_status",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    }
+  ]
+}

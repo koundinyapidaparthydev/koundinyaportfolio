@@ -1,0 +1,15 @@
+{
+  "jobId": "row-151",
+  "rowIndex": 151,
+  "url": "https://jobs.dropbox.com/listing/7773571?gh_jid=7773571",
+  "platform": "unknown",
+  "company": "Dropbox",
+  "title": "SaaS Engineer",
+  "capturedAt": "2026-06-03T07:09:34.293Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

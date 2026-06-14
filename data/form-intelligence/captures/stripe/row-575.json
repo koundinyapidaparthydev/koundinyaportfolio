@@ -1,0 +1,15 @@
+{
+  "jobId": "row-575",
+  "rowIndex": 575,
+  "url": "https://stripe.com/jobs/search?gh_jid=7411434",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Partner Solutions Architect - Consulting Partners",
+  "capturedAt": "2026-06-03T07:53:41.966Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

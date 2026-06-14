@@ -1,0 +1,15 @@
+{
+  "jobId": "row-143",
+  "rowIndex": 143,
+  "url": "https://jobs.dropbox.com/listing/6330390?gh_jid=6330390",
+  "platform": "unknown",
+  "company": "Dropbox",
+  "title": "Infrastructure Software Engineer",
+  "capturedAt": "2026-06-03T07:09:10.380Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

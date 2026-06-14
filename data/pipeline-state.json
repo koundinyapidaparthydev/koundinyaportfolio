@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "lastRunAt": null,
+  "lastRunId": null,
+  "stats": {
+    "enriched": 0,
+    "generated": 0,
+    "applied": 0,
+    "captured": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  "notes": "Updated by scripts/pipeline-orchestrator.mjs after each batch run."
+}

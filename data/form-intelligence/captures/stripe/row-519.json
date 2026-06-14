@@ -1,0 +1,15 @@
+{
+  "jobId": "row-519",
+  "rowIndex": 519,
+  "url": "https://stripe.com/jobs/search?gh_jid=7895287",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Backend Engineer, Payments Experiences",
+  "capturedAt": "2026-06-03T07:42:06.491Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

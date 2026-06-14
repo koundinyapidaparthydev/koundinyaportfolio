@@ -1,0 +1,223 @@
+{
+  "jobId": "row-28",
+  "rowIndex": 28,
+  "url": "https://job-boards.greenhouse.io/reddit/jobs/6960831",
+  "platform": "greenhouse",
+  "company": "Reddit",
+  "title": "Senior Machine Learning Engineer",
+  "capturedAt": "2026-06-03T07:02:10.227Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": [
+    {
+      "label": "First Name*",
+      "name": "first_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya",
+      "source": "script"
+    },
+    {
+      "label": "Last Name*",
+      "name": "last_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Pidaparthy",
+      "source": "script"
+    },
+    {
+      "label": "Preferred First Name",
+      "name": "preferred_name",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Koundinya",
+      "source": "script"
+    },
+    {
+      "label": "Email*",
+      "name": "email",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Country*",
+      "name": "country",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "United States",
+      "source": "generic-cache"
+    },
+    {
+      "label": "",
+      "name": "",
+      "type": "input",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "ai"
+    },
+    {
+      "label": "Phone*",
+      "name": "phone",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Location (City)*",
+      "name": "candidate-location",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "Attach",
+      "name": "resume",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Attach",
+      "name": "cover_letter",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "optional-skipped"
+    },
+    {
+      "label": "LinkedIn Profile",
+      "name": "question_57454599",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "How did you hear about this job?*",
+      "name": "question_57454600",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "LinkedIn",
+      "source": "script"
+    },
+    {
+      "label": "Are you currently authorized to work in the U.S.?*",
+      "name": "question_57454601",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Yes",
+      "source": "script"
+    },
+    {
+      "label": "Do you now, or will you in the future, require immigration sponsorship to work at Reddit?*",
+      "name": "question_57454602",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "No",
+      "source": "script"
+    },
+    {
+      "label": "By selecting \"I agree,\" I understand that the information I have provided as part of this job application will be processed in accordance with Reddit's Candidate Privacy Policy. *",
+      "name": "question_57454603",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Yes",
+      "source": "script"
+    },
+    {
+      "label": "Please provide the name of your current (or most recent) company*",
+      "name": "question_57454604",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Confidential",
+      "source": "script"
+    },
+    {
+      "label": "What gender identity do you most closely identify with? *",
+      "name": "430",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Are you a person of transgender experience? *",
+      "name": "431",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "What sexual orientation do you most closely identify with? *",
+      "name": "432",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Do you live with a disability (as outlined by the ADA)?*",
+      "name": "433",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Are you a veteran/have you served in the military? *",
+      "name": "434",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Please select up to 2 ethnicities that you most closely identify with.*",
+      "name": "436",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "By checking this box, I consent to Reddit collecting, storing, and processing my responses to the demographic data surveys above.*",
+      "name": "gdpr_demographic_data_consent_given",
+      "type": "checkbox",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    }
+  ]
+}

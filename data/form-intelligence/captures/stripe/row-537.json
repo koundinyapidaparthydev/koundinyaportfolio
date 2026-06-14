@@ -1,0 +1,15 @@
+{
+  "jobId": "row-537",
+  "rowIndex": 537,
+  "url": "https://stripe.com/jobs/search?gh_jid=7913545",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Engineering Manager, Product (Privy)",
+  "capturedAt": "2026-06-03T07:43:06.593Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

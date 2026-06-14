@@ -1,0 +1,15 @@
+{
+  "jobId": "row-504",
+  "rowIndex": 504,
+  "url": "https://stripe.com/jobs/search?gh_jid=7778627",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Android Engineer, Terminal Global Payments",
+  "capturedAt": "2026-06-03T07:35:54.870Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

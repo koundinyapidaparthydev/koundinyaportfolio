@@ -66,6 +66,7 @@ const HEADERS = [
   "Resume URL", "Cover Letter", "ATS Score", "Apply Status", "Applied At", "Notes",
   "Posted At", "ATS Match Summary", "Key Gaps", "Recommended Keywords",
   "Resume Modified", "Pre-Tailor ATS",
+  "Skill Match", "Tailor Attempts",
 ];
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1396,7 +1397,7 @@ async function ensureSheetAndHeaders(sheets) {
   // Always sync headers (A–S, 19 columns)
   await sheets.spreadsheets.values.update({
     spreadsheetId: GOOGLE_SHEET_ID,
-    range: `${SHEET_NAME}!A1:S1`,
+    range: `${SHEET_NAME}!A1:U1`,
     valueInputOption: "RAW",
     requestBody: { values: [HEADERS] },
   });
@@ -1657,7 +1658,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
   try {
     const resp = await sheets.spreadsheets.values.get({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A2:S`,
+      range: `${SHEET_NAME}!A2:U`,
     });
     const dataRows = (resp.data.values ?? []).map(padRowTo17);
     if (dataRows.length === 0) return;
@@ -1692,7 +1693,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
       });
       await sheets.spreadsheets.values.update({
         spreadsheetId: GOOGLE_SHEET_ID,
-        range: `${ARCHIVE_SHEET}!A1:S1`,
+        range: `${ARCHIVE_SHEET}!A1:U1`,
         valueInputOption: "RAW",
         requestBody: { values: [HEADERS] },
       });
@@ -1711,7 +1712,7 @@ async function archiveOldJobs(sheets, { maxAgeMs = APPLY_NOW_WINDOW_MS } = {}) {
     // Rewrite Jobs: headers + keep rows only; clear leftover data rows
     await sheets.spreadsheets.values.clear({
       spreadsheetId: GOOGLE_SHEET_ID,
-      range: `${SHEET_NAME}!A2:S`,
+      range: `${SHEET_NAME}!A2:U`,
     });
     const jobsBody = keepRows.length > 0 ? [HEADERS, ...keepRows] : [HEADERS];
     await sheets.spreadsheets.values.update({

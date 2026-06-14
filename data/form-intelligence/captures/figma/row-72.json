@@ -1,0 +1,172 @@
+{
+  "jobId": "row-72",
+  "rowIndex": 72,
+  "url": "https://boards.greenhouse.io/figma/jobs/5813865004?gh_jid=5813865004",
+  "platform": "greenhouse",
+  "company": "Figma",
+  "title": "IT Engineer (London, United Kingdom) ",
+  "capturedAt": "2026-06-03T07:04:32.539Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": [
+      "Why do you want to join Figma?*",
+      "From where do you intend to work? *"
+    ]
+  },
+  "fields": [
+    {
+      "label": "First Name*",
+      "name": "first_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya",
+      "source": "script"
+    },
+    {
+      "label": "Last Name*",
+      "name": "last_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Pidaparthy",
+      "source": "script"
+    },
+    {
+      "label": "Email*",
+      "name": "email",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Country*",
+      "name": "country",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "United States",
+      "source": "generic-cache"
+    },
+    {
+      "label": "",
+      "name": "",
+      "type": "input",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Phone*",
+      "name": "phone",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Location (City)*",
+      "name": "candidate-location",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "Attach",
+      "name": "resume",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "LinkedIn Profile",
+      "name": "question_15507555004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Other Website",
+      "name": "question_15507556004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "script"
+    },
+    {
+      "label": "Why do you want to join Figma?*",
+      "name": "question_15507557004",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Pronouns",
+      "name": "question_15507558004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Additional Information",
+      "name": "question_15507559004",
+      "type": "textarea",
+      "required": false,
+      "options": [],
+      "ourAnswer": "UK work authorization: I am a US citizen with valid passport and will require visa sponsorship (Skilled Worker visa) to work in the United Kingdom. I have 8 years of IT engineering experience and am relocating to London. Portfolio: https://koundinyapidaparhty.vercel.app",
+      "source": "ai"
+    },
+    {
+      "label": "From where do you intend to work? *",
+      "name": "question_15507560004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Preferred First Name",
+      "name": "question_15507561004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Koundinya",
+      "source": "script"
+    },
+    {
+      "label": "Are you authorized to work in the country for which you applied? *",
+      "name": "question_15507562004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Yes",
+      "source": "script"
+    },
+    {
+      "label": "Have you ever worked for Figma before, as an employee or a contractor/consultant? *",
+      "name": "question_15507563004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "No",
+      "source": "ai"
+    }
+  ]
+}

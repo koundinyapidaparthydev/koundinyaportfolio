@@ -1,0 +1,15 @@
+{
+  "jobId": "row-541",
+  "rowIndex": 541,
+  "url": "https://stripe.com/jobs/search?gh_jid=7948198",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Engineering Manager, User Compliance ",
+  "capturedAt": "2026-06-03T07:43:19.193Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

@@ -1,0 +1,15 @@
+{
+  "jobId": "row-565",
+  "rowIndex": 565,
+  "url": "https://stripe.com/jobs/search?gh_jid=7896519",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Integration Engineer (Global) ",
+  "capturedAt": "2026-06-03T07:47:50.396Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

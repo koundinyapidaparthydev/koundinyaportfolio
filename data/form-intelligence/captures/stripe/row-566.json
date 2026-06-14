@@ -1,0 +1,15 @@
+{
+  "jobId": "row-566",
+  "rowIndex": 566,
+  "url": "https://stripe.com/jobs/search?gh_jid=7819426",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Integration Engineer (US) ",
+  "capturedAt": "2026-06-03T07:47:53.457Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

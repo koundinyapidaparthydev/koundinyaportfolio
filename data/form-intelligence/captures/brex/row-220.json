@@ -1,0 +1,15 @@
+{
+  "jobId": "row-220",
+  "rowIndex": 220,
+  "url": "https://www.brex.com/careers/8472633002?gh_jid=8472633002",
+  "platform": "unknown",
+  "company": "Brex",
+  "title": "Senior Software Engineer, Full Stack",
+  "capturedAt": "2026-06-03T07:13:01.591Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

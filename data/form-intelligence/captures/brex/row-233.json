@@ -1,0 +1,15 @@
+{
+  "jobId": "row-233",
+  "rowIndex": 233,
+  "url": "https://www.brex.com/careers/8545586002?gh_jid=8545586002",
+  "platform": "unknown",
+  "company": "Brex",
+  "title": "Software Engineer II, Credit Limit Engineering",
+  "capturedAt": "2026-06-03T07:13:40.741Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

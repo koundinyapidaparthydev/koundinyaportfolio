@@ -1,0 +1,15 @@
+{
+  "jobId": "row-183",
+  "rowIndex": 183,
+  "url": "https://www.brex.com/careers/8366850002?gh_jid=8366850002",
+  "platform": "unknown",
+  "company": "Brex",
+  "title": "Data Engineer",
+  "capturedAt": "2026-06-03T07:11:10.604Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

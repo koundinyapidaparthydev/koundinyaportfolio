@@ -1,0 +1,15 @@
+{
+  "jobId": "row-524",
+  "rowIndex": 524,
+  "url": "https://stripe.com/jobs/search?gh_jid=7841757",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Engineering Manager, APAC & EMEA Cards",
+  "capturedAt": "2026-06-03T07:42:21.085Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

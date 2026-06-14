@@ -30,6 +30,7 @@ import {
   type AppliedVisibilityFilter,
 } from "@/lib/admin/allJobsFilters";
 import { ATS_STRONG_SCORE, NON_TAILORED_MIN_SCORE } from "@/lib/admin/atsConfig";
+import { isLowSkillFit } from "@/lib/admin/skillMatch";
 import { glass, glassCn } from "@/lib/glass";
 import { resolveCompanyLogo, companyInitial } from "@/lib/admin/companyLogos";
 import { AdminPageHeader } from "./AdminShell";
@@ -642,6 +643,9 @@ export default function AllJobsTab() {
             · {appliedCount} applied hidden
           </span>
         )}
+        <span className="ml-2 text-[11px] text-slate-500">
+          · Low skill-fit (&lt;3 matches) pinned to bottom
+        </span>
         {search.trim() && resumeModifiedFilter !== "all" && (
           <span className="ml-2 text-[11px] text-amber-400/90">
             Search shows all matches (resume filter paused)
@@ -764,6 +768,7 @@ export default function AllJobsTab() {
                     {filtered.map((job, i) => {
                       const isSelected = selectedUrl === job.url;
                       const applied = isJobApplied(job);
+                      const lowSkill = isLowSkillFit(job);
                       return (
                         <motion.tr
                           key={`${job.rowIndex}-${job.url}`}
@@ -775,6 +780,7 @@ export default function AllJobsTab() {
                             "cursor-pointer transition-colors",
                             isSelected ? "bg-indigo-500/10" : "hover:bg-white/3",
                             applied ? "opacity-80" : "",
+                            lowSkill ? "opacity-50" : "",
                           ].join(" ")}
                         >
                           <td className="max-w-[10rem] px-3 py-2.5">

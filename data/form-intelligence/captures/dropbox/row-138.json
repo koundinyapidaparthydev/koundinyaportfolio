@@ -1,0 +1,15 @@
+{
+  "jobId": "row-138",
+  "rowIndex": 138,
+  "url": "https://jobs.dropbox.com/listing/7739553?gh_jid=7739553",
+  "platform": "unknown",
+  "company": "Dropbox",
+  "title": "Data Engineer",
+  "capturedAt": "2026-06-03T07:08:56.141Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

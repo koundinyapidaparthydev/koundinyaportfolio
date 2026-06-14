@@ -1,0 +1,15 @@
+{
+  "jobId": "row-538",
+  "rowIndex": 538,
+  "url": "https://stripe.com/jobs/search?gh_jid=7525370",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Engineering Manager, Sales Systems",
+  "capturedAt": "2026-06-03T07:43:09.642Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

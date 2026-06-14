@@ -1,0 +1,15 @@
+{
+  "jobId": "row-501",
+  "rowIndex": 501,
+  "url": "https://stripe.com/jobs/search?gh_jid=7863844",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Analytics Engineer",
+  "capturedAt": "2026-06-03T07:35:45.921Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

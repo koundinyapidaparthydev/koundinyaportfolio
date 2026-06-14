@@ -9,6 +9,24 @@ import {
   formatQualityFeedback,
   sanitizeTailoredResume,
 } from "./resume-quality.mjs";
+import { TAILOR_TARGET_SCORE, MAX_TAILOR_ATTEMPTS } from "./ats-config.mjs";
+
+function delay(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function buildAtsTargetGuidance(targetScore, postResult, attempt) {
+  const gaps = postResult?.keyGaps ?? "";
+  const keywords = postResult?.recommendedKeywords ?? "";
+  const matched = Array.isArray(postResult?.matched) ? postResult.matched.join(", ") : "";
+  return `
+ATS TARGET (attempt ${attempt}): Tailored resume MUST score at least ${targetScore}% for this role.
+Current score is below target. Address these gaps naturally using ONLY truthful experience from the base resume:
+- Key gaps: ${gaps || "—"}
+- Recommended keywords: ${keywords || "—"}
+- Already matched: ${matched || "—"}
+Reorder skills, rewrite summary, and rephrase bullets to surface relevant stack — never invent employers, dates, or technologies.`;
+}
 
 const QUALITY_CHECKLIST = `
 QUALITY CHECKLIST — verify before responding:
@@ -177,11 +195,29 @@ export async function tailorResumeWithQualityGate(
   if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
 
   const preAtsScore = options.preAtsScore ?? null;
+  const extraGuidance = options.extraGuidance ?? "";
+  const draftResume = options.draftResume ?? null;
 
-  let parsed = await callGemini(
-    apiKey,
-    buildTailorPrompt(baseResume, title, company, description)
-  );
+  let parsed;
+  if (draftResume && options.refineFeedback) {
+    parsed = await callGemini(
+      apiKey,
+      buildRefinePrompt(
+        baseResume,
+        draftResume,
+        title,
+        company,
+        description,
+        options.refineFeedback,
+        options.atsGaps ?? ""
+      )
+    );
+  } else {
+    parsed = await callGemini(
+      apiKey,
+      buildTailorPrompt(baseResume, title, company, description, extraGuidance)
+    );
+  }
   let { tailoredResume, coverLetter } = normalizeTailored(baseResume, parsed);
 
   let postResult = await scoreJobWithGemini(title, description, tailoredResume);
@@ -193,7 +229,7 @@ export async function tailorResumeWithQualityGate(
     postAtsScore: postResult.score,
   });
 
-  if (!quality.passed) {
+  if (!quality.passed && !options.skipQualityRefine) {
     console.log(`  ↻ Quality refine for ${company} (${quality.errors.length} issues)`);
     const feedback = formatQualityFeedback(quality);
     const atsGaps = postResult.keyGaps ?? postResult.recommendedKeywords ?? "";
@@ -227,5 +263,63 @@ export async function tailorResumeWithQualityGate(
     preAtsScore,
     postAtsScore: postResult.score,
     postResult,
+  };
+}
+
+/**
+ * Tailor up to maxAttempts times until ATS >= targetScore (default 87%).
+ */
+export async function tailorResumeUntilTarget(
+  baseResume,
+  { title, company, description },
+  options = {}
+) {
+  const targetScore = options.targetScore ?? TAILOR_TARGET_SCORE;
+  const maxAttempts = options.maxAttempts ?? MAX_TAILOR_ATTEMPTS;
+  const preAtsScore = options.preAtsScore ?? null;
+  const startAttempt = options.startAttempt ?? 1;
+  const retryDelayMs = options.retryDelayMs ?? 1500;
+
+  let best = null;
+  let attempts = 0;
+
+  for (let attempt = startAttempt; attempt <= maxAttempts; attempt++) {
+    attempts = attempt;
+    const extraGuidance =
+      attempt === 1
+        ? `Target ATS score: at least ${targetScore}% for this role.`
+        : buildAtsTargetGuidance(targetScore, best?.postResult, attempt);
+
+    const result = await tailorResumeWithQualityGate(
+      baseResume,
+      { title, company, description },
+      {
+        preAtsScore,
+        extraGuidance,
+        skipQualityRefine: attempt > 1,
+      }
+    );
+
+    if (!best || result.postAtsScore > best.postAtsScore) {
+      best = { ...result, attempts };
+    }
+
+    if (result.postAtsScore >= targetScore) {
+      return { ...result, attempts, reachedTarget: true, targetScore };
+    }
+
+    if (attempt < maxAttempts) {
+      console.log(
+        `  ↻ ATS ${result.postAtsScore}% < ${targetScore}% — retry ${attempt + 1}/${maxAttempts}`
+      );
+      await delay(retryDelayMs);
+    }
+  }
+
+  return {
+    ...best,
+    attempts,
+    reachedTarget: (best?.postAtsScore ?? 0) >= targetScore,
+    targetScore,
   };
 }

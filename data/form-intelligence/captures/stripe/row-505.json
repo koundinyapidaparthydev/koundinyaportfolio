@@ -1,0 +1,15 @@
+{
+  "jobId": "row-505",
+  "rowIndex": 505,
+  "url": "https://stripe.com/jobs/search?gh_jid=7557403",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Android Engineer, Terminal OS Platform",
+  "capturedAt": "2026-06-03T07:35:57.826Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

@@ -1,0 +1,15 @@
+{
+  "jobId": "row-549",
+  "rowIndex": 549,
+  "url": "https://stripe.com/jobs/search?gh_jid=7403151",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Full Stack Engineer, Ecosystem",
+  "capturedAt": "2026-06-03T07:43:42.687Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

@@ -32,7 +32,8 @@
     "job:diagnose": "node scripts/diagnose-sheet.mjs",
     "job:purge": "node scripts/purge-jobs-sheet.mjs",
     "job:purge:dry": "DRY_RUN=true node scripts/purge-jobs-sheet.mjs",
-    "job:rebuild-pdfs": "node scripts/rebuild-tailored-pdfs.mjs",
+    "job:rebuild-pdfs": "node scripts/retailor-below-target.mjs",
+    "job:retailor": "node scripts/retailor-below-target.mjs",
     "job:enrich-descriptions": "node scripts/enrich-descriptions.mjs",
     "job:sync-emails": "node scripts/sync-job-emails.mjs",
     "resume:pdf": "node scripts/pdf-render-helper.cjs < data/resume.json > public/resume.pdf"

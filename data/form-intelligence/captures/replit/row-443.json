@@ -1,0 +1,596 @@
+{
+  "jobId": "row-443",
+  "rowIndex": 443,
+  "url": "https://jobs.ashbyhq.com/replit/12737078-74c7-4e63-98a7-5e8da1e9deb1",
+  "platform": "ashby",
+  "company": "Replit",
+  "title": "Software Engineering Intern (Summer 2026)",
+  "capturedAt": "2026-06-03T07:31:02.498Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": [
+      "Project Password",
+      "Please tell us about your submitted project",
+      "Why are you interested in Replit?"
+    ]
+  },
+  "fields": [
+    {
+      "label": "",
+      "name": "",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Full Name",
+      "name": "_systemfield_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "script"
+    },
+    {
+      "label": "Email",
+      "name": "_systemfield_email",
+      "type": "email",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Phone Number",
+      "name": "66f031b6-85ae-4b95-831b-2c25f229d0b0",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Resume",
+      "name": "_systemfield_resume",
+      "type": "file",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Project URL",
+      "name": "d454fa21-15bc-4f7d-b44a-3b52a74c3650",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "ai"
+    },
+    {
+      "label": "Project Password",
+      "name": "fb078510-5c8d-4c9e-903a-00e2df0cb25d",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Please tell us about your submitted project",
+      "name": "81370790-4d12-4476-bfb4-333c40d4d955",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Linkedin Profile URL",
+      "name": "1788c2c7-a75b-48aa-841a-e3559fb8d829",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Replit Profile URL",
+      "name": "dccc0812-1c75-4aaa-850e-df9d2a354e40",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Github Profile URL",
+      "name": "f51bc122-89c5-4df1-97aa-67437a6d845b",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Why are you interested in Replit?",
+      "name": "ba1b0394-0cc1-44a7-b280-da1b124f8d78",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Male",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_gender",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Female",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_gender",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Decline to self-identify",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_gender",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to self-identify",
+      "source": "ai"
+    },
+    {
+      "label": "Hispanic or Latino",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "White (Not Hispanic or Latino)",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Black or African American (Not Hispanic or Latino)",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Native Hawaiian or Other Pacific Islander (Not Hispanic or Latino)",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Asian (Not Hispanic or Latino)",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "American Indian or Alaska Native (Not Hispanic or Latino)",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Two or More Races (Not Hispanic or Latino)",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "ai"
+    },
+    {
+      "label": "Decline to self-identify",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_race",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to self-identify",
+      "source": "ai"
+    },
+    {
+      "label": "I identify as one or more of the classifications of protected veteran listed above",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_veteran_status",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "I am not a protected veteran",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_veteran_status",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "I decline to self-identify for protected veteran status",
+      "name": "19152f60-585d-442e-a347-a23008753d94__systemfield_eeoc_veteran_status",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        },
+        {
+          "value": "on",
+          "label": "on"
+        }
+      ],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    }
+  ]
+}

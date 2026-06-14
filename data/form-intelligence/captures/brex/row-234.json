@@ -1,0 +1,15 @@
+{
+  "jobId": "row-234",
+  "rowIndex": 234,
+  "url": "https://www.brex.com/careers/8310523002?gh_jid=8310523002",
+  "platform": "unknown",
+  "company": "Brex",
+  "title": "Software Engineer II, Frontend",
+  "capturedAt": "2026-06-03T07:13:43.703Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "description": "One-time fixes for manual-required / needs-review rows. Keys are normalized question labels; values are answers merged into applicant-memory and form-intelligence caches on import.",
+  "genericAnswers": {
+    "example custom screening question": "Your answer here"
+  },
+  "companyAnswers": {
+    "Stripe": {
+      "why do you want to work at stripe": "Optional company-specific override (overrides whyJoin template for this company)"
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "jobId": "row-201",
+  "rowIndex": 201,
+  "url": "https://www.brex.com/careers/8536942002?gh_jid=8536942002",
+  "platform": "unknown",
+  "company": "Brex",
+  "title": "Senior Engineering Manager, Acquisition",
+  "capturedAt": "2026-06-03T07:12:04.863Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

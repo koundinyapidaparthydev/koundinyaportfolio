@@ -1,0 +1,15 @@
+{
+  "jobId": "row-542",
+  "rowIndex": 542,
+  "url": "https://stripe.com/jobs/search?gh_jid=7739260",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Engineering Program Manager, Tech GRC",
+  "capturedAt": "2026-06-03T07:43:22.041Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

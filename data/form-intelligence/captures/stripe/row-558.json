@@ -1,0 +1,15 @@
+{
+  "jobId": "row-558",
+  "rowIndex": 558,
+  "url": "https://stripe.com/jobs/search?gh_jid=7523947",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Global Head of Specialist Solutions Architecture, Revenue",
+  "capturedAt": "2026-06-03T07:47:15.661Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

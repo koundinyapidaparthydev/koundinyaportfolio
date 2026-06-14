@@ -1,0 +1,15 @@
+{
+  "jobId": "row-147",
+  "rowIndex": 147,
+  "url": "https://jobs.dropbox.com/listing/7739556?gh_jid=7739556",
+  "platform": "unknown",
+  "company": "Dropbox",
+  "title": "Principal Engineer, Identity & Engagement",
+  "capturedAt": "2026-06-03T07:09:22.310Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

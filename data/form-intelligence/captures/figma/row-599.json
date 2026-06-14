@@ -1,0 +1,205 @@
+{
+  "jobId": "row-599",
+  "rowIndex": 599,
+  "url": "https://boards.greenhouse.io/figma/jobs/5807963004?gh_jid=5807963004",
+  "platform": "greenhouse",
+  "company": "Figma",
+  "title": "Manager, Software Engineering - Observability",
+  "capturedAt": "2026-06-04T02:54:07.926Z",
+  "dryRun": false,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": []
+  },
+  "fields": [
+    {
+      "label": "First Name*",
+      "name": "first_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya",
+      "source": "script"
+    },
+    {
+      "label": "Last Name*",
+      "name": "last_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Pidaparthy",
+      "source": "script"
+    },
+    {
+      "label": "Email*",
+      "name": "email",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Country*",
+      "name": "country",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "United States",
+      "source": "generic-cache"
+    },
+    {
+      "label": "",
+      "name": "",
+      "type": "input",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Phone*",
+      "name": "phone",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Location (City)*",
+      "name": "candidate-location",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "Attach",
+      "name": "resume",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": "C:\\fakepath\\resume_1780541646042.pdf",
+      "source": "script"
+    },
+    {
+      "label": "LinkedIn Profile",
+      "name": "question_15459772004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Other Website",
+      "name": "question_15459773004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "script"
+    },
+    {
+      "label": "Why do you want to join Figma?*",
+      "name": "question_15459774004",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": "I'm excited to join Figma because the product mission aligns with my experience building reliable, user-focused software at scale. With eight years of full-stack engineering — shipping features end-to-end, improving performance, and partnering closely with design and product — I can contribute quickly on high-impact work. I'm based in New York, fully authorized to work in the US without sponsorship, and motivated to help Figma deliver excellent experiences for customers.",
+      "source": "script"
+    },
+    {
+      "label": "Pronouns",
+      "name": "question_15459775004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "company-cache"
+    },
+    {
+      "label": "Additional Information",
+      "name": "question_15459776004",
+      "type": "textarea",
+      "required": false,
+      "options": [],
+      "ourAnswer": "UK work authorization: I am a US citizen with valid passport and will require visa sponsorship (Skilled Worker visa) to work in the United Kingdom. I have 8 years of IT engineering experience and am relocating to London. Portfolio: https://koundinyapidaparhty.vercel.app",
+      "source": "company-cache"
+    },
+    {
+      "label": "From where do you intend to work? *",
+      "name": "question_15459777004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "company-cache"
+    },
+    {
+      "label": "Preferred First Name",
+      "name": "question_15459778004",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Koundinya",
+      "source": "script"
+    },
+    {
+      "label": "Are you authorized to work in the country for which you applied? *",
+      "name": "question_15459779004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Yes",
+      "source": "script"
+    },
+    {
+      "label": "Have you ever worked for Figma before, as an employee or a contractor/consultant? *",
+      "name": "question_15459780004",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "No",
+      "source": "company-cache"
+    },
+    {
+      "label": "Gender",
+      "name": "gender",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Are you Hispanic/Latino?",
+      "name": "hispanic_ethnicity",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "company-cache"
+    },
+    {
+      "label": "Veteran Status",
+      "name": "veteran_status",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    },
+    {
+      "label": "Disability Status",
+      "name": "disability_status",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Decline to answer",
+      "source": "script"
+    }
+  ]
+}

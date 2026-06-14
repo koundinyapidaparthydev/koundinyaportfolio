@@ -1,0 +1,15 @@
+{
+  "jobId": "row-548",
+  "rowIndex": 548,
+  "url": "https://stripe.com/jobs/search?gh_jid=6567104",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Full Stack Engineer, Developer Experience & Product Platform",
+  "capturedAt": "2026-06-03T07:43:39.631Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

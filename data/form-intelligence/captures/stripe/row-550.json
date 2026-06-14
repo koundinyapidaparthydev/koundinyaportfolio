@@ -1,0 +1,15 @@
+{
+  "jobId": "row-550",
+  "rowIndex": 550,
+  "url": "https://stripe.com/jobs/search?gh_jid=7964956",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Full Stack Engineer, Growth",
+  "capturedAt": "2026-06-03T07:43:45.692Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

@@ -1,0 +1,99 @@
+{
+  "jobId": "row-434",
+  "rowIndex": 434,
+  "url": "https://jobs.ashbyhq.com/linear/cd5ae036-0223-427a-b038-ba16ef9dcb32",
+  "platform": "ashby",
+  "company": "Linear",
+  "title": "Senior / Staff Fullstack Engineer",
+  "capturedAt": "2026-06-03T07:30:06.011Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": [
+      "GitHub"
+    ]
+  },
+  "fields": [
+    {
+      "label": "",
+      "name": "",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Name",
+      "name": "_systemfield_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "ai"
+    },
+    {
+      "label": "Email",
+      "name": "_systemfield_email",
+      "type": "email",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Resume",
+      "name": "_systemfield_resume",
+      "type": "file",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Cover letter",
+      "name": "99078de3-86b8-4062-953d-991398f852ad",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": "With 8 years of fullstack engineering experience and a proven track record building scalable products, I'm excited to contribute to Linear's mission of making software development more efficient. My expertise spans modern web technologies and distributed systems, and I'm particularly drawn to Linear's commitment to developer experience and product excellence. I'm based in New York, fully authorized to work in the US, and ready to make an immediate impact on your team.",
+      "source": "ai"
+    },
+    {
+      "label": "GitHub",
+      "name": "742623b7-3025-4d9c-ab6e-3f08b2cbfd61",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "LinkedIn",
+      "name": "07ef7131-e21e-424e-93de-28b8dfbdcb1e",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Twitter",
+      "name": "cfb884a0-fef5-4b6a-b840-9fcd1e170f50",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "What country are you based in?",
+      "name": "a245ad9a-4b77-4ff8-884c-55c1b65c41c4",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "United States",
+      "source": "ai"
+    }
+  ]
+}

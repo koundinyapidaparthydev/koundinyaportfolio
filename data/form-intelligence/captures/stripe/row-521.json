@@ -1,0 +1,15 @@
+{
+  "jobId": "row-521",
+  "rowIndex": 521,
+  "url": "https://stripe.com/jobs/search?gh_jid=7867389",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Cloud Security Engineer",
+  "capturedAt": "2026-06-03T07:42:11.987Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

@@ -1,0 +1,15 @@
+{
+  "jobId": "row-228",
+  "rowIndex": 228,
+  "url": "https://www.brex.com/careers/8523435002?gh_jid=8523435002",
+  "platform": "unknown",
+  "company": "Brex",
+  "title": "Software Engineer, Forward Deployed Agent Builder",
+  "capturedAt": "2026-06-03T07:13:25.657Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

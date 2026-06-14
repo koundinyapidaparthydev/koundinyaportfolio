@@ -1,0 +1,128 @@
+{
+  "jobId": "e719443022c9",
+  "rowIndex": null,
+  "url": "https://jobs.ashbyhq.com/ramp/34413f8d-26bf-4bbc-8ade-eb309a0e2245/application",
+  "platform": "ashby",
+  "company": "Ramp",
+  "title": "Engineering (smoke)",
+  "capturedAt": "2026-06-03T05:03:52.725Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": false,
+    "missingRequired": [
+      "Please elaborate on your experience building software in AWS (with Terraform)",
+      "Here's some text encoded in a common format. Figure out the correct secret and submit it in the field below. IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoKJycnCktlZXAgdXMgb3V0IG9mIGdvb2dsZSBzZWFyY2ggcmVzdWx0cy4uCgokIG9kIC1kIC9kZXYvdXJhbmRvbSB8IGhlYWQKMDAwMDAwMCAgICAgNjAyMTUgICAyODc3OCAgIDI5MjI3ICAgMjg1NDggICA2MjY4NiAgIDQ1MTcxICAgIDc4MjYgICA0ODc2NgowMDAwMDIwICAgICAxNzExOCAgIDE1MjI1ICAgMTI4NTIgICAzNDc4MSAgIDMxOTU1ICAgMTkwODcgICAzOTU2MyAgIDQzNjE0CjAwMDAwNDAgICAgICA2NzEwICAgMzg1MTUgICAxNDU3MyAgIDY0MDg3ICAgMTcwMjYgICAyNTU5OCAgIDQyOTEzICAgMTQyMDkKMDAwMDA2MCAgICAgMTA3MjMgICAzMTMwNyAgIDE5MDcxICAgMTQ3OTggICAgMjQ2MiAgIDQ2MjUzICAgMzU2MjYgICAzMjQzNgowMDAwMTAwICAgICAgMTczOSAgIDI3NzEyICAgIDU2NjcgICAxMjIxMiAgIDQ3MDc3ICAgNDE3MjIgICA1NDQ1MiAgIDM4NDYxCjAwMDAxMjAgICAgICA0ODE2ICAgMTUwMTQgICAyODYyMyAgIDEwOTI4ICAgNTQwMjggICA2NDUyMyAgIDU0NjMyICAgNTQxODcKMDAwMDE0MCAgICAgNjE2MzEgICA1NDQ5OSAgIDE4MzA3ICAgIDU1MTQgICA1MDc0MyAgIDUwNTkxICAgMjUxNzIgICA1NDAxOAowMDAwMTYwICAgICAzMTk5MCAgIDI2MjQ4ICAgIDQzODMgICA0NjQ1MiAgIDQyMTU2ICAgNjIzMjAgICA1MTA1MiAgIDI4NjIxCjAwMDAyMDAgICAgIDI3MjI2ICAgNjUyOTYgICA1NjMwNSAgIDMzMzc1ICAgIDQ4MTMgICA0MjI4MyAgIDE5OTgwICAgIDE5MjIKMDAwMDIyMCAgICAgNTcwNjEgICAyOTMyMiAgIDI3MDczICAgNjQ5ODYgICAxNTIxOSAgIDI2MjM0ICAgMjQxMDAgICAyMTIwNAonJycKCicnJwpDb3B5IHRoaXMgZmlsZSBhbmQgcnVuIGBwYnBhc3RlIHwgYmFzZTY0YCB0byBnZW5lcmF0ZSBjaGFsbGVuZ2UgdGV4dC4gQ29waW91cwp3aGl0ZSBzcGFjZSBpcyBhdCB0aGUgYm90dG9tIG9mIHRoZSBmaWxlIHRvIGVuc3VyZSB0cmFpbGluZyBgPT1gIGFuZCBoaW50IGF0CmJhc2U2NC4KJycnCgppbXBvcnQgY29kZWNzCmltcG9ydCBzdHJpbmcKaW1wb3J0IHN5cwppbXBvcnQgdGltZQoKZnJvbSBjcnlwdG9ncmFwaHkuaGF6bWF0LmJhY2tlbmRzIGltcG9ydCBkZWZhdWx0X2JhY2tlbmQKZnJvbSBjcnlwdG9ncmFwaHkuaGF6bWF0LnByaW1pdGl2ZXMuaGFzaGVzIGltcG9ydCBTSEExCmZyb20gY3J5cHRvZ3JhcGh5Lmhhem1hdC5wcmltaXRpdmVzLnR3b2ZhY3Rvci50b3RwIGltcG9ydCBUT1RQCgoKT05FX1dFRUtfSU5fU0VDT05EUyA9IDYwNF84MDAKCgpkZWYgZ2VuZXJhdGVfc2VjcmV0KCk6CiAgICB0b3RwID0gVE9UUCgKICAgICAgICBrZXk9Y29kZWNzLmVuY29kZShzdHJpbmcuYXNjaWlfbGV0dGVycywgZW5jb2Rpbmc9InV0Zi04IiksCiAgICAgICAgbGVuZ3RoPTgsCiAgICAgICAgYWxnb3JpdGhtPVNIQTEoKSwKICAgICAgICB0aW1lX3N0ZXA9T05FX1dFRUtfSU5fU0VDT05EUywKICAgICAgICBiYWNrZW5kPWRlZmF1bHRfYmFja2VuZCgpLAogICAgKQogICAgc2VlZCA9IGludCh0aW1lLnRpbWUoKSkKICAgIHRva2VuID0gY29kZWNzLmRlY29kZSh0b3RwLmdlbmVyYXRlKHNlZWQpLCBlbmNvZGluZz0idXRmLTgiKQogICAgcmV0dXJuIGYie3Rva2VufS17c2VlZH0iCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIHN5cy5zdGRvdXQud3JpdGUoCiAgICAgICAgZiJQbGVhc2UgaGVhZCB0byBodHRwczovL3JhbXAuY29tL2NhcmVlcnMgYW5kIHVzZSB0aGlzIHNlY3JldCB3aGVuICIKICAgICAgICBmInlvdSBhcHBseToge2dlbmVyYXRlX3NlY3JldCgpfVxuIgogICAgKQoKCg==",
+      "In the above question, we ask you to figure out a secret to prove two things: (1) that you are not a bot auto-applying to the role and (2) that you are able to read and interact with code. With those goals in mind, what are the security properties (if any) of the resulting secret? Do we achieve our goals? How could we do so more effectively?"
+    ]
+  },
+  "fields": [
+    {
+      "label": "",
+      "name": "",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": "C:\\fakepath\\resume.pdf",
+      "source": "script"
+    },
+    {
+      "label": "Legal Name",
+      "name": "_systemfield_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "script"
+    },
+    {
+      "label": "Email",
+      "name": "_systemfield_email",
+      "type": "email",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Phone",
+      "name": "4b71793a-c95c-4cc9-9d06-02e6ef7c5777",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Start typing...",
+      "name": "",
+      "type": "input",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Resume",
+      "name": "_systemfield_resume",
+      "type": "file",
+      "required": true,
+      "options": [],
+      "ourAnswer": "[resume uploaded]",
+      "source": "script"
+    },
+    {
+      "label": "LinkedIn Profile",
+      "name": "dc915b3a-c535-49df-abd6-dc8f3ddf6728",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "Cover Letter",
+      "name": "6686ff1d-a7f9-484b-af56-4c32ff8cd99f",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Please elaborate on your experience building software in AWS (with Terraform)",
+      "name": "0086e069-bc0c-467b-8d38-c3f023146e79",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Here's some text encoded in a common format. Figure out the correct secret and submit it in the field below. IyEvdXNyL2Jpbi9lbnYgcHl0aG9uMwoKJycnCktlZXAgdXMgb3V0IG9mIGdvb2dsZSBzZWFyY2ggcmVzdWx0cy4uCgokIG9kIC1kIC9kZXYvdXJhbmRvbSB8IGhlYWQKMDAwMDAwMCAgICAgNjAyMTUgICAyODc3OCAgIDI5MjI3ICAgMjg1NDggICA2MjY4NiAgIDQ1MTcxICAgIDc4MjYgICA0ODc2NgowMDAwMDIwICAgICAxNzExOCAgIDE1MjI1ICAgMTI4NTIgICAzNDc4MSAgIDMxOTU1ICAgMTkwODcgICAzOTU2MyAgIDQzNjE0CjAwMDAwNDAgICAgICA2NzEwICAgMzg1MTUgICAxNDU3MyAgIDY0MDg3ICAgMTcwMjYgICAyNTU5OCAgIDQyOTEzICAgMTQyMDkKMDAwMDA2MCAgICAgMTA3MjMgICAzMTMwNyAgIDE5MDcxICAgMTQ3OTggICAgMjQ2MiAgIDQ2MjUzICAgMzU2MjYgICAzMjQzNgowMDAwMTAwICAgICAgMTczOSAgIDI3NzEyICAgIDU2NjcgICAxMjIxMiAgIDQ3MDc3ICAgNDE3MjIgICA1NDQ1MiAgIDM4NDYxCjAwMDAxMjAgICAgICA0ODE2ICAgMTUwMTQgICAyODYyMyAgIDEwOTI4ICAgNTQwMjggICA2NDUyMyAgIDU0NjMyICAgNTQxODcKMDAwMDE0MCAgICAgNjE2MzEgICA1NDQ5OSAgIDE4MzA3ICAgIDU1MTQgICA1MDc0MyAgIDUwNTkxICAgMjUxNzIgICA1NDAxOAowMDAwMTYwICAgICAzMTk5MCAgIDI2MjQ4ICAgIDQzODMgICA0NjQ1MiAgIDQyMTU2ICAgNjIzMjAgICA1MTA1MiAgIDI4NjIxCjAwMDAyMDAgICAgIDI3MjI2ICAgNjUyOTYgICA1NjMwNSAgIDMzMzc1ICAgIDQ4MTMgICA0MjI4MyAgIDE5OTgwICAgIDE5MjIKMDAwMDIyMCAgICAgNTcwNjEgICAyOTMyMiAgIDI3MDczICAgNjQ5ODYgICAxNTIxOSAgIDI2MjM0ICAgMjQxMDAgICAyMTIwNAonJycKCicnJwpDb3B5IHRoaXMgZmlsZSBhbmQgcnVuIGBwYnBhc3RlIHwgYmFzZTY0YCB0byBnZW5lcmF0ZSBjaGFsbGVuZ2UgdGV4dC4gQ29waW91cwp3aGl0ZSBzcGFjZSBpcyBhdCB0aGUgYm90dG9tIG9mIHRoZSBmaWxlIHRvIGVuc3VyZSB0cmFpbGluZyBgPT1gIGFuZCBoaW50IGF0CmJhc2U2NC4KJycnCgppbXBvcnQgY29kZWNzCmltcG9ydCBzdHJpbmcKaW1wb3J0IHN5cwppbXBvcnQgdGltZQoKZnJvbSBjcnlwdG9ncmFwaHkuaGF6bWF0LmJhY2tlbmRzIGltcG9ydCBkZWZhdWx0X2JhY2tlbmQKZnJvbSBjcnlwdG9ncmFwaHkuaGF6bWF0LnByaW1pdGl2ZXMuaGFzaGVzIGltcG9ydCBTSEExCmZyb20gY3J5cHRvZ3JhcGh5Lmhhem1hdC5wcmltaXRpdmVzLnR3b2ZhY3Rvci50b3RwIGltcG9ydCBUT1RQCgoKT05FX1dFRUtfSU5fU0VDT05EUyA9IDYwNF84MDAKCgpkZWYgZ2VuZXJhdGVfc2VjcmV0KCk6CiAgICB0b3RwID0gVE9UUCgKICAgICAgICBrZXk9Y29kZWNzLmVuY29kZShzdHJpbmcuYXNjaWlfbGV0dGVycywgZW5jb2Rpbmc9InV0Zi04IiksCiAgICAgICAgbGVuZ3RoPTgsCiAgICAgICAgYWxnb3JpdGhtPVNIQTEoKSwKICAgICAgICB0aW1lX3N0ZXA9T05FX1dFRUtfSU5fU0VDT05EUywKICAgICAgICBiYWNrZW5kPWRlZmF1bHRfYmFja2VuZCgpLAogICAgKQogICAgc2VlZCA9IGludCh0aW1lLnRpbWUoKSkKICAgIHRva2VuID0gY29kZWNzLmRlY29kZSh0b3RwLmdlbmVyYXRlKHNlZWQpLCBlbmNvZGluZz0idXRmLTgiKQogICAgcmV0dXJuIGYie3Rva2VufS17c2VlZH0iCgoKaWYgX19uYW1lX18gPT0gIl9fbWFpbl9fIjoKICAgIHN5cy5zdGRvdXQud3JpdGUoCiAgICAgICAgZiJQbGVhc2UgaGVhZCB0byBodHRwczovL3JhbXAuY29tL2NhcmVlcnMgYW5kIHVzZSB0aGlzIHNlY3JldCB3aGVuICIKICAgICAgICBmInlvdSBhcHBseToge2dlbmVyYXRlX3NlY3JldCgpfVxuIgogICAgKQoKCg==",
+      "name": "c88f753e-ac4c-461c-81ec-3495a671c5bd",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "In the above question, we ask you to figure out a secret to prove two things: (1) that you are not a bot auto-applying to the role and (2) that you are able to read and interact with code. With those goals in mind, what are the security properties (if any) of the resulting secret? Do we achieve our goals? How could we do so more effectively?",
+      "name": "3285cb76-c9b1-4ac1-92ce-c4059b19e4a0",
+      "type": "textarea",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "We believe exceptional performance in one area is a good indication of performance in other areas. Do you have any examples of exceptional performance you want to highlight?",
+      "name": "3e666775-f7f9-4eab-bbdb-1a3bb13bc8a4",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    }
+  ]
+}

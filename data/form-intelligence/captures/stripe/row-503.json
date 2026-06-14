@@ -1,0 +1,15 @@
+{
+  "jobId": "row-503",
+  "rowIndex": 503,
+  "url": "https://stripe.com/jobs/search?gh_jid=7550154",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Android Engineer, Terminal Developer Productivity",
+  "capturedAt": "2026-06-03T07:35:51.756Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

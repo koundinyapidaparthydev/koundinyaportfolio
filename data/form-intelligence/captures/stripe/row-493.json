@@ -1,0 +1,15 @@
+{
+  "jobId": "row-493",
+  "rowIndex": 493,
+  "url": "https://stripe.com/jobs/search?gh_jid=7680548",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Account Executive, Platforms ",
+  "capturedAt": "2026-06-03T07:35:22.267Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

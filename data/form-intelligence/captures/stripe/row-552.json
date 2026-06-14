@@ -1,0 +1,15 @@
+{
+  "jobId": "row-552",
+  "rowIndex": 552,
+  "url": "https://stripe.com/jobs/search?gh_jid=6606581",
+  "platform": "unknown",
+  "company": "Stripe",
+  "title": "Full Stack Engineer, Money as a Service",
+  "capturedAt": "2026-06-03T07:43:51.815Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": []
+}

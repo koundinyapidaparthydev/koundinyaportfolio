@@ -1,0 +1,317 @@
+{
+  "jobId": "row-249",
+  "rowIndex": 249,
+  "url": "https://jobs.ashbyhq.com/plaid/58033600-5c9e-40bc-877e-64479e957a1e",
+  "platform": "ashby",
+  "company": "Plaid",
+  "title": "Senior Software Engineer, Backend ",
+  "capturedAt": "2026-06-03T07:16:46.843Z",
+  "dryRun": true,
+  "validation": {
+    "allRequiredFilled": true,
+    "missingRequired": []
+  },
+  "fields": [
+    {
+      "label": "",
+      "name": "",
+      "type": "file",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Name",
+      "name": "_systemfield_name",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "company-cache"
+    },
+    {
+      "label": "Email",
+      "name": "_systemfield_email",
+      "type": "email",
+      "required": true,
+      "options": [],
+      "ourAnswer": "koundinyapidaparthy@gmail.com",
+      "source": "script"
+    },
+    {
+      "label": "Resume",
+      "name": "_systemfield_resume",
+      "type": "file",
+      "required": true,
+      "options": [],
+      "ourAnswer": null,
+      "source": "script"
+    },
+    {
+      "label": "Phone Number",
+      "name": "724d6ac8-8284-4220-94c9-7e196033f5d1",
+      "type": "tel",
+      "required": true,
+      "options": [],
+      "ourAnswer": "5512298660",
+      "source": "script"
+    },
+    {
+      "label": "Yes - I consent to receiving text messages",
+      "name": "communicationConsent",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "given",
+          "label": "given"
+        },
+        {
+          "value": "notGiven",
+          "label": "notGiven"
+        }
+      ],
+      "ourAnswer": "Yes",
+      "source": "script"
+    },
+    {
+      "label": "No - I do not consent to receiving text messages",
+      "name": "communicationConsent",
+      "type": "radio",
+      "required": false,
+      "options": [
+        {
+          "value": "given",
+          "label": "given"
+        },
+        {
+          "value": "notGiven",
+          "label": "notGiven"
+        }
+      ],
+      "ourAnswer": "notGiven",
+      "source": "script"
+    },
+    {
+      "label": "Start typing...",
+      "name": "",
+      "type": "input",
+      "required": false,
+      "options": [],
+      "ourAnswer": "Koundinya Pidaparthy",
+      "source": "company-cache"
+    },
+    {
+      "label": "Search schools...",
+      "name": "",
+      "type": "input",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Degree",
+      "name": "_systemfield_education_history-degree",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Field of Study",
+      "name": "_systemfield_education_history-major",
+      "type": "text",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "",
+      "name": "",
+      "type": "select",
+      "required": false,
+      "options": [
+        {
+          "value": "1",
+          "label": "January"
+        },
+        {
+          "value": "2",
+          "label": "February"
+        },
+        {
+          "value": "3",
+          "label": "March"
+        },
+        {
+          "value": "4",
+          "label": "April"
+        },
+        {
+          "value": "5",
+          "label": "May"
+        },
+        {
+          "value": "6",
+          "label": "June"
+        },
+        {
+          "value": "7",
+          "label": "July"
+        },
+        {
+          "value": "8",
+          "label": "August"
+        },
+        {
+          "value": "9",
+          "label": "September"
+        },
+        {
+          "value": "10",
+          "label": "October"
+        },
+        {
+          "value": "11",
+          "label": "November"
+        },
+        {
+          "value": "12",
+          "label": "December"
+        }
+      ],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Still Student?",
+      "name": "_systemfield_education_history-isCurrent",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": "no",
+      "source": "company-cache"
+    },
+    {
+      "label": "San Francisco HQ",
+      "name": "San Francisco HQ",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "New York City Office",
+      "name": "New York City Office",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": "New York, NY",
+      "source": "script"
+    },
+    {
+      "label": "Seattle Office",
+      "name": "Seattle Office",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Raleigh Office",
+      "name": "Raleigh Office",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Remote US",
+      "name": "Remote US",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": "yes",
+      "source": "ai"
+    },
+    {
+      "label": "London Office",
+      "name": "London Office",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Amsterdam Office",
+      "name": "Amsterdam Office",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Remote Canada",
+      "name": "Remote Canada",
+      "type": "checkbox",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Current/Last Company",
+      "name": "5e0e578d-5288-4fbf-be45-2e3412e8a3fd",
+      "type": "text",
+      "required": true,
+      "options": [],
+      "ourAnswer": "Confidential",
+      "source": "script"
+    },
+    {
+      "label": "LinkedIn",
+      "name": "2d9e5a56-55e8-496b-a58f-d286962b0d75",
+      "type": "url",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://linkedin.com/in/koundinyap",
+      "source": "script"
+    },
+    {
+      "label": "GitHub",
+      "name": "1eb50dad-df56-43ff-a130-37dbdf3b22f1",
+      "type": "url",
+      "required": false,
+      "options": [],
+      "ourAnswer": null,
+      "source": "needs-manual"
+    },
+    {
+      "label": "Portfolio",
+      "name": "802fb07e-d8b6-4b77-8c28-06d378c20bc7",
+      "type": "url",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "script"
+    },
+    {
+      "label": "Other URL",
+      "name": "a480cb78-14a4-42af-95d1-b9061f041ef5",
+      "type": "url",
+      "required": false,
+      "options": [],
+      "ourAnswer": "https://koundinyapidaparhty.vercel.app",
+      "source": "company-cache"
+    }
+  ]
+}

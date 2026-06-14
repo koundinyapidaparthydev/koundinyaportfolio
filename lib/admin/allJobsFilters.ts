@@ -7,6 +7,7 @@ import {
   type CountryLocationFilter,
 } from "@/lib/admin/jobLocationMatch";
 import { DEFAULT_ATS_MIN_SCORE, NON_TAILORED_MIN_SCORE } from "@/lib/admin/atsConfig";
+import { deprioritizeLowSkillFit } from "@/lib/admin/skillMatch";
 
 export { DEFAULT_ATS_MIN_SCORE, NON_TAILORED_MIN_SCORE } from "@/lib/admin/atsConfig";
 
@@ -100,6 +101,10 @@ export interface AllJobsRow {
   resumeUrl?: string;
   applyStatus?: string;
   appliedAt?: string;
+  /** Sheet column T — resume skills found in job description. */
+  skillMatchCount?: string;
+  /** Sheet column U — AI tailor attempts consumed. */
+  tailorAttempts?: string;
 }
 
 /** Whether applied jobs appear in the list (hidden by default). */
@@ -418,7 +423,8 @@ export function applyAllJobsFilters<T extends AllJobsRow>(
       opts.atsMinScore
     );
   }
-  return sortAllJobs(result, opts.sort ?? DEFAULT_ALL_JOBS_SORT);
+  result = sortAllJobs(result, opts.sort ?? DEFAULT_ALL_JOBS_SORT);
+  return deprioritizeLowSkillFit(result);
 }
 
 export function uniqueCategories(jobs: AllJobsRow[]): string[] {
