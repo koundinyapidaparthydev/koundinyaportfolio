@@ -33,7 +33,7 @@ function row(overrides: Record<number, string> = {}) {
 
 describe("needsTailoring", () => {
   it("skips when pre-tailor score (column S) is at or above skip threshold", () => {
-    const r = row({ 18: "88", 9: "65" });
+    const r = row({ 18: "91", 9: "65" });
     expect(needsTailoring(r, baseResume)).toBe(false);
   });
 
@@ -78,9 +78,9 @@ describe("needsTailoring", () => {
 });
 
 describe("ats-config.mjs tailoring constants", () => {
-  it("exports aligned skip, milestone, target, and save thresholds", () => {
-    expect(SKIP_TAILOR_INITIAL_ATS).toBe(87);
-    expect(TAILOR_SAVE_MIN_SCORE).toBe(91);
-    expect(MAX_TAILOR_ATTEMPTS).toBe(7);
+  it("exports aligned 90% skip, target, and save thresholds", () => {
+    expect(SKIP_TAILOR_INITIAL_ATS).toBe(90);
+    expect(TAILOR_SAVE_MIN_SCORE).toBe(90);
+    expect(MAX_TAILOR_ATTEMPTS).toBe(12);
   });
 });

@@ -2,16 +2,13 @@
 export const DEFAULT_ATS_MIN_SCORE = 75;
 
 /** Skip AI tailoring when base (pre-tailor) ATS is already at or above this. */
-export const SKIP_TAILOR_INITIAL_ATS = 87;
+export const SKIP_TAILOR_INITIAL_ATS = 90;
 
-/** Phase 1 milestone — refine best draft until this score before phase 2. */
-export const INTERMEDIATE_MILESTONE_SCORE = 82;
+/** Single-phase tailor loop target — save PDF at or above this score. */
+export const TAILOR_TARGET_SCORE = 90;
 
-/** Aspirational loop target in phase 2 (best effort). */
-export const TAILOR_TARGET_SCORE = 95;
-
-/** Minimum post-tailor ATS to upload PDF and set Resume Modified = yes (>90%). */
-export const TAILOR_SAVE_MIN_SCORE = 91;
+/** Minimum post-tailor ATS to upload PDF and set Resume Modified = yes. */
+export const TAILOR_SAVE_MIN_SCORE = 90;
 
 /** @deprecated Use SKIP_TAILOR_INITIAL_ATS — when base resume needs tailoring. */
 export const TAILOR_ATS_THRESHOLD = SKIP_TAILOR_INITIAL_ATS;
@@ -21,8 +18,8 @@ export const ATS_STRONG_SCORE = 80;
 /** Non-tailored resume filter bar (admin UI) — base resume strong enough to skip tailoring. */
 export const NON_TAILORED_MIN_SCORE = SKIP_TAILOR_INITIAL_ATS;
 
-/** Max Gemini tailor attempts per job (phase 1 + phase 2 combined). */
-export const MAX_TAILOR_ATTEMPTS = 7;
+/** Max Gemini tailor attempts per job (single-phase loop). */
+export const MAX_TAILOR_ATTEMPTS = 12;
 
 /** Minimum resume skills that must match the job description to tailor. */
 export const MIN_SKILL_MATCH_COUNT = 3;

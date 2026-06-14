@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 /**
- * Re-tailor non-applied jobs below 90% ATS with >= 3 skill overlap.
+ * One-time backfill: re-tailor all eligible jobs below 90% ATS.
  *
- *   node scripts/retailor-below-target.mjs
- *   HC_TAILOR_BATCH_LIMIT=20 node scripts/retailor-below-target.mjs
+ *   npm run job:retailor:all
+ *   HC_TAILOR_BATCH_LIMIT=999 HC_TAILOR_CONCURRENCY=5 npm run job:retailor:all
  */
 
 import { pathToFileURL } from "url";
 import { loadEnvLocal } from "./lib/load-env.mjs";
 import { validatePipelineEnv } from "./lib/pipeline-env.mjs";
 import {
-  retailorAllBelowTargetOnSheet,
   resetExhaustedTailorAttemptsOnSheet,
+  retailorAllBelowTargetOnSheet,
 } from "./lib/hiring-cafe-tailor.mjs";
 
 loadEnvLocal();
@@ -23,15 +23,21 @@ async function main() {
   const sj = await import("./scrape-jobs.mjs");
   const sheets = await sj.getSheets();
   await sj.ensureSheetAndHeaders(sheets);
-  const limit = Number(process.env.HC_TAILOR_BATCH_LIMIT) || 50;
-  const resetAttempts = process.env.HC_RESET_TAILOR_ATTEMPTS !== "0";
-  if (resetAttempts) {
-    await resetExhaustedTailorAttemptsOnSheet(sheets, GOOGLE_SHEET_ID);
-  }
+
+  const limit = Number(process.env.HC_TAILOR_BATCH_LIMIT) || 999;
+  const concurrency = Number(process.env.HC_TAILOR_CONCURRENCY) || 5;
+
+  console.log(
+    `\n🔄  Retailor all below 90% — batch ${limit}, concurrency ${concurrency}\n`
+  );
+
+  await resetExhaustedTailorAttemptsOnSheet(sheets, GOOGLE_SHEET_ID);
   const result = await retailorAllBelowTargetOnSheet(sheets, GOOGLE_SHEET_ID, {
     limit,
+    concurrency,
     resetAttempts: false,
   });
+
   console.log(
     `\nDone — ${result.processed} processed, ${result.reached} job(s) now at 90%+ ATS.\n`
   );
@@ -42,7 +48,7 @@ const isMain =
 
 if (isMain) {
   main().catch((err) => {
-    console.error("❌  Retailor failed:", err.message);
+    console.error("❌  Retailor-all failed:", err.message);
     process.exit(1);
   });
 }

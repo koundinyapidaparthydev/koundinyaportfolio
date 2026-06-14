@@ -3,7 +3,7 @@
  * Includes humanized prompts, quality validation, and one refinement pass.
  */
 
-import { scoreJobWithGemini, GEMINI_MODEL } from "./gemini-ats.mjs";
+import { scoreJobWithGemini, GEMINI_TAILOR_MODEL } from "./gemini-ats.mjs";
 import {
   validateTailoredResume,
   formatQualityFeedback,
@@ -12,17 +12,25 @@ import {
 import {
   TAILOR_TARGET_SCORE,
   TAILOR_SAVE_MIN_SCORE,
-  INTERMEDIATE_MILESTONE_SCORE,
   MAX_TAILOR_ATTEMPTS,
 } from "./ats-config.mjs";
+
+export { GEMINI_TAILOR_MODEL };
 
 function delay(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+/** Normalize Gemini string/array fields before string ops (avoids .toLowerCase crashes). */
+export function normalizeGeminiTextField(value) {
+  if (value == null) return "";
+  if (Array.isArray(value)) return value.map(String).filter(Boolean).join(", ");
+  return String(value);
+}
+
 function buildAtsTargetGuidance(targetScore, postResult, attempt) {
-  const gaps = postResult?.keyGaps ?? "";
-  const keywords = postResult?.recommendedKeywords ?? "";
+  const gaps = normalizeGeminiTextField(postResult?.keyGaps);
+  const keywords = normalizeGeminiTextField(postResult?.recommendedKeywords);
   const matched = Array.isArray(postResult?.matched) ? postResult.matched.join(", ") : "";
   return `
 ATS TARGET (attempt ${attempt}): Tailored resume MUST score at least ${targetScore}% for this role.
@@ -39,7 +47,7 @@ QUALITY CHECKLIST — verify before responding:
 - No headline job title under the candidate's name (personalInfo.title empty)
 - Zero buzzwords: leveraged, spearheaded, synergy, cutting-edge, results-driven, passionate about delivering, thrilled to apply
 - Edited bullets start with strong past-tense verbs; each bullet under ~2 lines
-- Only reorder skills and lightly rephrase bullets — never invent companies, roles, skills, or metrics
+- Only reorder skills and rephrase bullets — never invent companies, roles, skills, or metrics
 - Cover letter: 3 short paragraphs, conversational, mentions one concrete story from the resume`;
 
 function buildTailorPrompt(resume, jobTitle, companyName, jobDescription, extraGuidance = "") {
@@ -59,7 +67,7 @@ RULES — follow every rule strictly
 2. Do NOT add a generic headline title under the candidate's name (personalInfo.title must be empty).
 3. Rewrite personalInfo.summary (2–3 sentences) to speak directly to ${companyName}'s focus and the role's key needs. Sound like a real engineer writing to a hiring manager.
 4. Reorder skill categories and skills within each category so the most relevant skills appear first.
-5. For experience bullet points: keep the core fact intact but lightly rephrase 1–2 bullets per role to echo the job description's language naturally — no keyword stuffing.
+5. For experience bullet points: rephrase EVERY bullet in each role to echo the job description's language naturally — mirror JD keywords using ONLY terms/skills already present in the base resume (no keyword stuffing, no invented facts).
 6. Leave education, project names, dates, and company names unchanged.
 7. coverLetter: 3 paragraphs (opening hook, evidence/stories, close with specific enthusiasm for ${companyName}). Conversational — must NOT sound AI-generated.
 ${QUALITY_CHECKLIST}
@@ -147,8 +155,17 @@ function normalizeTailored(baseResume, parsed) {
   return { tailoredResume, coverLetter };
 }
 
+function normalizePostResult(postResult) {
+  if (!postResult) return postResult;
+  return {
+    ...postResult,
+    keyGaps: normalizeGeminiTextField(postResult.keyGaps),
+    recommendedKeywords: normalizeGeminiTextField(postResult.recommendedKeywords),
+  };
+}
+
 async function callGemini(apiKey, prompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_TAILOR_MODEL}:generateContent?key=${apiKey}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -172,6 +189,13 @@ async function callGemini(apiKey, prompt) {
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   if (!text.trim()) throw new Error("Empty response from Gemini");
   return extractJsonObject(text);
+}
+
+async function scoreTailored(title, description, tailoredResume) {
+  const result = await scoreJobWithGemini(title, description, tailoredResume, {
+    useTailorModel: true,
+  });
+  return normalizePostResult(result);
 }
 
 /**
@@ -226,7 +250,7 @@ export async function tailorResumeWithQualityGate(
   }
   let { tailoredResume, coverLetter } = normalizeTailored(baseResume, parsed);
 
-  let postResult = await scoreJobWithGemini(title, description, tailoredResume);
+  let postResult = await scoreTailored(title, description, tailoredResume);
   let quality = validateTailoredResume(baseResume, tailoredResume, {
     company,
     title,
@@ -247,7 +271,9 @@ export async function tailorResumeWithQualityGate(
     const feedback = quality.passed
       ? "Improve ATS alignment for this role while keeping human tone and truthful facts."
       : formatQualityFeedback(quality);
-    const atsGaps = postResult.keyGaps ?? postResult.recommendedKeywords ?? "";
+    const atsGaps = normalizeGeminiTextField(
+      postResult.keyGaps || postResult.recommendedKeywords
+    );
     parsed = await callGemini(
       apiKey,
       buildRefinePrompt(
@@ -261,7 +287,7 @@ export async function tailorResumeWithQualityGate(
       )
     );
     ({ tailoredResume, coverLetter } = normalizeTailored(baseResume, parsed));
-    postResult = await scoreJobWithGemini(title, description, tailoredResume);
+    postResult = await scoreTailored(title, description, tailoredResume);
     quality = validateTailoredResume(baseResume, tailoredResume, {
       company,
       title,
@@ -281,12 +307,6 @@ export async function tailorResumeWithQualityGate(
   };
 }
 
-function splitPhaseAttempts(total) {
-  if (total <= 1) return { phase1: total, phase2: 0 };
-  const phase1 = Math.max(1, Math.min(Math.ceil(total * 0.55), total - 1));
-  return { phase1, phase2: total - phase1 };
-}
-
 async function attemptTailor(baseResume, job, { best, attempt, preAtsScore, targetScore, fromBase }) {
   const { title, company, description } = job;
 
@@ -299,7 +319,9 @@ async function attemptTailor(baseResume, job, { best, attempt, preAtsScore, targ
         preAtsScore,
         draftResume: best.tailoredResume,
         refineFeedback: atsGuidance,
-        atsGaps: best.postResult?.keyGaps ?? best.postResult?.recommendedKeywords ?? "",
+        atsGaps: normalizeGeminiTextField(
+          best.postResult?.keyGaps || best.postResult?.recommendedKeywords
+        ),
         isRetryAttempt: true,
         targetScore,
       }
@@ -314,64 +336,9 @@ async function attemptTailor(baseResume, job, { best, attempt, preAtsScore, targ
   );
 }
 
-async function runTailorPhase(baseResume, job, options) {
-  const {
-    best: initialBest,
-    startAttempt,
-    maxAttempts,
-    phaseTarget,
-    preAtsScore,
-    retryDelayMs,
-    phaseLabel,
-  } = options;
-
-  let best = initialBest;
-  let attemptsUsed = 0;
-
-  for (let i = 0; i < maxAttempts; i++) {
-    const attempt = startAttempt + attemptsUsed;
-    attemptsUsed++;
-    const fromBase = !best;
-
-    const result = await attemptTailor(baseResume, job, {
-      best,
-      attempt,
-      preAtsScore,
-      targetScore: phaseTarget,
-      fromBase,
-    });
-
-    if (!best || result.postAtsScore > best.postAtsScore) {
-      best = { ...result, attempts: attempt };
-    } else if (result.postAtsScore < best.postAtsScore) {
-      console.log(
-        `  ↻ Phase ${phaseLabel}: ${result.postAtsScore}% < best ${best.postAtsScore}% — keeping prior draft`
-      );
-    }
-
-    if (best.postAtsScore >= phaseTarget) {
-      console.log(
-        `  ✓ Phase ${phaseLabel}: reached ${phaseTarget}% milestone (best ${best.postAtsScore}%)`
-      );
-      return { best, attemptsUsed, reachedPhaseTarget: true };
-    }
-
-    if (i < maxAttempts - 1) {
-      console.log(
-        `  ↻ Phase ${phaseLabel}: ATS ${best.postAtsScore}% < ${phaseTarget}% — retry ${attempt + 1}`
-      );
-      await delay(retryDelayMs);
-    }
-  }
-
-  return { best, attemptsUsed, reachedPhaseTarget: false };
-}
-
 /**
- * Two-phase tailor loop:
- * - Phase 1: from base (attempt 1) then best draft until ≥ INTERMEDIATE_MILESTONE_SCORE (82%)
- * - Phase 2: from best draft (must be ≥82%) toward TAILOR_TARGET_SCORE (95%)
- * - Save/upload when postAtsScore ≥ TAILOR_SAVE_MIN_SCORE (91%)
+ * Single-phase tailor loop: refine best draft until ≥ save min (90%) or attempts exhausted.
+ * Attempt 1 from base; attempts 2+ refine best draft with ATS gap feedback.
  * Never replaces best draft with a lower-scoring attempt.
  */
 export async function tailorResumeUntilTarget(
@@ -379,87 +346,62 @@ export async function tailorResumeUntilTarget(
   { title, company, description },
   options = {}
 ) {
-  const aspirationalTarget = options.targetScore ?? TAILOR_TARGET_SCORE;
+  const targetScore = options.targetScore ?? TAILOR_TARGET_SCORE;
   const saveMinScore = options.saveMinScore ?? TAILOR_SAVE_MIN_SCORE;
-  const intermediateMilestone = options.intermediateMilestone ?? INTERMEDIATE_MILESTONE_SCORE;
   const maxAttempts = options.maxAttempts ?? MAX_TAILOR_ATTEMPTS;
   const preAtsScore = options.preAtsScore ?? null;
   const startAttempt = options.startAttempt ?? 1;
   const retryDelayMs = options.retryDelayMs ?? 1500;
 
-  const { phase1: phase1Budget, phase2: phase2Budget } = splitPhaseAttempts(maxAttempts);
-  let totalAttemptsUsed = 0;
-  let currentAttempt = startAttempt;
+  let best = null;
+  let attemptsUsed = 0;
 
   console.log(
-    `  Phase 1: targeting ${intermediateMilestone}% (up to ${phase1Budget} of ${maxAttempts} attempts)`
+    `  Tailor loop: target ${targetScore}%, save ≥${saveMinScore}%, up to ${maxAttempts} attempts`
   );
-  const phase1 = await runTailorPhase(
-    baseResume,
-    { title, company, description },
-    {
-      best: null,
-      startAttempt: currentAttempt,
-      maxAttempts: phase1Budget,
-      phaseTarget: intermediateMilestone,
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const attempt = startAttempt + attemptsUsed;
+    attemptsUsed++;
+    const fromBase = !best;
+
+    const result = await attemptTailor(baseResume, { title, company, description }, {
+      best,
+      attempt,
       preAtsScore,
-      retryDelayMs,
-      phaseLabel: "1",
+      targetScore,
+      fromBase,
+    });
+
+    if (!best || result.postAtsScore > best.postAtsScore) {
+      best = { ...result, attempts: attempt };
+    } else if (result.postAtsScore < best.postAtsScore) {
+      console.log(
+        `  ↻ ATS ${result.postAtsScore}% < best ${best.postAtsScore}% — keeping prior draft`
+      );
     }
-  );
 
-  totalAttemptsUsed += phase1.attemptsUsed;
-  currentAttempt += phase1.attemptsUsed;
-  let best = phase1.best;
-
-  if (!best) {
-    return {
-      attempts: totalAttemptsUsed,
-      reachedTarget: false,
-      reachedAspirational: false,
-      targetScore: aspirationalTarget,
-      saveMinScore,
-      intermediateMilestone,
-    };
-  }
-
-  if (phase1.reachedPhaseTarget && phase2Budget > 0) {
-    console.log(
-      `  Phase 2: targeting ${aspirationalTarget}% (save ≥${saveMinScore}%, up to ${phase2Budget} attempts)`
-    );
-    const phase2 = await runTailorPhase(
-      baseResume,
-      { title, company, description },
-      {
-        best,
-        startAttempt: currentAttempt,
-        maxAttempts: phase2Budget,
-        phaseTarget: aspirationalTarget,
-        preAtsScore,
-        retryDelayMs,
-        phaseLabel: "2",
-      }
-    );
-    totalAttemptsUsed += phase2.attemptsUsed;
-    if (phase2.best && phase2.best.postAtsScore >= (best?.postAtsScore ?? 0)) {
-      best = phase2.best;
+    if ((best?.postAtsScore ?? 0) >= saveMinScore) {
+      console.log(`  ✓ Reached save target ${saveMinScore}% (best ${best.postAtsScore}%)`);
+      break;
     }
-  } else if (!phase1.reachedPhaseTarget) {
-    console.log(
-      `  Phase 2 skipped: best ${best.postAtsScore}% < ${intermediateMilestone}% milestone`
-    );
+
+    if (i < maxAttempts - 1) {
+      console.log(
+        `  ↻ ATS ${best.postAtsScore}% < ${targetScore}% — retry ${attempt + 1}`
+      );
+      await delay(retryDelayMs);
+    }
   }
 
   const reachedSaveMin = (best?.postAtsScore ?? 0) >= saveMinScore;
-  const reachedAspirational = (best?.postAtsScore ?? 0) >= aspirationalTarget;
 
   return {
     ...best,
-    attempts: totalAttemptsUsed,
+    attempts: attemptsUsed,
     reachedTarget: reachedSaveMin,
-    reachedAspirational,
-    targetScore: aspirationalTarget,
+    reachedAspirational: reachedSaveMin,
+    targetScore,
     saveMinScore,
-    intermediateMilestone,
   };
 }

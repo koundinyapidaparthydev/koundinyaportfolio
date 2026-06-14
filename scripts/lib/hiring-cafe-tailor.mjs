@@ -1,5 +1,5 @@
 /**
- * Auto-tailor resumes using two-phase strategy (82% milestone → 95% target, save at 91%+).
+ * Auto-tailor resumes to 90% ATS target (single-phase loop, parallel workers).
  * Requires >= 3 resume skills matching the job description. Skips applied jobs.
  */
 
@@ -10,9 +10,9 @@ import { loadResume } from "./resume-loader.mjs";
 import { tailorResumeUntilTarget } from "./resume-tailor.mjs";
 import { uploadToGCS } from "./gcs-upload.mjs";
 import { countSkillMatches } from "./skill-match.mjs";
+import { mapConcurrent } from "./concurrency.mjs";
 import {
   SKIP_TAILOR_INITIAL_ATS,
-  INTERMEDIATE_MILESTONE_SCORE,
   TAILOR_TARGET_SCORE,
   TAILOR_SAVE_MIN_SCORE,
   MAX_TAILOR_ATTEMPTS,
@@ -33,6 +33,7 @@ export { needsTailoring };
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SHEET_NAME = "Jobs";
 const DEFAULT_BATCH = Number(process.env.HC_TAILOR_BATCH_LIMIT) || 5;
+const HC_TAILOR_CONCURRENCY = Number(process.env.HC_TAILOR_CONCURRENCY) || 5;
 const TAILOR_DELAY_MS = Number(process.env.HC_TAILOR_DELAY_MS) || 2000;
 
 function delay(ms) {
@@ -139,10 +140,8 @@ async function tailorJobTarget({ row, sheetRow, baseResume }) {
     status = "saved";
   } else if (reachedSaveMin) {
     status = `ATS ${postScore}% but upload failed`;
-  } else if ((result.postAtsScore ?? 0) >= INTERMEDIATE_MILESTONE_SCORE) {
-    status = `phase 2 incomplete — below save min ${TAILOR_SAVE_MIN_SCORE}% after ${totalAttempts} tries (best ${postScore}%)`;
   } else {
-    status = `below ${INTERMEDIATE_MILESTONE_SCORE}% milestone after ${totalAttempts} tries (best ${postScore}%)`;
+    status = `below ${TAILOR_SAVE_MIN_SCORE}% after ${totalAttempts} tries (best ${postScore}%)`;
   }
 
   console.log(
@@ -242,7 +241,7 @@ export async function resetExhaustedTailorAttemptsOnSheet(sheets, spreadsheetId)
 export const resetExhaustedTailorAttempts = resetExhaustedTailorAttemptsOnSheet;
 
 /**
- * Tailor jobs below skip threshold with >= 3 skill overlap (two-phase, max 7 attempts each).
+ * Tailor jobs below skip threshold with >= 3 skill overlap (single-phase 90% target).
  * @returns {{ processed: number, reached: number }}
  */
 export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {}) {
@@ -252,6 +251,7 @@ export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {
   }
 
   const batchLimit = options.limit ?? DEFAULT_BATCH;
+  const concurrency = options.concurrency ?? HC_TAILOR_CONCURRENCY;
   const baseResume = options.resume ?? loadResume();
 
   await syncSkillMatchCountsOnSheet(sheets, spreadsheetId, { resume: baseResume });
@@ -269,27 +269,45 @@ export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {
   if (targets.length === 0) return { processed: 0, reached: 0 };
 
   console.log(
-    `✍️  Tailoring up to ${targets.length} jobs (phase 1 → ${INTERMEDIATE_MILESTONE_SCORE}%, phase 2 → ${TAILOR_TARGET_SCORE}%, save ≥${TAILOR_SAVE_MIN_SCORE}%, skip base ≥${SKIP_TAILOR_INITIAL_ATS}%, ≥${MIN_SKILL_MATCH_COUNT} skills, max ${MAX_TAILOR_ATTEMPTS} tries)…`
+    `✍️  Tailoring up to ${targets.length} jobs (target ${TAILOR_TARGET_SCORE}%, save ≥${TAILOR_SAVE_MIN_SCORE}%, skip base ≥${SKIP_TAILOR_INITIAL_ATS}%, ≥${MIN_SKILL_MATCH_COUNT} skills, max ${MAX_TAILOR_ATTEMPTS} tries, concurrency ${concurrency})…`
   );
 
   const updateData = [];
   let tailored = 0;
   let reached = 0;
 
-  for (let i = 0; i < targets.length; i++) {
-    const { row, sheetRow } = targets[i];
-    const company = row[0] ?? "";
-    try {
-      const result = await tailorJobTarget({ row, sheetRow, baseResume });
+  if (concurrency <= 1) {
+    for (let i = 0; i < targets.length; i++) {
+      const { row, sheetRow } = targets[i];
+      const company = row[0] ?? "";
+      try {
+        const result = await tailorJobTarget({ row, sheetRow, baseResume });
+        updateData.push(...result.updateData);
+        tailored++;
+        if (result.reachedTarget) reached++;
+      } catch (err) {
+        console.warn(`  ⚠  Tailor failed row ${sheetRow} (${company}): ${err.message}`);
+      }
+      if (i < targets.length - 1) {
+        await delay(TAILOR_DELAY_MS);
+      }
+    }
+  } else {
+    const results = await mapConcurrent(targets, concurrency, async ({ row, sheetRow }) => {
+      const company = row[0] ?? "";
+      try {
+        return await tailorJobTarget({ row, sheetRow, baseResume });
+      } catch (err) {
+        console.warn(`  ⚠  Tailor failed row ${sheetRow} (${company}): ${err.message}`);
+        return null;
+      }
+    });
+
+    for (const result of results) {
+      if (!result) continue;
       updateData.push(...result.updateData);
       tailored++;
       if (result.reachedTarget) reached++;
-    } catch (err) {
-      console.warn(`  ⚠  Tailor failed row ${sheetRow} (${company}): ${err.message}`);
-    }
-
-    if (i < targets.length - 1) {
-      await delay(TAILOR_DELAY_MS);
     }
   }
 

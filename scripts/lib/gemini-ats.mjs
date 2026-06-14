@@ -12,7 +12,14 @@ import {
 /** Cheapest generally-available Gemini model for short classification tasks. */
 export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
 
-export async function scoreJobWithGemini(jobTitle, jobDescription, resume) {
+/** Higher-quality model for post-tailor scoring and resume tailoring loops. */
+export const GEMINI_TAILOR_MODEL =
+  process.env.GEMINI_TAILOR_MODEL ?? "gemini-2.0-flash";
+
+export async function scoreJobWithGemini(jobTitle, jobDescription, resume, options = {}) {
+  const model = options.useTailorModel
+    ? GEMINI_TAILOR_MODEL
+    : options.model ?? GEMINI_MODEL;
   const fullDescription = normalizeJobDescriptionForAts(jobDescription);
   const apiKey = process.env.GEMINI_API_KEY?.trim();
 
@@ -54,7 +61,7 @@ Resume summary (summary paragraph, experience bullets, skills, roles, technologi
 ${resumeContext}`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -83,10 +90,14 @@ ${resumeContext}`;
     const missing = Array.isArray(parsed.missing) ? parsed.missing.slice(0, 20) : [];
     const keyGaps = Array.isArray(parsed.keyGaps)
       ? parsed.keyGaps.slice(0, 12).join(", ")
-      : missing.slice(0, 8).join(", ");
+      : typeof parsed.keyGaps === "string"
+        ? parsed.keyGaps
+        : missing.slice(0, 8).join(", ");
     const recommendedKeywords = Array.isArray(parsed.recommendedKeywords)
       ? parsed.recommendedKeywords.slice(0, 12).join(", ")
-      : missing.slice(0, 10).join(", ");
+      : typeof parsed.recommendedKeywords === "string"
+        ? parsed.recommendedKeywords
+        : missing.slice(0, 10).join(", ");
 
     return {
       score,

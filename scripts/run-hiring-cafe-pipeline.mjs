@@ -8,9 +8,12 @@
  *   3. Backfill posted-at, compact duplicate rows (HC id + company/title)
  *   4. Append only NEW jobs (dedup vs Jobs + Old Jobs)
  *   5. Backfill full descriptions + ATS score vs resume (Gemini)
- *   6. Tailor resumes below 87% ATS (≥3 skill match, up to 5 tries per job)
- *   7. Archive Jobs tab rows older than 12h → Old Jobs
- *   7. Log to Scrape Log + optional WhatsApp for new discoveries
+ *   6. Verify all eligible rows vs 90% target; re-queue below 90%
+ *   7. Quick tailor batch (5 jobs) for rows still below 90%
+ *   8. Archive Jobs tab rows older than 12h → Old Jobs
+ *   9. Log to Scrape Log + optional WhatsApp for new discoveries
+ *
+ * Bulk parallel tailoring runs in tailor-jobs.yml (every 5 min).
  *
  * Local loop (dev only — production uses GHA):
  *   ALLOW_LOCAL_PIPELINE_LOOP=1 npm run job:pipeline:loop
@@ -35,6 +38,7 @@ import {
   backfillHcDescriptionsOnSheet,
   scoreHcJobsOnSheet,
 } from "./lib/hiring-cafe-ats.mjs";
+import { verifyAtsComplianceOnSheet } from "./lib/hiring-cafe-verify.mjs";
 import { tailorLowAtsJobsOnSheet } from "./lib/hiring-cafe-tailor.mjs";
 
 loadEnvLocal();
@@ -89,6 +93,7 @@ async function main() {
 
   const descriptionsBackfilled = await backfillHcDescriptionsOnSheet(sheets, GOOGLE_SHEET_ID);
   const atsScored = await scoreHcJobsOnSheet(sheets, GOOGLE_SHEET_ID);
+  const verifyResult = await verifyAtsComplianceOnSheet(sheets, GOOGLE_SHEET_ID);
   const tailorResult = await tailorLowAtsJobsOnSheet(sheets, GOOGLE_SHEET_ID);
 
   await sj.archiveOldJobs(sheets, { maxAgeMs: APPLY_NOW_WINDOW_MS });
@@ -103,7 +108,8 @@ async function main() {
     notes:
       `HC US · pages 1-${5} · refreshed ${refreshed} · dupes ${dupesRemoved} · ` +
       `desc ${descriptionsBackfilled} · ATS ${atsScored} · ` +
-      `tailor ${tailorResult.processed} processed / ${tailorResult.reached} at 87%+ · ` +
+      `verify ${verifyResult.checked}/${verifyResult.requeued} re-queued · ` +
+      `tailor ${tailorResult.processed} processed / ${tailorResult.reached} at 90%+ · ` +
       `window ${APPLY_NOW_WINDOW_MS / 3_600_000}h`,
   });
 
@@ -112,7 +118,7 @@ async function main() {
   }
 
   console.log(
-    `\n📊  HC pipeline: ${normalized.length} fetched | ${refreshed} refreshed | ${newJobRows.length} new | ${dupesRemoved} dupes | ${descriptionsBackfilled} desc | ${atsScored} ATS | tailor ${tailorResult.processed} processed / ${tailorResult.reached} at 87%+ | ${beforeCount} in sheet before`
+    `\n📊  HC pipeline: ${normalized.length} fetched | ${refreshed} refreshed | ${newJobRows.length} new | ${dupesRemoved} dupes | ${descriptionsBackfilled} desc | ${atsScored} ATS | verify ${verifyResult.checked} checked / ${verifyResult.requeued} re-queued | tailor ${tailorResult.processed} processed / ${tailorResult.reached} at 90%+ | ${beforeCount} in sheet before`
   );
   console.log(`═══════════════════════════════════════════════════════════\n`);
 }

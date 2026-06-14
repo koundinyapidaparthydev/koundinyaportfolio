@@ -206,8 +206,8 @@ describe("ATS thresholds", () => {
     expect(DEFAULT_ATS_MIN_SCORE).toBe(75);
   });
 
-  it("uses 87% as the non-tailored resume filter bar (skip-tailor threshold)", () => {
-    expect(NON_TAILORED_MIN_SCORE).toBe(87);
+  it("uses 90% as the non-tailored resume filter bar (skip-tailor threshold)", () => {
+    expect(NON_TAILORED_MIN_SCORE).toBe(90);
   });
 
   it("defaults resume filter to all jobs", () => {
@@ -234,15 +234,15 @@ describe("filterByAtsFriendly", () => {
 });
 
 describe("filterByResumeModified", () => {
-  it("shows base-resume jobs at or above 87% for non-modified filter", () => {
+  it("shows base-resume jobs at or above 90% for non-modified filter", () => {
     const jobs = [
-      job({ atsScore: "90", resumeModified: "no" }),
+      job({ atsScore: "92", resumeModified: "no" }),
       job({ atsScore: "85", resumeModified: "no" }),
       job({ atsScore: "82", resumeModified: "yes", resumeUrl: "https://x/r.pdf" }),
     ];
     const result = filterByResumeModified(jobs, "non-modified");
     expect(result).toHaveLength(1);
-    expect(result[0].atsScore).toBe("90");
+    expect(result[0].atsScore).toBe("92");
   });
 
   it("returns all jobs when filter is all", () => {

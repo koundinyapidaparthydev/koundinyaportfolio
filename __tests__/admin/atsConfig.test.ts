@@ -2,7 +2,6 @@ import { describe, it, expect } from "@jest/globals";
 import {
   DEFAULT_ATS_MIN_SCORE,
   SKIP_TAILOR_INITIAL_ATS,
-  INTERMEDIATE_MILESTONE_SCORE,
   TAILOR_TARGET_SCORE,
   TAILOR_SAVE_MIN_SCORE,
   NON_TAILORED_MIN_SCORE,
@@ -15,28 +14,25 @@ describe("atsConfig", () => {
     expect(DEFAULT_ATS_MIN_SCORE).toBe(75);
   });
 
-  it("skips tailoring when base ATS is at or above 87%", () => {
-    expect(SKIP_TAILOR_INITIAL_ATS).toBe(87);
+  it("skips tailoring when base ATS is at or above 90%", () => {
+    expect(SKIP_TAILOR_INITIAL_ATS).toBe(90);
   });
 
-  it("uses 82% as the phase 1 intermediate milestone", () => {
-    expect(INTERMEDIATE_MILESTONE_SCORE).toBe(82);
+  it("uses 90% as the single-phase tailor target", () => {
+    expect(TAILOR_TARGET_SCORE).toBe(90);
   });
 
-  it("uses 95% as the phase 2 aspirational target", () => {
-    expect(TAILOR_TARGET_SCORE).toBe(95);
-  });
-
-  it("requires 91% post-tailor score to save PDF (>90%)", () => {
-    expect(TAILOR_SAVE_MIN_SCORE).toBe(91);
+  it("requires 90% post-tailor score to save PDF", () => {
+    expect(TAILOR_SAVE_MIN_SCORE).toBe(90);
   });
 
   it("aligns non-tailored filter with skip-tailor threshold", () => {
     expect(NON_TAILORED_MIN_SCORE).toBe(SKIP_TAILOR_INITIAL_ATS);
+    expect(NON_TAILORED_MIN_SCORE).toBe(90);
   });
 
-  it("allows up to 7 combined tailor attempts", () => {
-    expect(MAX_TAILOR_ATTEMPTS).toBe(7);
+  it("allows up to 12 tailor attempts", () => {
+    expect(MAX_TAILOR_ATTEMPTS).toBe(12);
   });
 
   it("requires at least 3 skill matches to tailor", () => {
