@@ -39,9 +39,11 @@ export async function runJobsPipeline(options = {}) {
   const tailor = options.tailor !== false;
   const resetTailorAttempts = options.resetTailorAttempts === true;
   const tailorLimit =
-    options.tailorLimit ?? Number(process.env.HC_TAILOR_BATCH_LIMIT) || 30;
+    options.tailorLimit ??
+    (Number(process.env.HC_TAILOR_BATCH_LIMIT) || 30);
   const tailorConcurrency =
-    options.tailorConcurrency ?? Number(process.env.HC_TAILOR_CONCURRENCY) || 5;
+    options.tailorConcurrency ??
+    (Number(process.env.HC_TAILOR_CONCURRENCY) || 5);
 
   const GOOGLE_SHEET_ID = process.env.GOOGLE_SHEET_ID;
   const sj = await import("../scrape-jobs.mjs");
