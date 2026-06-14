@@ -6,7 +6,6 @@ import {
   Text,
   View,
   StyleSheet,
-  Link,
 } from "@react-pdf/renderer";
 import type { Resume, Experience, Project, SkillCategory, Education } from "@/types/resume";
 
@@ -33,36 +32,41 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     borderBottomWidth: 1,
     borderBottomColor: "#e2e8f0",
-    alignItems: "center",
+    width: "100%",
   },
   name: {
     fontSize: 20,
     fontFamily: "Helvetica-Bold",
     color: BLACK,
     textAlign: "center",
-    marginBottom: 2,
+    width: "100%",
+    marginBottom: 8,
   },
   title: {
     fontSize: 11,
     color: MID,
     textAlign: "center",
+    width: "100%",
     marginBottom: 6,
   },
   contactLine: {
     fontSize: 9,
     color: LIGHT,
     textAlign: "center",
-    lineHeight: 1.5,
-    marginBottom: 4,
+    width: "100%",
+    lineHeight: 1.6,
+    marginTop: 2,
+    marginBottom: 6,
   },
-  contactItem: { fontSize: 9, color: LIGHT },
   summary: {
     fontSize: 9.5,
     color: MID,
     lineHeight: 1.45,
-    marginTop: 6,
+    marginTop: 8,
     textAlign: "left",
+    width: "100%",
     maxWidth: 480,
+    alignSelf: "center",
   },
   section: { marginTop: 14, marginBottom: 4 },
   sectionTitle: {
@@ -98,26 +102,10 @@ function SectionTitle({ children }: { children: string }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
 }
 
-/** Single inline Text row — avoids react-pdf flexWrap overlap on contact fields. */
-function ContactLine({ parts }: { parts: { text: string; href?: string }[] }) {
+/** Plain-text contact row — react-pdf overlaps when mixing Fragment, Link, and raw strings. */
+function ContactLine({ parts }: { parts: { text: string }[] }) {
   if (parts.length === 0) return null;
-
-  return (
-    <Text style={styles.contactLine}>
-      {parts.map((part, i) => (
-        <React.Fragment key={i}>
-          {i > 0 ? " · " : ""}
-          {part.href ? (
-            <Link src={part.href} style={styles.contactItem}>
-              {part.text}
-            </Link>
-          ) : (
-            part.text
-          )}
-        </React.Fragment>
-      ))}
-    </Text>
-  );
+  return <Text style={styles.contactLine}>{parts.map((p) => p.text).join(" · ")}</Text>;
 }
 
 function Bullet({ text }: { text: string }) {
@@ -217,34 +205,13 @@ function EducationBlock({ edu }: { edu: Education }) {
 export function ResumePdfDocument({ resume }: { resume: Resume }) {
   const { personalInfo, experience, projects, skills, education } = resume;
 
-  const contactParts: { text: string; href?: string }[] = [];
+  const contactParts: { text: string }[] = [];
   if (personalInfo.email) contactParts.push({ text: personalInfo.email });
   if (personalInfo.phone) contactParts.push({ text: personalInfo.phone });
   if (personalInfo.location) contactParts.push({ text: personalInfo.location });
-  if (personalInfo.linkedin) {
-    contactParts.push({
-      text: personalInfo.linkedin,
-      href: personalInfo.linkedin.startsWith("http")
-        ? personalInfo.linkedin
-        : `https://${personalInfo.linkedin}`,
-    });
-  }
-  if (personalInfo.github) {
-    contactParts.push({
-      text: personalInfo.github,
-      href: personalInfo.github.startsWith("http")
-        ? personalInfo.github
-        : `https://${personalInfo.github}`,
-    });
-  }
-  if (personalInfo.portfolio) {
-    contactParts.push({
-      text: personalInfo.portfolio,
-      href: personalInfo.portfolio.startsWith("http")
-        ? personalInfo.portfolio
-        : `https://${personalInfo.portfolio}`,
-    });
-  }
+  if (personalInfo.linkedin) contactParts.push({ text: personalInfo.linkedin });
+  if (personalInfo.github) contactParts.push({ text: personalInfo.github });
+  if (personalInfo.portfolio) contactParts.push({ text: personalInfo.portfolio });
 
   return (
     <Document
