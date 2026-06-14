@@ -1,0 +1,91 @@
+name: Jobs Pipeline
+
+# ONLY scheduled jobs workflow — scrape + ATS + verify + tailor every 10 minutes.
+# One script: scripts/run-jobs-pipeline.mjs
+#
+# Cost tips:
+#   - Public repos: unlimited free Actions minutes on linux runners.
+#   - Private repos: 2,000 free min/month; cancel-in-progress avoids stacked runs.
+#   - Do NOT add a second scrape/tailor workflow (doubles your bill).
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Pipeline mode"
+        required: false
+        default: "full"
+        type: choice
+        options:
+          - full
+          - scrape-only
+          - tailor-only
+
+concurrency:
+  group: hc-jobs-pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Install Playwright Chromium
+        run: |
+          if [ "${{ steps.playwright-cache.outputs.cache-hit }}" = "true" ]; then
+            npx playwright install chromium
+          else
+            npx playwright install chromium --with-deps
+          fi
+
+      - name: Validate pipeline env
+        run: node scripts/validate-pipeline-env.mjs --stage=scrape
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+
+      - name: Run unified pipeline (scrape + tailor)
+        run: |
+          ARGS=""
+          MODE="${{ github.event.inputs.mode }}"
+          if [ "$MODE" = "scrape-only" ]; then
+            ARGS="--scrape-only"
+          elif [ "$MODE" = "tailor-only" ]; then
+            ARGS="--tailor-only"
+          fi
+          node scripts/run-jobs-pipeline.mjs $ARGS
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: gemini-3.1-flash-lite
+          GEMINI_TAILOR_MODEL: gemini-3.1-flash-lite
+          HC_ATS_BATCH_LIMIT: "60"
+          HC_TAILOR_BATCH_LIMIT: "40"
+          HC_TAILOR_CONCURRENCY: "5"
+          GCS_SERVICE_ACCOUNT_JSON: ${{ secrets.GCS_SERVICE_ACCOUNT_JSON }}
+          GCS_BUCKET_NAME: ${{ secrets.GCS_BUCKET_NAME }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          WHATSAPP_ACCESS_TOKEN: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_RECIPIENT: ${{ secrets.WHATSAPP_RECIPIENT }}

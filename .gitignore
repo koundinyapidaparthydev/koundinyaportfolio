@@ -32,6 +32,9 @@ cypress/downloads/
 # CI/local Playwright apply recordings
 /artifacts/
 
+# pipeline cron logs
+/logs/
+
 # debug
 npm-debug.log*
 yarn-debug.log*

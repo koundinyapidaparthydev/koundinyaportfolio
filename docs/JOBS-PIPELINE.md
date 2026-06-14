@@ -4,9 +4,75 @@ This project **scrapes engineering job listings from Hiring Cafe** into a Google
 
 **Source of truth:** Google Sheet (`GOOGLE_SHEET_ID`) → tab **`Jobs`** (active apply-now window) and **`Old Jobs`** (archived after ~12 hours).
 
-**Job fetching:** `.github/workflows/scrape-jobs.yml` scrapes jobs every 10 min. **Parallel tailoring** runs in `.github/workflows/tailor-jobs.yml` every 5 min. The `CI` workflow runs tests on push — it does not fetch jobs.
+**Job fetching (cloud):** One workflow — `.github/workflows/jobs-pipeline.yml` — runs every **10 minutes** on GitHub Actions. One script — `scripts/run-jobs-pipeline.mjs` — does **scrape + ATS + verify + tailor** in a single run. Your Mac is not involved.
 
 **Production mode:** Hiring Cafe only — Engineering + Software Development departments, jobs posted within the last 2 days. Legacy multi-portal scraping (`companies.json`) is disabled unless `ALLOW_LEGACY_SCRAPE=1`.
+
+---
+
+## Cloud setup (every 10 minutes)
+
+### One workflow, one script
+
+```
+*/10 * * * *  (UTC)
+       ↓
+jobs-pipeline.yml          ← only scheduled jobs workflow
+       ↓
+run-jobs-pipeline.mjs      ← scrape → sheet → ATS → verify → tailor → PDFs
+```
+
+Each run:
+
+1. Scrape Hiring Cafe (Playwright)
+2. Append/update Google Sheet
+3. Score base resume (Gemini ATS)
+4. Verify compliance
+5. Tailor up to **40** eligible jobs (5 parallel workers, max **5** attempts each, save best effort)
+6. Archive rows older than 12h
+
+Saved PDFs (`R=yes` + URL) are **never** re-tailored.
+
+### GitHub secrets (required)
+
+**GitHub → Settings → Secrets and variables → Actions**
+
+| Secret | Purpose |
+|--------|---------|
+| `GOOGLE_SHEET_ID` | Sheet ID |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Sheet access |
+| `GEMINI_API_KEY` | ATS + tailoring |
+| `GCS_SERVICE_ACCOUNT_JSON` | Resume PDF upload |
+| `GCS_BUCKET_NAME` | GCS bucket |
+| `WHATSAPP_*` | Optional alerts |
+
+Manual run: **Actions → Jobs Pipeline → Run workflow**.
+
+### GitHub Actions cost (you're paying ~$4)
+
+| Situation | Cost |
+|-----------|------|
+| **Public repository** | **$0** — unlimited free minutes on standard linux runners |
+| **Private repository** | 2,000 free min/month, then ~$0.008/min |
+
+**Biggest cost saver:** `cancel-in-progress: true` — if a run takes >10 min, the next scheduled run **skips** instead of queuing (stacked runs were likely burning your minutes).
+
+**Do not** re-add `scrape-jobs.yml` + `tailor-jobs.yml` — that doubled runs and cost.
+
+**Optional:** Make the repo **public** (code only; secrets stay in GitHub) → Actions become free.
+
+Rough usage: ~6 runs/hour × ~15 min/run ≈ **90 min/hour** when busy. Private free tier ≈ 22 hours/month before overage. Public = unlimited.
+
+### Local (dev / one-off)
+
+| Command | What it does |
+|---------|----------------|
+| `npm run job:pipeline` | Same script as cloud |
+| `npm run job:pipeline:scrape` | Scrape/ingest only |
+| `npm run job:pipeline:tailor` | Tailor only |
+| `npm run job:retailor:all` | One-time backfill |
+
+Core: `scripts/run-jobs-pipeline.mjs` · `scripts/lib/jobs-pipeline-core.mjs`
 
 ---
 
@@ -14,32 +80,23 @@ This project **scrapes engineering job listings from Hiring Cafe** into a Google
 
 ```mermaid
 flowchart LR
-  HC[hiring.cafe Playwright scrape]
-  HC --> Filter[isEngineeringRole + US]
-  Filter --> Refresh[Refresh discovered-at for existing rows]
-  Refresh --> Dedup[Dedup HC id + company/title]
-  Dedup --> Sheet[Append new jobs to Jobs A–U]
+  Schedule[Every 10 min GHA]
+  Schedule --> Script[run-jobs-pipeline.mjs]
+  Script --> HC[hiring.cafe scrape]
+  HC --> Sheet[Google Sheet Jobs]
   Sheet --> ATS[Gemini ATS score]
-  ATS --> Verify[Verify eligible rows vs 90%]
-  Verify --> TailorQuick[Quick tailor batch 5]
-  TailorQuick --> Archive[Archive rows older than 12h → Old Jobs]
-  Archive --> Notify[WhatsApp optional]
-
-  subgraph tailorWF [tailor-jobs.yml every 5m]
-    Parallel[Parallel tailor concurrency 5]
-    Save[Upload PDF when score >= 90]
-    Parallel --> Save
-  end
-
-  Verify -->|re-queue J < 90| Parallel
-  Parallel --> Sheet
+  ATS --> Verify[Verify rows]
+  Verify --> Tailor[Tailor up to 40 jobs]
+  Tailor --> PDF[GCS resume PDFs]
+  PDF --> Archive[Archive 12h+ rows]
 ```
 
 | Stage | Script | npm command |
 |-------|--------|-------------|
-| **HC pipeline** (default) | `scripts/run-hiring-cafe-pipeline.mjs` | `npm run job:pipeline` |
-| **Parallel tailor** (GHA every 5m) | `scripts/run-tailor-pipeline.mjs` | — |
-| **Local 10-min loop** | `scripts/run-hiring-cafe-loop.mjs` | Disabled by default — use GHA. Dev: `ALLOW_LOCAL_PIPELINE_LOOP=1 npm run job:pipeline:loop` |
+| **Unified pipeline** (cron / default) | `scripts/run-jobs-pipeline.mjs` | `npm run job:pipeline` |
+| **Scrape only** | same | `npm run job:pipeline:scrape` |
+| **Tailor only** | same | `npm run job:pipeline:tailor` |
+| **Local 10-min loop** | `scripts/run-hiring-cafe-loop.mjs` | `ALLOW_LOCAL_PIPELINE_LOOP=1 npm run job:pipeline:loop` |
 | **Re-tailor below 90%** | `scripts/retailor-below-target.mjs` | `npm run job:retailor` |
 | **Full sheet backfill** | `scripts/retailor-all-below-90.mjs` | `npm run job:retailor:all` |
 | **Purge legacy rows** | `scripts/purge-jobs-sheet.mjs` | `npm run job:purge` |
@@ -47,14 +104,15 @@ flowchart LR
 | **Env check** | `scripts/validate-pipeline-env.mjs` | `npm run job:validate-env` |
 | **Legacy multi-portal** (manual only) | `scripts/run-full-pipeline.mjs` | `ALLOW_LEGACY_SCRAPE=1 npm run job:pipeline:companies` |
 
-**GitHub Actions:**
+**GitHub Actions (cloud — only scheduler):**
 
 | Workflow | Schedule | Role |
 |----------|----------|------|
-| `scrape-jobs.yml` | Every 10 min | Scrape, ATS score, **verify** compliance, quick tailor (batch 5) |
-| `tailor-jobs.yml` | Every 5 min | Bulk parallel tailoring (batch 30, concurrency 5) |
+| `jobs-pipeline.yml` | Every 10 min UTC | Scrape + ATS + verify + tailor (one script) |
 
-Batch limits in GHA: `HC_ATS_BATCH_LIMIT=60`, `HC_TAILOR_BATCH_LIMIT=5` (scrape) / `30` (tailor workflow).
+Removed: `scrape-jobs.yml`, `tailor-jobs.yml` (duplicate workflows increased cost).
+
+Defaults in workflow: `HC_TAILOR_BATCH_LIMIT=40`, `HC_TAILOR_CONCURRENCY=5`.
 
 ---
 

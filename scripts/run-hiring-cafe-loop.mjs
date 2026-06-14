@@ -2,7 +2,7 @@
 /**
  * Local 10-minute loop — **disabled by default**.
  *
- * Production scheduling: `.github/workflows/scrape-jobs.yml` (GHA cron every 10 min).
+ * Production scheduling: local cron — `scripts/cron/run-jobs-pipeline.sh` (every 10 min).
  *
  * One-off local test:
  *   npm run job:pipeline
@@ -16,7 +16,7 @@ import { HC_PIPELINE_INTERVAL_MS } from "./lib/hiring-cafe-sheet-sync.mjs";
 
 if (process.env.ALLOW_LOCAL_PIPELINE_LOOP !== "1") {
   console.error("\n❌  Local pipeline loop is disabled.");
-  console.error("   Production uses GitHub Actions: .github/workflows/scrape-jobs.yml");
+  console.error("   Production uses cron: scripts/cron/run-jobs-pipeline.sh");
   console.error("   One-off test: npm run job:pipeline");
   console.error("   Dev loop only: ALLOW_LOCAL_PIPELINE_LOOP=1 npm run job:pipeline:loop\n");
   process.exit(1);
@@ -26,7 +26,7 @@ const INTERVAL_SEC = HC_PIPELINE_INTERVAL_MS / 1000;
 
 function runOnce() {
   return new Promise((resolve, reject) => {
-    const child = spawn("node", ["scripts/run-hiring-cafe-pipeline.mjs"], {
+    const child = spawn("node", ["scripts/run-jobs-pipeline.mjs"], {
       stdio: "inherit",
       env: process.env,
     });
