@@ -121,11 +121,19 @@ export function sanitizeTailoredResume(base: Resume, tailored: Resume): Resume {
   });
 
   const allowedSkills = baseSkillSet(base);
+  const baseSkillsByTitle = new Map(
+    (base.skills ?? []).map((cat) => [safeLower(cat.title), cat])
+  );
   let skills = normalizeSkillCategories(tailored.skills ?? [], base.skills ?? [])
-    .map((cat) => ({
-      ...cat,
-      skills: (cat.skills ?? []).filter((s) => allowedSkills.has(safeLower(s))),
-    }))
+    .map((cat) => {
+      const filtered = cat.skills.filter((s) => allowedSkills.has(safeLower(s)));
+      const baseCat = baseSkillsByTitle.get(safeLower(cat.title ?? ""));
+      return {
+        id: baseCat?.id ?? `skill-${safeLower(cat.title ?? "misc")}`,
+        title: cat.title ?? baseCat?.title ?? "Skills",
+        skills: filtered,
+      };
+    })
     .filter((cat) => cat.skills.length > 0);
   if (skills.length === 0) skills = base.skills ?? [];
 

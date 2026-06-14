@@ -2,6 +2,11 @@
  * Normalize messy Gemini tailor JSON (TS mirror of scripts/lib/resume-normalize.mjs).
  */
 
+export type NormalizedSkillCategory = {
+  title?: string;
+  skills: string[];
+};
+
 export function asText(value: unknown): string {
   if (value == null) return "";
   if (Array.isArray(value)) return value.map((v) => asText(v)).filter(Boolean).join(" ");
@@ -18,10 +23,10 @@ export function normalizePoints(points: unknown): string[] {
   return points.map((p) => asText(p)).filter((p) => p.length > 0);
 }
 
-export function normalizeSkillCategories<T extends { title?: string; skills?: unknown }>(
+export function normalizeSkillCategories(
   skills: unknown,
-  fallback: T[] = []
-): T[] {
+  fallback: NormalizedSkillCategory[] = []
+): NormalizedSkillCategory[] {
   let list = skills;
 
   if (!Array.isArray(list)) {
@@ -37,9 +42,9 @@ export function normalizeSkillCategories<T extends { title?: string; skills?: un
 
   return (list as unknown[])
     .filter((cat) => cat != null)
-    .map((cat) => {
+    .map((cat): NormalizedSkillCategory => {
       if (typeof cat === "string") {
-        return { title: cat, skills: [] } as T;
+        return { title: cat, skills: [] };
       }
       const row = cat as { title?: string; category?: string; skills?: unknown };
       const title = asText(row.title ?? row.category ?? "");
@@ -48,9 +53,8 @@ export function normalizeSkillCategories<T extends { title?: string; skills?: un
         skillList = skillList != null && skillList !== "" ? [skillList] : [];
       }
       return {
-        ...row,
         title,
         skills: (skillList as unknown[]).map((s) => asText(s)).filter(Boolean),
-      } as T;
+      };
     });
 }
