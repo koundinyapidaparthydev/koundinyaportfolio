@@ -10,6 +10,10 @@
 /coverage
 cypress/screenshots/
 cypress/videos/
+cypress/downloads/
+
+# local pipeline / form-intelligence data
+/data/
 
 # next.js
 /.next/
