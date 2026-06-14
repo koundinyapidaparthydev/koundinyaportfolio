@@ -33,17 +33,28 @@ export function normalizeGeminiTextField(value) {
   return String(value);
 }
 
-function buildAtsTargetGuidance(targetScore, postResult, attempt) {
+function buildAtsTargetGuidance(targetScore, postResult, attempt, currentScore = null) {
   const gaps = normalizeGeminiTextField(postResult?.keyGaps);
   const keywords = normalizeGeminiTextField(postResult?.recommendedKeywords);
   const matched = Array.isArray(postResult?.matched) ? postResult.matched.join(", ") : "";
+  const score =
+    currentScore ?? (typeof postResult?.score === "number" ? postResult.score : null);
+  const closeRange =
+    score !== null && score >= 80 && score < targetScore
+      ? `
+CLOSE TO TARGET (${score}% → need ${targetScore}%): You are within ${targetScore - score} points.
+- Put every recommended keyword in personalInfo.summary (first 2 sentences).
+- Rephrase ALL experience bullets to include JD terms already in the base resume.
+- Move the top 12 matching skills to the front of the skills section.
+- Strengthen project descriptions with role-relevant stack terms from the base resume.`
+      : "";
   return `
 ATS TARGET (attempt ${attempt}): Tailored resume MUST score at least ${targetScore}% for this role.
 Current score is below target. Address these gaps naturally using ONLY truthful experience from the base resume:
 - Key gaps: ${gaps || "—"}
 - Recommended keywords: ${keywords || "—"}
 - Already matched: ${matched || "—"}
-Reorder skills, rewrite summary, and rephrase bullets to surface relevant stack — never invent employers, dates, or technologies.`;
+Reorder skills, rewrite summary, and rephrase bullets to surface relevant stack — never invent employers, dates, or technologies.${closeRange}`;
 }
 
 const QUALITY_CHECKLIST = `
@@ -126,15 +137,40 @@ ${jobDescription.slice(0, 4000)}
 OUTPUT: ONLY valid JSON with the same schema as the draft (include coverLetter). personalInfo.title must be empty.`;
 }
 
+function repairJsonText(jsonText) {
+  let out = jsonText;
+  // Trailing commas before } or ]
+  out = out.replace(/,(\s*[}\]])/g, "$1");
+  // Unescaped newlines inside strings are rare; strip BOM
+  out = out.replace(/^\uFEFF/, "");
+  return out;
+}
+
 function extractJsonObject(raw) {
   let cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
   const firstBrace = cleaned.indexOf("{");
   if (firstBrace > 0) cleaned = cleaned.slice(firstBrace);
   let depth = 0;
+  let inString = false;
+  let escape = false;
   let end = -1;
   for (let i = 0; i < cleaned.length; i++) {
-    if (cleaned[i] === "{") depth++;
-    else if (cleaned[i] === "}") {
+    const ch = cleaned[i];
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === "\\" && inString) {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (inString) continue;
+    if (ch === "{") depth++;
+    else if (ch === "}") {
       depth--;
       if (depth === 0) {
         end = i;
@@ -143,7 +179,25 @@ function extractJsonObject(raw) {
     }
   }
   if (end !== -1) cleaned = cleaned.slice(0, end + 1);
+  cleaned = repairJsonText(cleaned);
   return JSON.parse(cleaned);
+}
+
+function parseTailorJson(raw) {
+  try {
+    return extractJsonObject(raw);
+  } catch (firstErr) {
+    try {
+      const cleaned = repairJsonText(
+        raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim()
+      );
+      const start = cleaned.indexOf("{");
+      const slice = start >= 0 ? cleaned.slice(start) : cleaned;
+      return JSON.parse(slice);
+    } catch {
+      throw firstErr;
+    }
+  }
 }
 
 function normalizeTailored(baseResume, parsed) {
@@ -169,7 +223,7 @@ function normalizePostResult(postResult) {
   };
 }
 
-async function callGemini(apiKey, prompt) {
+async function callGemini(apiKey, prompt, jsonRetries = 1) {
   const models = tailorModelCandidates();
   let lastError = null;
 
@@ -202,7 +256,20 @@ async function callGemini(apiKey, prompt) {
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
     if (!text.trim()) throw new Error("Empty response from Gemini");
-    return extractJsonObject(text);
+
+    try {
+      return parseTailorJson(text);
+    } catch (parseErr) {
+      if (jsonRetries > 0) {
+        console.warn(`  ⚠  Invalid JSON from Gemini — retrying (${parseErr.message.slice(0, 60)})`);
+        return callGemini(
+          apiKey,
+          `${prompt}\n\nCRITICAL: Previous response was invalid JSON. Return ONLY valid JSON matching the schema. No trailing commas. Keep coverLetter as a single escaped string.`,
+          jsonRetries - 1
+        );
+      }
+      throw parseErr;
+    }
   }
 
   throw lastError ?? new Error("Gemini request failed");
@@ -328,7 +395,12 @@ async function attemptTailor(baseResume, job, { best, attempt, preAtsScore, targ
   const { title, company, description } = job;
 
   if (!fromBase && best?.tailoredResume) {
-    const atsGuidance = buildAtsTargetGuidance(targetScore, best.postResult, attempt);
+    const atsGuidance = buildAtsTargetGuidance(
+      targetScore,
+      best.postResult,
+      attempt,
+      best.postAtsScore
+    );
     return tailorResumeWithQualityGate(
       baseResume,
       { title, company, description },
