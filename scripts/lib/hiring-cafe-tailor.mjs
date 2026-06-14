@@ -80,6 +80,142 @@ async function renderResumePdf(resume) {
   });
 }
 
+function needsPdfRebuild(row) {
+  const padded = padRow19(row);
+  const desc = (padded[6] ?? "").trim();
+  const modified = (padded[17] ?? "").trim().toLowerCase();
+  return modified === "yes" && desc.length >= MIN_DESCRIPTION;
+}
+
+async function tailorJobTarget({ row, sheetRow, baseResume, logLabel = "tailored" }) {
+  const company = row[0] ?? "";
+  const title = row[1] ?? "";
+  const desc = row[6] ?? "";
+  const preScoreNum = parseScore(row[18]) ?? parseScore(row[9]);
+  const preScore = String(preScoreNum ?? "");
+
+  const {
+    tailoredResume,
+    coverLetter,
+    quality,
+    postResult,
+    postAtsScore,
+  } = await tailorResumeWithQualityGate(
+    baseResume,
+    { title, company, description: desc },
+    { preAtsScore: preScoreNum }
+  );
+
+  if (!quality.passed) {
+    console.warn(
+      `  ⚠ ${company} — ${title}: quality notes (${quality.warnings.length} warnings) — saving anyway`
+    );
+    for (const warn of quality.warnings.slice(0, 3)) {
+      console.warn(`      · ${warn.message}`);
+    }
+  }
+
+  const postScore = String(postAtsScore);
+
+  let resumeUrl = "";
+  try {
+    const pdfBuffer = await renderResumePdf(tailoredResume);
+    const safeCompany = company.replace(/[^a-zA-Z0-9]/g, "_");
+    const safeTitle = title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40);
+    const ts = new Date().toISOString().slice(0, 10);
+    const fileName = `resumes/${ts}/${safeCompany}_${safeTitle}.pdf`;
+    resumeUrl = await uploadToGCS(pdfBuffer, fileName);
+  } catch (uploadErr) {
+    console.warn(`  ⚠  GCS upload skipped row ${sheetRow}: ${uploadErr.message}`);
+  }
+
+  const qualityNote =
+    quality.warnings.length > 0
+      ? ` (quality ${quality.score}/100, ${quality.warnings.length} warnings)`
+      : ` (quality ${quality.score}/100)`;
+  console.log(
+    `  ✓ ${company} — ${title}: ATS ${preScore}% → ${postScore}% (${logLabel})${qualityNote}`
+  );
+
+  return {
+    updateData: [
+      { range: `${SHEET_NAME}!H${sheetRow}`, values: [[resumeUrl]] },
+      {
+        range: `${SHEET_NAME}!I${sheetRow}`,
+        values: [[(coverLetter ?? "").slice(0, 4000)]],
+      },
+      { range: `${SHEET_NAME}!J${sheetRow}`, values: [[postScore]] },
+      { range: `${SHEET_NAME}!O${sheetRow}`, values: [[postResult.matchSummary ?? ""]] },
+      { range: `${SHEET_NAME}!P${sheetRow}`, values: [[postResult.keyGaps ?? ""]] },
+      { range: `${SHEET_NAME}!Q${sheetRow}`, values: [[postResult.recommendedKeywords ?? ""]] },
+      { range: `${SHEET_NAME}!R${sheetRow}`, values: [["yes"]] },
+      { range: `${SHEET_NAME}!S${sheetRow}`, values: [[preScore]] },
+    ],
+  };
+}
+
+async function processTailorTargets(targets, baseResume, logLabel) {
+  const updateData = [];
+  let processed = 0;
+
+  for (let i = 0; i < targets.length; i++) {
+    const { row, sheetRow } = targets[i];
+    const company = row[0] ?? "";
+    try {
+      const result = await tailorJobTarget({ row, sheetRow, baseResume, logLabel });
+      updateData.push(...result.updateData);
+      processed++;
+    } catch (err) {
+      console.warn(`  ⚠  Tailor failed row ${sheetRow} (${company}): ${err.message}`);
+    }
+
+    if (i < targets.length - 1) {
+      await delay(TAILOR_DELAY_MS);
+    }
+  }
+
+  return { updateData, processed };
+}
+
+/**
+ * Re-tailor and re-upload PDFs for rows already marked resumeModified=yes.
+ * Use after PDF layout fixes to refresh existing GCS files.
+ */
+export async function rebuildTailoredPdfsOnSheet(sheets, spreadsheetId, options = {}) {
+  if (!process.env.GEMINI_API_KEY?.trim()) {
+    console.log("⏭  Skipping PDF rebuild — GEMINI_API_KEY not set");
+    return 0;
+  }
+
+  const batchLimit = options.limit ?? (Number(process.env.REBUILD_PDF_LIMIT) || 50);
+  const baseResume = options.resume ?? loadResume();
+
+  const res = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${SHEET_NAME}!A2:S`,
+  });
+  const rows = res.data.values ?? [];
+  const targets = rows
+    .map((row, idx) => ({ row: padRow19(row), sheetRow: idx + 2 }))
+    .filter(({ row }) => needsPdfRebuild(row))
+    .slice(0, batchLimit);
+
+  if (targets.length === 0) return 0;
+
+  console.log(`🔄  Rebuilding ${targets.length} tailored resume PDFs…`);
+  const { updateData, processed } = await processTailorTargets(targets, baseResume, "rebuilt");
+
+  if (updateData.length > 0) {
+    await sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId,
+      requestBody: { valueInputOption: "RAW", data: updateData },
+    });
+  }
+
+  console.log(`✅  Rebuilt tailored PDFs: ${processed}`);
+  return processed;
+}
+
 /**
  * Tailor low-ATS jobs, re-score with Gemini, upload PDF, write sheet columns.
  */
@@ -106,83 +242,11 @@ export async function tailorLowAtsJobsOnSheet(sheets, spreadsheetId, options = {
   if (targets.length === 0) return 0;
 
   console.log(`✍️  Tailoring ${targets.length} low-ATS jobs (<${TAILOR_ATS_THRESHOLD}%)…`);
-  const updateData = [];
-  let tailored = 0;
-
-  for (let i = 0; i < targets.length; i++) {
-    const { row, sheetRow } = targets[i];
-    const company = row[0] ?? "";
-    const title = row[1] ?? "";
-    const desc = row[6] ?? "";
-    const preScoreNum = parseScore(row[9]);
-    const preScore = String(preScoreNum ?? "");
-
-    try {
-      const {
-        tailoredResume,
-        coverLetter,
-        quality,
-        postResult,
-        postAtsScore,
-      } = await tailorResumeWithQualityGate(baseResume, {
-        title,
-        company,
-        description: desc,
-      }, { preAtsScore: preScoreNum });
-
-      if (!quality.passed) {
-        console.warn(
-          `  ⚠ ${company} — ${title}: quality notes (${quality.warnings.length} warnings) — saving anyway`
-        );
-        for (const warn of quality.warnings.slice(0, 3)) {
-          console.warn(`      · ${warn.message}`);
-        }
-      }
-
-      const postScore = String(postAtsScore);
-
-      let resumeUrl = "";
-      try {
-        const pdfBuffer = await renderResumePdf(tailoredResume);
-        const safeCompany = company.replace(/[^a-zA-Z0-9]/g, "_");
-        const safeTitle = title.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 40);
-        const ts = new Date().toISOString().slice(0, 10);
-        const fileName = `resumes/${ts}/${safeCompany}_${safeTitle}.pdf`;
-        resumeUrl = await uploadToGCS(pdfBuffer, fileName);
-      } catch (uploadErr) {
-        console.warn(`  ⚠  GCS upload skipped row ${sheetRow}: ${uploadErr.message}`);
-      }
-
-      updateData.push(
-        { range: `${SHEET_NAME}!H${sheetRow}`, values: [[resumeUrl]] },
-        {
-          range: `${SHEET_NAME}!I${sheetRow}`,
-          values: [[(coverLetter ?? "").slice(0, 4000)]],
-        },
-        { range: `${SHEET_NAME}!J${sheetRow}`, values: [[postScore]] },
-        { range: `${SHEET_NAME}!O${sheetRow}`, values: [[postResult.matchSummary ?? ""]] },
-        { range: `${SHEET_NAME}!P${sheetRow}`, values: [[postResult.keyGaps ?? ""]] },
-        { range: `${SHEET_NAME}!Q${sheetRow}`, values: [[postResult.recommendedKeywords ?? ""]] },
-        { range: `${SHEET_NAME}!R${sheetRow}`, values: [["yes"]] },
-        { range: `${SHEET_NAME}!S${sheetRow}`, values: [[preScore]] }
-      );
-
-      tailored++;
-      const qualityNote =
-        quality.warnings.length > 0
-          ? ` (quality ${quality.score}/100, ${quality.warnings.length} warnings)`
-          : ` (quality ${quality.score}/100)`;
-      console.log(
-        `  ✓ ${company} — ${title}: ATS ${preScore}% → ${postScore}% (tailored)${qualityNote}`
-      );
-    } catch (err) {
-      console.warn(`  ⚠  Tailor failed row ${sheetRow} (${company}): ${err.message}`);
-    }
-
-    if (i < targets.length - 1) {
-      await delay(TAILOR_DELAY_MS);
-    }
-  }
+  const { updateData, processed: tailored } = await processTailorTargets(
+    targets,
+    baseResume,
+    "tailored"
+  );
 
   if (updateData.length > 0) {
     await sheets.spreadsheets.values.batchUpdate({

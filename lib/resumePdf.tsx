@@ -48,14 +48,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 6,
   },
-  contactRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+  contactLine: {
+    fontSize: 9,
+    color: LIGHT,
+    textAlign: "center",
+    lineHeight: 1.5,
     marginBottom: 4,
   },
   contactItem: { fontSize: 9, color: LIGHT },
-  contactDot: { fontSize: 9, color: LIGHT, marginHorizontal: 4 },
   summary: {
     fontSize: 9.5,
     color: MID,
@@ -96,6 +96,28 @@ const styles = StyleSheet.create({
 
 function SectionTitle({ children }: { children: string }) {
   return <Text style={styles.sectionTitle}>{children}</Text>;
+}
+
+/** Single inline Text row — avoids react-pdf flexWrap overlap on contact fields. */
+function ContactLine({ parts }: { parts: { text: string; href?: string }[] }) {
+  if (parts.length === 0) return null;
+
+  return (
+    <Text style={styles.contactLine}>
+      {parts.map((part, i) => (
+        <React.Fragment key={i}>
+          {i > 0 ? " · " : ""}
+          {part.href ? (
+            <Link src={part.href} style={styles.contactItem}>
+              {part.text}
+            </Link>
+          ) : (
+            part.text
+          )}
+        </React.Fragment>
+      ))}
+    </Text>
+  );
 }
 
 function Bullet({ text }: { text: string }) {
@@ -215,6 +237,14 @@ export function ResumePdfDocument({ resume }: { resume: Resume }) {
         : `https://${personalInfo.github}`,
     });
   }
+  if (personalInfo.portfolio) {
+    contactParts.push({
+      text: personalInfo.portfolio,
+      href: personalInfo.portfolio.startsWith("http")
+        ? personalInfo.portfolio
+        : `https://${personalInfo.portfolio}`,
+    });
+  }
 
   return (
     <Document
@@ -228,20 +258,7 @@ export function ResumePdfDocument({ resume }: { resume: Resume }) {
           {personalInfo.title ? (
             <Text style={styles.title}>{personalInfo.title}</Text>
           ) : null}
-          <View style={styles.contactRow}>
-            {contactParts.map((part, i) => (
-              <React.Fragment key={i}>
-                {i > 0 && <Text style={styles.contactDot}>·</Text>}
-                {part.href ? (
-                  <Link src={part.href} style={styles.contactItem}>
-                    {part.text}
-                  </Link>
-                ) : (
-                  <Text style={styles.contactItem}>{part.text}</Text>
-                )}
-              </React.Fragment>
-            ))}
-          </View>
+          <ContactLine parts={contactParts} />
           {personalInfo.summary ? (
             <Text style={styles.summary}>{personalInfo.summary}</Text>
           ) : null}
