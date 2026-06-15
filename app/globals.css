@@ -632,13 +632,6 @@ section[id] {
 .dark .aurora-20 { background-color: hsl(calc(var(--aurora-hue) + 20) 50% 5%); }
 .dark .aurora-25 { background-color: hsl(calc(var(--aurora-hue) + 25) 50% 5.5%); }
 
-/* ── Magnetic custom cursor (pointer devices only) ── */
-@media (pointer: fine) and (min-width: 768px) {
-  *, *::before, *::after {
-    cursor: none !important;
-  }
-}
-
 /* ── Cyber Circle photo scan-line animation ── */
 @keyframes cyberScan {
   0%   { transform: translateY(-100%); }

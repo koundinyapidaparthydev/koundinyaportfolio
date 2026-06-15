@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { StoreHydrator } from "@/components/StoreHydrator";
 import { AuroraScrollInit } from "@/components/AuroraScrollInit";
-import { MagneticCursor } from "@/components/MagneticCursor";
 import { Providers } from "./providers";
 import {
   ConditionalNavbar,
@@ -74,7 +73,6 @@ export default function RootLayout({
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
           <AuroraScrollInit />
-          <MagneticCursor />
           <StoreHydrator />
           <ConditionalNavbar />
           {children}
