@@ -21,6 +21,15 @@ jest.mock("fs", () => ({
   },
 }));
 
+const mockDownloadFromGCS = jest.fn();
+const mockUploadToGCS = jest.fn();
+
+jest.mock("@/lib/gcsUpload", () => ({
+  downloadFromGCS: (...args: unknown[]) => mockDownloadFromGCS(...args),
+  uploadToGCS: (...args: unknown[]) => mockUploadToGCS(...args),
+  RESUME_GCS_KEY: "config/resume.json",
+}));
+
 // Import AFTER mock is in place
 import { getResume, saveResume } from "@/lib/resumeStore";
 
@@ -46,7 +55,11 @@ const minimalResume: Resume = {
 // ─── getResume ────────────────────────────────────────────────────────────────
 
 describe("getResume", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    delete process.env.GCS_SERVICE_ACCOUNT_JSON;
+    delete process.env.GCS_BUCKET_NAME;
+  });
 
   it("reads the resume file and parses JSON", async () => {
     mockReadFile.mockResolvedValueOnce(JSON.stringify(minimalResume));
@@ -121,7 +134,11 @@ describe("getResume", () => {
 // ─── saveResume ───────────────────────────────────────────────────────────────
 
 describe("saveResume", () => {
-  beforeEach(() => jest.clearAllMocks());
+  beforeEach(() => {
+    jest.clearAllMocks();
+    delete process.env.GCS_SERVICE_ACCOUNT_JSON;
+    delete process.env.GCS_BUCKET_NAME;
+  });
 
   it("writes pretty-printed JSON to a temp file and renames it", async () => {
     mockWriteFile.mockResolvedValueOnce(undefined);
@@ -164,21 +181,66 @@ describe("saveResume", () => {
     expect(JSON.parse(captured)).toEqual(minimalResume);
   });
 
-  it("propagates writeFile errors (wraps in read-only message)", async () => {
+  it("propagates writeFile errors when GCS is not configured", async () => {
     mockWriteFile.mockRejectedValueOnce(new Error("ENOSP"));
 
     await expect(saveResume(minimalResume)).rejects.toThrow(
-      "Resume cannot be saved: the server filesystem is read-only."
+      "Resume cannot be saved: configure GCS credentials"
     );
     expect(mockRename).not.toHaveBeenCalled();
   });
 
-  it("propagates rename errors (wraps in read-only message)", async () => {
+  it("propagates rename errors when GCS is not configured", async () => {
     mockWriteFile.mockResolvedValueOnce(undefined);
     mockRename.mockRejectedValueOnce(new Error("EACCES"));
 
     await expect(saveResume(minimalResume)).rejects.toThrow(
-      "Resume cannot be saved: the server filesystem is read-only."
+      "Resume cannot be saved: configure GCS credentials"
     );
+  });
+
+  it("saves to GCS when credentials are configured", async () => {
+    process.env.GCS_SERVICE_ACCOUNT_JSON = '{"type":"service_account"}';
+    process.env.GCS_BUCKET_NAME = "test-bucket";
+    mockUploadToGCS.mockResolvedValueOnce("https://storage.example/config/resume.json");
+    mockWriteFile.mockRejectedValueOnce(new Error("EROFS"));
+
+    await saveResume(minimalResume);
+
+    expect(mockUploadToGCS).toHaveBeenCalledWith(
+      expect.any(Buffer),
+      "config/resume.json",
+      "application/json"
+    );
+    const uploaded = JSON.parse(
+      (mockUploadToGCS.mock.calls[0][0] as Buffer).toString("utf-8")
+    );
+    expect(uploaded).toEqual(minimalResume);
+  });
+
+  it("reads from GCS when credentials are configured", async () => {
+    process.env.GCS_SERVICE_ACCOUNT_JSON = '{"type":"service_account"}';
+    process.env.GCS_BUCKET_NAME = "test-bucket";
+    mockDownloadFromGCS.mockResolvedValueOnce(
+      Buffer.from(JSON.stringify(minimalResume), "utf-8")
+    );
+
+    const result = await getResume();
+
+    expect(mockDownloadFromGCS).toHaveBeenCalledWith("config/resume.json");
+    expect(mockReadFile).not.toHaveBeenCalled();
+    expect(result).toEqual(minimalResume);
+  });
+
+  it("falls back to disk when GCS read fails", async () => {
+    process.env.GCS_SERVICE_ACCOUNT_JSON = '{"type":"service_account"}';
+    process.env.GCS_BUCKET_NAME = "test-bucket";
+    mockDownloadFromGCS.mockRejectedValueOnce(new Error("not found"));
+    mockReadFile.mockResolvedValueOnce(JSON.stringify(minimalResume));
+
+    const result = await getResume();
+
+    expect(result).toEqual(minimalResume);
+    expect(mockReadFile).toHaveBeenCalled();
   });
 });

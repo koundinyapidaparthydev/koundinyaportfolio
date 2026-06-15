@@ -426,11 +426,31 @@ describe("applied job visibility", () => {
   it("filters out applied jobs unless include-applied is selected", () => {
     const jobs = [
       job({ company: "Open", applyStatus: "" }),
-      job({ company: "Done", applyStatus: "applied" }),
+      job({ company: "Done", applyStatus: "applied", appliedAt: "2026-06-10T12:00:00.000Z" }),
     ];
     expect(filterByAppliedVisibility(jobs, "hide-applied")).toHaveLength(1);
     expect(filterByAppliedVisibility(jobs, "hide-applied")[0].company).toBe("Open");
     expect(filterByAppliedVisibility(jobs, "include-applied")).toHaveLength(2);
+  });
+
+  it("shows only applied jobs when applied-only is selected", () => {
+    const jobs = [
+      job({ company: "Open", applyStatus: "" }),
+      job({ company: "Done", applyStatus: "applied", appliedAt: "2026-06-10T12:00:00.000Z" }),
+      job({ company: "Skipped", skipApply: "yes" }),
+    ];
+    const appliedOnly = filterByAppliedVisibility(jobs, "applied-only");
+    expect(appliedOnly).toHaveLength(1);
+    expect(appliedOnly[0].company).toBe("Done");
+  });
+
+  it("sorts applied-only jobs by appliedAt descending", () => {
+    const jobs = [
+      job({ company: "Older", applyStatus: "applied", appliedAt: "2026-06-01T12:00:00.000Z" }),
+      job({ company: "Newer", applyStatus: "applied", appliedAt: "2026-06-14T12:00:00.000Z" }),
+    ];
+    const appliedOnly = filterByAppliedVisibility(jobs, "applied-only");
+    expect(appliedOnly.map((j) => j.company)).toEqual(["Newer", "Older"]);
   });
 
   it("detects skip status from sheet column V", () => {

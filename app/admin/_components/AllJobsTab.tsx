@@ -593,6 +593,9 @@ export default function AllJobsTab() {
         if (applied && appliedVisibility === "hide-applied" && selectedUrl === job.url) {
           setSelectedUrl(null);
         }
+        if (!applied && appliedVisibility === "applied-only" && selectedUrl === job.url) {
+          setSelectedUrl(null);
+        }
       } catch {
         queryClient.setQueryData(["all-jobs"], prevJobs);
         alert("Failed to save apply status. Try again.");
@@ -715,6 +718,11 @@ export default function AllJobsTab() {
             · {appliedCount} applied hidden
           </span>
         )}
+        {appliedCount > 0 && appliedVisibility === "applied-only" && (
+          <span className="ml-2 text-[11px] text-emerald-500/90">
+            · {appliedCount} applied total
+          </span>
+        )}
         {skippedCount > 0 && appliedVisibility === "hide-applied" && (
           <span className="ml-2 text-[11px] text-slate-500">
             · {skippedCount} skipped hidden
@@ -787,6 +795,9 @@ export default function AllJobsTab() {
             )}
           >
             {label}
+            {id === "applied-only" && appliedCount > 0 && (
+              <span className={glass.pillBadge}>{appliedCount}</span>
+            )}
             {id === "include-applied" && appliedCount + skippedCount > 0 && (
               <span className={glass.pillBadge}>{appliedCount + skippedCount}</span>
             )}

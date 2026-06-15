@@ -150,8 +150,8 @@ export default function ResumePreview({ resume }: { resume: Resume }) {
 
   return (
     <div className="h-full overflow-y-auto bg-white px-8 py-8 text-slate-900 shadow-xl">
-      {/* Header */}
-      <header className="mb-4 text-center border-b border-slate-200 pb-4">
+      {/* Header — name + contact only (no rule under summary) */}
+      <header className="mb-3 text-center">
         <h1 className="text-2xl font-bold tracking-tight text-slate-900">
           {personalInfo.name}
         </h1>
@@ -171,12 +171,12 @@ export default function ResumePreview({ resume }: { resume: Resume }) {
           {personalInfo.github && <span>·</span>}
           {personalInfo.github && <span>{personalInfo.github}</span>}
         </div>
-        {personalInfo.summary && (
-          <p className="mt-3 text-[10.5px] leading-relaxed text-slate-600 text-left max-w-prose mx-auto">
-            {personalInfo.summary}
-          </p>
-        )}
       </header>
+      {personalInfo.summary && (
+        <p className="mb-4 w-full text-[10.5px] font-bold leading-relaxed text-slate-800 text-justify">
+          {personalInfo.summary}
+        </p>
+      )}
 
       {/* Experience */}
       {experience.length > 0 && (

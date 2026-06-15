@@ -109,8 +109,8 @@ export interface AllJobsRow {
   skipApply?: string;
 }
 
-/** Whether applied jobs appear in the list (hidden by default). */
-export type AppliedVisibilityFilter = "hide-applied" | "include-applied";
+/** Which jobs appear in the list (applied/skipped handling). */
+export type AppliedVisibilityFilter = "hide-applied" | "applied-only" | "include-applied";
 
 export const DEFAULT_APPLIED_VISIBILITY_FILTER: AppliedVisibilityFilter = "hide-applied";
 
@@ -119,7 +119,8 @@ export const APPLIED_VISIBILITY_OPTIONS: {
   label: string;
 }[] = [
   { id: "hide-applied", label: "Active jobs" },
-  { id: "include-applied", label: "All jobs + hidden" },
+  { id: "applied-only", label: "Applied jobs" },
+  { id: "include-applied", label: "All jobs" },
 ];
 
 /** True when the job was marked applied in the sheet (column K). */
@@ -138,6 +139,13 @@ export function filterByAppliedVisibility<T extends AllJobsRow>(
   filter: AppliedVisibilityFilter
 ): T[] {
   if (filter === "include-applied") return jobs;
+  if (filter === "applied-only") {
+    return [...jobs.filter(isJobApplied)].sort((a, b) => {
+      const aT = isoTimestamp(a.appliedAt ?? "") ?? 0;
+      const bT = isoTimestamp(b.appliedAt ?? "") ?? 0;
+      return bT - aT;
+    });
+  }
   return jobs.filter((j) => !isJobApplied(j) && !isJobSkipped(j));
 }
 

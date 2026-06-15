@@ -58,3 +58,16 @@ export async function uploadToGCS(
 
   return signedUrl;
 }
+
+/** Download an object from GCS as a Buffer. */
+export async function downloadFromGCS(fileName: string): Promise<Buffer> {
+  const bucketName = process.env.GCS_BUCKET_NAME;
+  if (!bucketName) throw new Error("GCS_BUCKET_NAME is not set");
+
+  const storage = getStorage();
+  const [contents] = await storage.bucket(bucketName).file(fileName).download();
+  return contents;
+}
+
+/** GCS object key for the canonical admin-edited resume JSON. */
+export const RESUME_GCS_KEY = process.env.RESUME_GCS_KEY ?? "config/resume.json";

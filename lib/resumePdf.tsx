@@ -28,10 +28,7 @@ const styles = StyleSheet.create({
     lineHeight: 1.4,
   },
   header: {
-    marginBottom: 14,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+    marginBottom: 8,
     width: "100%",
   },
   name: {
@@ -60,13 +57,13 @@ const styles = StyleSheet.create({
   },
   summary: {
     fontSize: 9.5,
-    color: MID,
+    fontFamily: "Helvetica-Bold",
+    color: BLACK,
     lineHeight: 1.45,
-    marginTop: 8,
-    textAlign: "left",
+    marginTop: 10,
+    marginBottom: 12,
+    textAlign: "justify",
     width: "100%",
-    maxWidth: 480,
-    alignSelf: "center",
   },
   section: { marginTop: 14, marginBottom: 4 },
   sectionTitle: {
@@ -226,10 +223,10 @@ export function ResumePdfDocument({ resume }: { resume: Resume }) {
             <Text style={styles.title}>{personalInfo.title}</Text>
           ) : null}
           <ContactLine parts={contactParts} />
-          {personalInfo.summary ? (
-            <Text style={styles.summary}>{personalInfo.summary}</Text>
-          ) : null}
         </View>
+        {personalInfo.summary ? (
+          <Text style={styles.summary}>{personalInfo.summary}</Text>
+        ) : null}
 
         {experience.length > 0 && (
           <View style={styles.section}>
