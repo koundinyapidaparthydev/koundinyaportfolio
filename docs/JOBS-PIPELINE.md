@@ -28,7 +28,7 @@ Each run:
 2. Append/update Google Sheet
 3. Score base resume (Gemini ATS)
 4. Verify compliance
-5. Tailor up to **40** eligible jobs (5 parallel workers, max **5** attempts each, save best effort)
+5. Tailor up to **40** eligible jobs (5 parallel workers, max **2** attempts each, save best effort)
 6. Archive rows older than 12h
 
 Saved PDFs (`R=yes` + URL) are **never** re-tailored.
@@ -132,7 +132,7 @@ Defaults in workflow: `HC_TAILOR_BATCH_LIMIT=40`, `HC_TAILOR_CONCURRENCY=5`.
 | Descriptions | Full text from HC job detail API (`job_information.description`) |
 | ATS | Gemini scores base resume vs description → J, O–Q |
 | Verify | Every scrape re-scores eligible rows; rows below 90% reset column U |
-| Auto-tailor | Base ATS &lt;90% with ≥3 skill matches → single-phase Gemini tailor (max 5 tries) → PDF upload at ≥90% or best score after 5 tries → H; R=`yes` when upload succeeds |
+| Auto-tailor | Base ATS &lt;90% with ≥3 skill matches → single-phase Gemini tailor (max 2 tries) → PDF upload at ≥90% or best score after 2 tries → H; R=`yes` when upload succeeds |
 
 ### Tailoring thresholds
 
@@ -141,7 +141,7 @@ Defaults in workflow: `HC_TAILOR_BATCH_LIMIT=40`, `HC_TAILOR_CONCURRENCY=5`.
 | `SKIP_TAILOR_INITIAL_ATS` | 90% | Skip tailoring when base resume already scores this high |
 | `TAILOR_TARGET_SCORE` | 90% | Single-phase loop target |
 | `TAILOR_SAVE_MIN_SCORE` | 90% | Minimum post-tailor score to upload PDF and set R=`yes` |
-| `MAX_TAILOR_ATTEMPTS` | 5 | Max tailor attempts per job; saves highest-scoring draft if still below 90% |
+| `MAX_TAILOR_ATTEMPTS` | 2 | Max tailor attempts per job; saves highest-scoring draft if still below 90% |
 | `MIN_SKILL_MATCH_COUNT` | 3 | Minimum skill overlap required to tailor |
 
 Single-phase loop: attempt 1 from base resume, attempts 2+ refine the **best-scoring draft** with ATS gap feedback. A lower-scoring retry never replaces a better draft. Rows with **R=yes** and a resume URL are never re-tailored.

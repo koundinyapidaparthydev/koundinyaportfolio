@@ -20,7 +20,7 @@ export const ATS_STRONG_SCORE = 80;
 export const NON_TAILORED_MIN_SCORE = SKIP_TAILOR_INITIAL_ATS;
 
 /** Max AI tailor attempts per job; after exhaustion, save the highest-scoring draft. */
-export const MAX_TAILOR_ATTEMPTS = 5;
+export const MAX_TAILOR_ATTEMPTS = 2;
 
 /** Minimum resume skills matching the JD before tailoring is allowed. */
 export const MIN_SKILL_MATCH_COUNT = 3;

@@ -105,6 +105,6 @@ describe("ats-config.mjs tailoring constants", () => {
   it("exports aligned 90% skip, target, and save thresholds", () => {
     expect(SKIP_TAILOR_INITIAL_ATS).toBe(90);
     expect(TAILOR_SAVE_MIN_SCORE).toBe(90);
-    expect(MAX_TAILOR_ATTEMPTS).toBe(5);
+    expect(MAX_TAILOR_ATTEMPTS).toBe(2);
   });
 });

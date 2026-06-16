@@ -39,7 +39,7 @@ async function main() {
   });
 
   console.log(
-    `\nDone — ${result.processed} processed, ${result.reached} saved (90%+ or best effort after 5 tries).\n`
+    `\nDone — ${result.processed} processed, ${result.reached} saved (90%+ or best effort after 2 tries).\n`
   );
 }
 
