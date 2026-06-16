@@ -12,7 +12,9 @@ import {
 } from "@/lib/resumeQuality";
 
 export const GEMINI_TAILOR_MODEL =
-  process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
+  process.env.GEMINI_TAILOR_MODEL ??
+  process.env.GEMINI_MODEL ??
+  "gemini-2.5-flash-lite";
 
 const QUALITY_CHECKLIST = `
 QUALITY CHECKLIST — verify before responding:

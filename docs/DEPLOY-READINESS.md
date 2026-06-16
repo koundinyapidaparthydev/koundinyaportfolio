@@ -24,7 +24,7 @@ Optional tuning:
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `GEMINI_MODEL` | `gemini-3.1-flash-lite` | ATS model |
+| `GEMINI_MODEL` | `gemini-2.5-flash-lite` | ATS model |
 | `DESCRIPTION_BACKFILL_LIMIT` | `15` | Max descriptions filled per company per cycle |
 | `DESCRIPTION_CONCURRENCY` | `3` | Parallel description fetches |
 | `SHEETS_READ_INTERVAL_MS` | `350` | Min delay between Sheets reads |

@@ -10,11 +10,11 @@ import {
 } from "./resume-ats-context.mjs";
 
 /** Cheapest generally-available Gemini model for short classification tasks. */
-export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
+export const GEMINI_MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
 
-/** Higher-quality model for post-tailor scoring and resume tailoring loops. */
+/** Model for post-tailor scoring and resume tailoring loops. */
 export const GEMINI_TAILOR_MODEL =
-  process.env.GEMINI_TAILOR_MODEL ?? "gemini-3.1-flash-lite";
+  process.env.GEMINI_TAILOR_MODEL ?? "gemini-2.5-flash-lite";
 
 /** Models to try for tailor/scoring (primary → fallback). */
 export function tailorModelCandidates() {

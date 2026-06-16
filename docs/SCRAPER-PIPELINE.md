@@ -79,7 +79,7 @@ python3 autonomous_agent.py --once
 
 - `GOOGLE_SHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON` — required
 - `GEMINI_API_KEY` — ATS scoring (optional; falls back to local keywords)
-- `GEMINI_MODEL` — default `gemini-3.1-flash-lite`
+- `GEMINI_MODEL` — default `gemini-2.5-flash-lite`
 
 ## Resume generation
 

@@ -7,7 +7,7 @@ export type ChatMessage = {
 };
 
 export const GEMINI_CHAT_MODEL =
-  process.env.GEMINI_MODEL ?? "gemini-3.1-flash-lite";
+  process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
 
 const MAX_CONTEXT_CHARS = 12_000;
 const MAX_HISTORY_MESSAGES = 12;
