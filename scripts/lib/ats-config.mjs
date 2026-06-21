@@ -21,5 +21,7 @@ export const NON_TAILORED_MIN_SCORE = SKIP_TAILOR_INITIAL_ATS;
 /** Max Gemini tailor attempts per job; after exhaustion, save the highest-scoring draft. */
 export const MAX_TAILOR_ATTEMPTS = 2;
 
-/** Minimum resume skills that must match the job description to tailor. */
-export const MIN_SKILL_MATCH_COUNT = 3;
+/** Minimum resume skills that must match the job description to tailor.
+ *  Override via MIN_SKILL_MATCH_COUNT env (set lower to tailor jobs with weak base overlap now that JD-skill injection is allowed). */
+const _envMatch = Number(process.env.MIN_SKILL_MATCH_COUNT);
+export const MIN_SKILL_MATCH_COUNT = Number.isFinite(_envMatch) ? _envMatch : 3;
