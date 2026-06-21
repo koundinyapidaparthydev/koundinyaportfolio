@@ -8,8 +8,6 @@ name: Jobs Pipeline
 #   - Private repos: 2,000 free min/month; cancel-in-progress avoids stacked runs.
 #   - Do NOT add a second scrape/tailor workflow (doubles your bill).
 on:
-  schedule:
-    - cron: "*/10 * * * *"
   workflow_dispatch:
     inputs:
       mode:
