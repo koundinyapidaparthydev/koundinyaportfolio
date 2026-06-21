@@ -19,6 +19,9 @@ const AllJobsTab = dynamic(() => import("./_components/AllJobsTab"), {
 const EditResumeTab = dynamic(() => import("./_components/EditResumeTab"), {
   loading: () => <TabLoader />,
 });
+const MissingSkillsTab = dynamic(() => import("./_components/MissingSkillsTab"), {
+  loading: () => <TabLoader />,
+});
 
 function TabLoader() {
   return (
@@ -52,6 +55,7 @@ export default function AdminPage() {
         <main className="min-w-0">
           <AdminTabPanel tabKey={activeTab}>
             {activeTab === "all-jobs" && <AllJobsTab />}
+            {activeTab === "missing-skills" && <MissingSkillsTab />}
             {activeTab === "edit-resume" && <EditResumeTab />}
           </AdminTabPanel>
         </main>

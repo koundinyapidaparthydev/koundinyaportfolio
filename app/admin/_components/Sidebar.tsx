@@ -6,7 +6,7 @@ import { glass, glassCn } from "@/lib/glass";
  * AdminTabNav — horizontal tab navigation for the admin dashboard.
  */
 
-export type AdminTab = "edit-resume" | "all-jobs";
+export type AdminTab = "edit-resume" | "all-jobs" | "missing-skills";
 
 const NAV_ITEMS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
   {
@@ -29,6 +29,27 @@ const NAV_ITEMS: { id: AdminTab; label: string; icon: React.ReactNode }[] = [
         <path d="M9 12h6" />
         <path d="M9 16h6" />
         <path d="M9 8h6" />
+      </svg>
+    ),
+  },
+  {
+    id: "missing-skills",
+    label: "Missing Skills",
+    icon: (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-4 w-4"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 2 2 7l10 5 10-5-10-5Z" />
+        <path d="m2 17 10 5 10-5" />
+        <path d="m2 12 10 5 10-5" />
       </svg>
     ),
   },

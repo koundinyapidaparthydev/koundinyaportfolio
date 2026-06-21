@@ -290,7 +290,15 @@ async function sendWhatsApp(text) {
     if (res.ok) {
       console.log("📱  Sent:", body.slice(0, 60) + "…");
     } else {
-      console.warn(`⚠️   Send failed (${res.status}):`, (await res.text()).slice(0, 300));
+      if (res.status === 401 || res.status === 403) {
+        console.warn(
+          `⚠️   WhatsApp auth failed (${res.status}) — WHATSAPP_ACCESS_TOKEN is expired or revoked. ` +
+          `Refresh it in Meta Business Suite (System Users → permanent token), then update the GitHub ` +
+          `secret and .env.local.`
+        );
+      } else {
+        console.warn(`⚠️   Send failed (${res.status}):`, (await res.text()).slice(0, 300));
+      }
     }
   } catch (err) {
     console.warn("⚠️   WhatsApp error:", err.message);

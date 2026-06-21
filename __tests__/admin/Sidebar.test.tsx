@@ -20,6 +20,7 @@ describe("AdminSidebar", () => {
     expect(screen.queryByText("Preview live site")).not.toBeInTheDocument();
     expect(screen.getAllByText("Edit Resume").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Jobs").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Missing Skills").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("Discoveries")).not.toBeInTheDocument();
   });
 
@@ -35,6 +36,12 @@ describe("AdminSidebar", () => {
     expect(onSelect).toHaveBeenCalledWith("all-jobs");
   });
 
+  it("calls onSelect with 'missing-skills' when Missing Skills is clicked", () => {
+    render(<AdminSidebar activeTab="all-jobs" onSelect={onSelect} />);
+    fireEvent.click(screen.getAllByRole("button", { name: /missing skills/i })[0]);
+    expect(onSelect).toHaveBeenCalledWith("missing-skills");
+  });
+
   it("lists Jobs first in nav order", () => {
     render(<AdminSidebar activeTab="all-jobs" onSelect={onSelect} />);
     const labels = screen
@@ -42,8 +49,10 @@ describe("AdminSidebar", () => {
       .map((btn) => btn.textContent?.trim())
       .filter(Boolean);
     const jobsIdx = labels.indexOf("Jobs");
+    const missingSkillsIdx = labels.indexOf("Missing Skills");
     const editResumeIdx = labels.indexOf("Edit Resume");
     expect(jobsIdx).toBeGreaterThanOrEqual(0);
-    expect(editResumeIdx).toBeGreaterThan(jobsIdx);
+    expect(missingSkillsIdx).toBeGreaterThan(jobsIdx);
+    expect(editResumeIdx).toBeGreaterThan(missingSkillsIdx);
   });
 });

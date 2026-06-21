@@ -5,6 +5,7 @@
 
 import {
   HC_MAX_PAGES,
+  HC_SEARCH_QUERIES,
   buildHiringCafePageUrl,
   dedupeHcRows,
   extractHcItemsFromPayload,
@@ -249,22 +250,25 @@ async function scrapeHiringCafeViaPlaywright(isEngineeringRole) {
       await collectFromDom();
     }
 
-    for (let pageIndex = 0; pageIndex < HC_MAX_PAGES; pageIndex++) {
-      const pageUrl = buildHiringCafePageUrl(pageIndex);
-      console.log(`  🔗  HC page ${pageIndex + 1}/${HC_MAX_PAGES}: ${pageUrl.slice(0, 90)}…`);
-      await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
-      await page.waitForTimeout(INITIAL_PAGE_WAIT_MS);
+    for (const query of HC_SEARCH_QUERIES) {
+      console.log(`  🔎  HC query (playwright): "${query}"`);
+      for (let pageIndex = 0; pageIndex < HC_MAX_PAGES; pageIndex++) {
+        const pageUrl = buildHiringCafePageUrl(pageIndex, { searchQuery: query });
+        console.log(`  🔗  HC "${query}" page ${pageIndex + 1}/${HC_MAX_PAGES}: ${pageUrl.slice(0, 90)}…`);
+        await page.goto(pageUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
+        await page.waitForTimeout(INITIAL_PAGE_WAIT_MS);
 
-      const pageReady = await waitForHcResults(page);
-      if (!pageReady) {
-        console.log(`  ⚠️  HC page ${pageIndex + 1} blocked or empty`);
-        continue;
+        const pageReady = await waitForHcResults(page);
+        if (!pageReady) {
+          console.log(`  ⚠️  HC "${query}" page ${pageIndex + 1} blocked or empty`);
+          continue;
+        }
+
+        stats.pagesFetched++;
+        await collectAllSources();
+        await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+        await page.waitForTimeout(SCROLL_PAUSE_MS);
       }
-
-      stats.pagesFetched++;
-      await collectAllSources();
-      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      await page.waitForTimeout(SCROLL_PAUSE_MS);
     }
 
     const rows = dedupeHcRows([...itemMap.values()]);

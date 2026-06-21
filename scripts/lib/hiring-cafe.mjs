@@ -5,6 +5,21 @@
 
 export const HC_DEPARTMENTS = ["Engineering", "Software Development"];
 
+/**
+ * Search queries for software-engineering roles. Each query runs across
+ * pages 1–5 and results are merged + deduped by job URL. Replaces the broad
+ * department filter (which pulled mechanical/civil/electrical noise).
+ * Override via HC_SEARCH_QUERIES env (comma-separated).
+ */
+const _envQueries = (process.env.HC_SEARCH_QUERIES ?? "")
+  .split(",")
+  .map((q) => q.trim())
+  .filter(Boolean);
+export const HC_SEARCH_QUERIES =
+  _envQueries.length > 0
+    ? _envQueries
+    : ["software engineer", "software developer", "full stack developer"];
+
 /** United States workplace filter — matches hiring.cafe `searchState.locations` shape. */
 export const HC_US_LOCATION = {
   formatted_address: "United States",
@@ -37,12 +52,14 @@ const HC_SHORT_JOB_ID_RE = /^[a-z0-9]{16}$/i;
 const HC_JOB_URL_RE = /hiring\.cafe\/job\/([a-z0-9]{8,})/i;
 
 export function buildHiringCafeSearchState(overrides = {}) {
-  return {
+  const base = {
     dateFetchedPastNDays: HC_DATE_FETCHED_PAST_DAYS,
-    departments: HC_DEPARTMENTS,
     sortBy: "date",
-    ...overrides,
   };
+  // Query-based search is precise on its own; department filter only applies
+  // to the legacy department-only search (no searchQuery).
+  if (!overrides.searchQuery) base.departments = HC_DEPARTMENTS;
+  return { ...base, ...overrides };
 }
 
 export function buildHiringCafeSearchUrl(overrides = {}) {

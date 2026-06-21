@@ -1639,7 +1639,15 @@ async function sendWhatsAppNotification(newJobRows) {
       console.log(`📱  WhatsApp notification sent to ${recipient}`);
     } else {
       const err = await res.text().catch(() => "");
-      console.warn(`⚠️   WhatsApp send failed (${res.status}): ${err.slice(0, 300)}`);
+      if (res.status === 401 || res.status === 403) {
+        console.warn(
+          `⚠️   WhatsApp auth failed (${res.status}) — WHATSAPP_ACCESS_TOKEN is expired or revoked. ` +
+          `Refresh it in Meta Business Suite (System Users → permanent token), then update the GitHub ` +
+          `secret and .env.local. Pipeline continues; jobs are still saved to the sheet.`
+        );
+      } else {
+        console.warn(`⚠️   WhatsApp send failed (${res.status}): ${err.slice(0, 300)}`);
+      }
     }
   } catch (err) {
     console.warn("⚠️   WhatsApp notification error:", err.message);

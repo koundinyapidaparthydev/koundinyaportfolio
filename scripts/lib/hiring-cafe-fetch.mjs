@@ -5,6 +5,7 @@
 
 import {
   HC_MAX_PAGES,
+  HC_SEARCH_QUERIES,
   buildHiringCafePageUrl,
   buildHiringCafeSearchState,
   extractFullDescriptionFromJobPayload,
@@ -58,9 +59,10 @@ export async function fetchHcBuildId(force = false) {
  * Fetch one search results page (pageIndex 0 = page 1).
  * @returns {Promise<{ hits: object[]; pageIndex: number; source: string }>}
  */
-export async function fetchHcSearchPage(pageIndex = 0) {
+export async function fetchHcSearchPage(pageIndex = 0, query = "") {
   const buildId = await fetchHcBuildId();
-  const searchState = encodeURIComponent(JSON.stringify(buildHiringCafeSearchState()));
+  const overrides = query ? { searchQuery: query } : {};
+  const searchState = encodeURIComponent(JSON.stringify(buildHiringCafeSearchState(overrides)));
   const pageParam = pageIndex > 0 ? `&page=${pageIndex}` : "";
   const dataUrl =
     `https://hiring.cafe/_next/data/${buildId}/index.json?searchState=${searchState}${pageParam}`;
@@ -78,7 +80,7 @@ export async function fetchHcSearchPage(pageIndex = 0) {
     }
   }
 
-  const htmlRes = await fetch(buildHiringCafePageUrl(pageIndex), {
+  const htmlRes = await fetch(buildHiringCafePageUrl(pageIndex, overrides), {
     headers: HC_FETCH_HEADERS,
     signal: AbortSignal.timeout(30_000),
   });
@@ -157,44 +159,47 @@ export async function scrapeHiringCafeViaFetch(isEngineeringRole, isUsHcJob) {
     descriptionsEnriched: 0,
   };
 
-  for (let pageIndex = 0; pageIndex < HC_MAX_PAGES; pageIndex++) {
-    let result;
-    try {
-      result = await fetchHcSearchPage(pageIndex);
-    } catch (err) {
-      console.warn(`  ⚠  HC page ${pageIndex + 1} fetch failed: ${err.message}`);
-      continue;
-    }
-
-    stats.pagesFetched++;
-    stats.fetched += result.hits.length;
-    console.log(
-      `  📄  HC page ${pageIndex + 1}/${HC_MAX_PAGES}: ${result.hits.length} hits (${result.source})`
-    );
-
-    for (const item of result.hits) {
-      const row = parseHcItemToRow(item, fetchedAt);
-      if (!row || !isEngineeringRole(row[1])) continue;
-      stats.afterEngineeringFilter++;
-      if (!isUsHcJob(row[2])) {
-        stats.skippedNonUs++;
+  for (const query of HC_SEARCH_QUERIES) {
+    console.log(`  🔎  HC query: "${query}"`);
+    for (let pageIndex = 0; pageIndex < HC_MAX_PAGES; pageIndex++) {
+      let result;
+      try {
+        result = await fetchHcSearchPage(pageIndex, query);
+      } catch (err) {
+        console.warn(`  ⚠  HC "${query}" page ${pageIndex + 1} fetch failed: ${err.message}`);
         continue;
       }
-      stats.afterUsFilter++;
 
-      const shortId = getHcShortJobId(item);
-      const key = row[3];
-      if (!key) continue;
+      stats.pagesFetched++;
+      stats.fetched += result.hits.length;
+      console.log(
+        `  📄  HC "${query}" page ${pageIndex + 1}/${HC_MAX_PAGES}: ${result.hits.length} hits (${result.source})`
+      );
 
-      const withMeta = [...row, shortId];
-      const existing = itemMap.get(key);
-      if (!existing) {
-        itemMap.set(key, withMeta);
-      } else {
-        if (!existing[6] && withMeta[6]) existing[6] = withMeta[6];
-        if (!existing[2] && withMeta[2]) existing[2] = withMeta[2];
-        if ((withMeta[7] ?? "").length > (existing[7] ?? "").length) existing[7] = withMeta[7];
-        if (!existing[8] && shortId) existing[8] = shortId;
+      for (const item of result.hits) {
+        const row = parseHcItemToRow(item, fetchedAt);
+        if (!row || !isEngineeringRole(row[1])) continue;
+        stats.afterEngineeringFilter++;
+        if (!isUsHcJob(row[2])) {
+          stats.skippedNonUs++;
+          continue;
+        }
+        stats.afterUsFilter++;
+
+        const shortId = getHcShortJobId(item);
+        const key = row[3];
+        if (!key) continue;
+
+        const withMeta = [...row, shortId];
+        const existing = itemMap.get(key);
+        if (!existing) {
+          itemMap.set(key, withMeta);
+        } else {
+          if (!existing[6] && withMeta[6]) existing[6] = withMeta[6];
+          if (!existing[2] && withMeta[2]) existing[2] = withMeta[2];
+          if ((withMeta[7] ?? "").length > (existing[7] ?? "").length) existing[7] = withMeta[7];
+          if (!existing[8] && shortId) existing[8] = shortId;
+        }
       }
     }
   }

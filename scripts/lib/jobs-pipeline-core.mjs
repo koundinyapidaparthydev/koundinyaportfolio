@@ -95,7 +95,14 @@ export async function runJobsPipeline(options = {}) {
       summary.dupesRemoved = await compactJobsSheet(sheets, GOOGLE_SHEET_ID, sj.SHEET_NAME);
 
       const newJobs = filterNewHcJobs(normalized, knownKeys, knownRoleKeys);
-      const newJobRows = await sj.writeNewJobs(sheets, newJobs);
+      const maxNewJobs = Number(process.env.MAX_JOBS) || 0;
+      const cappedNewJobs = maxNewJobs > 0 ? newJobs.slice(0, maxNewJobs) : newJobs;
+      if (maxNewJobs > 0 && cappedNewJobs.length < newJobs.length) {
+        console.log(
+          `🔢  MAX_JOBS=${maxNewJobs}: capping ${newJobs.length} → ${cappedNewJobs.length} new jobs`
+        );
+      }
+      const newJobRows = await sj.writeNewJobs(sheets, cappedNewJobs);
       summary.newJobs = newJobRows.length;
 
       summary.descriptionsBackfilled = await backfillHcDescriptionsOnSheet(

@@ -23,6 +23,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
 const TAB_TITLES: Record<string, string> = {
   "all-jobs": "Hiring Cafe Jobs",
+  "missing-skills": "Missing Skills",
   "edit-resume": "Edit Resume",
 };
 
