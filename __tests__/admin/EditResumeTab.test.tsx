@@ -198,8 +198,8 @@ describe("EditResumeTab", () => {
 
   it("renders the Save button in the toolbar", () => {
     render(<EditResumeTab />);
-    // The toolbar has a "Save" button (not "Save Changes" — that sticky banner
-    // only appears when isDirty=true which is mocked as false)
+    // The toolbar has a "Save" button. Edits are only persisted on explicit
+    // save (click or Cmd+S); there is no auto-save.
     expect(screen.getByRole("button", { name: /^save$/i })).toBeTruthy();
   });
 
@@ -245,5 +245,26 @@ describe("EditResumeTab", () => {
       await Promise.resolve();
     });
     expect(mockMutateAsync).toHaveBeenCalled();
+  });
+
+  it("clicking the Save button triggers the mutation", async () => {
+    render(<EditResumeTab />);
+    const saveBtn = screen.getByRole("button", { name: /^save$/i });
+    await act(async () => {
+      fireEvent.click(saveBtn);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(mockMutateAsync).toHaveBeenCalled();
+  });
+
+  it("does not auto-save while typing", () => {
+    jest.useFakeTimers();
+    render(<EditResumeTab />);
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(mockMutateAsync).not.toHaveBeenCalled();
+    jest.useRealTimers();
   });
 });

@@ -9,7 +9,7 @@
  *  5. Export JSON — downloads resume_backup.json
  */
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   useForm,
   useFieldArray,
@@ -1081,13 +1081,6 @@ export default function EditResumeTab() {
   const { data: resumeData, isLoading } = useResume();
   const mutation = useUpdateResume();
 
-  // Keep a stable ref to mutateAsync so the auto-save effect doesn't resubscribe
-  // every time the mutation status changes (idle → loading → success → idle).
-  const mutateRef = useRef(mutation.mutateAsync);
-  useLayoutEffect(() => {
-    mutateRef.current = mutation.mutateAsync;
-  });
-
   // ── Form ────────────────────────────────────────────────────────────────────
   const {
     control,
@@ -1135,15 +1128,13 @@ export default function EditResumeTab() {
   }, [isEnlarged]);
 
   // ── Loop-prevention refs ────────────────────────────────────────────────────
-  // isResettingRef   — true while reset() is running → suppresses auto-save
-  // lastSavedSerial  — JSON snapshot of last saved form values (loop guard)
-  // lastSavedResume  — Resume object of last save (pushed to history before next)
-  // debounceTimer    — setTimeout handle for 500 ms debounce
+  // isResettingRef   — true while reset() is running
+  // lastSavedSerial  — JSON snapshot of last saved form values
+  // lastSavedResume  — Resume object of last save (pushed to history before next save)
   // isUndoRedoing    — prevents pushing to history during undo/redo
   const isResettingRef     = useRef(false);
   const lastSavedSerialRef = useRef<string>("");
   const lastSavedResumeRef = useRef<Resume | null>(null);
-  const debounceTimer      = useRef<ReturnType<typeof setTimeout>>();
   const isUndoRedoingRef   = useRef(false);
 
   // ── Initialise form from server data ────────────────────────────────────────
@@ -1159,44 +1150,12 @@ export default function EditResumeTab() {
     }
   }, [resumeData, reset]);
 
-  // ── Live-watched values (powers auto-save + live preview) ───────────────────
+  // ── Live-watched values (powers live preview only) ──────────────────────────
   const watchedValues = useWatch({ control }) as ResumeFormValues;
 
-  // ── Auto-save: debounced 500 ms ─────────────────────────────────────────────
-  // Guard conditions:
-  //   • isResettingRef → form is being reset programmatically
-  //   • serial match   → values already match last save (prevents post-reset loop)
-  useEffect(() => {
-    if (isResettingRef.current) return;
-    const serial = JSON.stringify(watchedValues);
-    if (serial === lastSavedSerialRef.current) return;
-
-    setSaveStatus("pending");
-
-    clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(async () => {
-      let resume: Resume;
-      try { resume = fromForm(watchedValues); } catch { return; } // skip if form invalid
-
-      if (!isUndoRedoingRef.current && lastSavedResumeRef.current) {
-        pushHistory(lastSavedResumeRef.current); // push PREVIOUS state before overwriting
-      }
-
-      setSaveStatus("saving");
-      try {
-        await mutateRef.current(resume);
-        lastSavedSerialRef.current = serial;
-        lastSavedResumeRef.current = resume;
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus((s) => (s === "saved" ? "idle" : s)), 2500);
-      } catch {
-        setSaveStatus("error");
-      }
-    }, 500);
-
-    return () => clearTimeout(debounceTimer.current);
-    // pushHistory is a stable Zustand action ref — safe in deps
-  }, [watchedValues, pushHistory]);
+  // Note: auto-save has been removed. Edits are only persisted when the user
+  // clicks the Save button or presses Cmd+S / Ctrl+S. The live preview still
+  // updates immediately from local form state.
 
   // ── Manual save ─────────────────────────────────────────────────────────────
   const onManualSave = handleSubmit(async (values) => {
@@ -1334,8 +1293,8 @@ export default function EditResumeTab() {
         title="Edit Resume"
         subtitle={
           isEnlarged
-            ? "Fullscreen · Esc to exit · Auto-saved every 500 ms"
-            : "Auto-saved every 500 ms · Cmd+Z to undo"
+            ? "Fullscreen · Esc to exit · Click Save or press Cmd+S to persist"
+            : "Click Save or press Cmd+S to persist · Cmd+Z to undo"
         }
       />
 

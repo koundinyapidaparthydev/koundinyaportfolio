@@ -3,6 +3,11 @@ import { requireAdminSession } from "@/lib/auth";
 import { ResumeSchema } from "@/lib/schemas";
 import { getResume, saveResume } from "@/lib/resumeStore";
 
+// Force dynamic rendering: the same route must handle both public GET and
+// admin PUT. Without this, Next.js statically optimizes GET and rejects PUT
+// with a 405 Method Not Allowed.
+export const dynamic = "force-dynamic";
+
 // ─── GET /api/resume ──────────────────────────────────────────────────────────
 // Public endpoint — returns the full resume JSON.
 
