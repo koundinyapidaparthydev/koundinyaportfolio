@@ -191,6 +191,37 @@ describe("validateTailoredResume", () => {
     expect(clean.projects).toEqual(base.projects);
   });
 
+  it("sanitizeTailoredResume keeps JD-mentioned skills when jdDescription is supplied", () => {
+    const base = baseResume();
+    const tailored: Resume = {
+      ...base,
+      skills: [
+        {
+          id: "sk-1",
+          title: "Frontend",
+          skills: ["React", "C++", "Angular", "RandomHallucination"],
+        },
+      ],
+    };
+    const jd = "We need a frontend engineer with React, C++, and Angular experience.";
+    const clean = sanitizeTailoredResume(base, tailored, jd);
+    expect(clean.skills[0].skills).toContain("React");
+    expect(clean.skills[0].skills).toContain("C++");
+    expect(clean.skills[0].skills).toContain("Angular");
+    expect(clean.skills[0].skills).not.toContain("RandomHallucination");
+  });
+
+  it("sanitizeTailoredResume does not match short skills inside unrelated words", () => {
+    const base = baseResume();
+    const tailored: Resume = {
+      ...base,
+      skills: [{ id: "sk-1", title: "Languages", skills: ["Go", "C"] }],
+    };
+    const jd = "We are going to catch great engineers.";
+    const clean = sanitizeTailoredResume(base, tailored, jd);
+    expect(clean.skills[0].skills).not.toContain("Go");
+  });
+
   it("exports expected ATS constants", () => {
     expect(TARGET_TAILORED_ATS).toBe(75);
     expect(MIN_ATS_IMPROVEMENT).toBe(5);

@@ -81,6 +81,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: gemini-2.5-flash-lite
           GEMINI_TAILOR_MODEL: gemini-2.5-flash-lite
+          TAILOR_ALLOW_NEW_SKILLS: "true"
           HC_ATS_BATCH_LIMIT: "60"
           HC_TAILOR_BATCH_LIMIT: "40"
           HC_TAILOR_CONCURRENCY: "5"

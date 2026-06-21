@@ -83,8 +83,25 @@ function baseSkillSet(resume) {
   return set;
 }
 
-/** Clamp Gemini output to base-resume facts — always keep a usable tailored PDF. */
-export function sanitizeTailoredResume(base, tailored) {
+/**
+ * True when the skill term appears in the job description text.
+ * Word-boundary matching so short tokens like "go"/"c" don't match substrings.
+ */
+function skillInJobDescription(skill, jd) {
+  const s = String(skill ?? "").toLowerCase().trim();
+  const text = String(jd ?? "").toLowerCase();
+  if (!s || s.length < 2 || !text) return false;
+  const compact = s.replace(/[.\s/_-]+/g, "");
+  if (compact.length >= 3 && text.replace(/[.\s/_-]+/g, "").includes(compact)) {
+    return true;
+  }
+  const escaped = s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`).test(text);
+}
+
+/** Clamp Gemini output to base-resume facts — always keep a usable tailored PDF.
+ *  When jdDescription is supplied, JD-mentioned skills are kept too (base stays untouched). */
+export function sanitizeTailoredResume(base, tailored, jdDescription) {
   const tailoredByExpId = new Map(
     normalizeExperienceList(tailored.experience, []).map((e) => [e.id, e])
   );
@@ -98,7 +115,11 @@ export function sanitizeTailoredResume(base, tailored) {
   let skills = normalizeSkillCategories(tailored.skills, [])
     .map((cat) => ({
       ...cat,
-      skills: (cat.skills ?? []).filter((s) => allowedSkills.has(safeLower(s))),
+      skills: (cat.skills ?? []).filter(
+        (s) =>
+          allowedSkills.has(safeLower(s)) ||
+          (jdDescription ? skillInJobDescription(s, jdDescription) : false)
+      ),
     }))
     .filter((cat) => cat.skills.length > 0);
   if (skills.length === 0) skills = base.skills ?? [];

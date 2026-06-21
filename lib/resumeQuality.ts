@@ -107,10 +107,35 @@ function baseSkillSet(resume: Resume): Set<string> {
 }
 
 /**
+ * True when the skill term appears in the job description text.
+ * Uses word-boundary matching so short tokens like "go" or "c" do not match
+ * substrings of unrelated words ("going", "catch").
+ */
+function skillInJobDescription(skill: string, jd: string): boolean {
+  const s = skill.toLowerCase().trim();
+  const text = jd.toLowerCase();
+  if (!s || s.length < 2 || !text) return false;
+  const compact = s.replace(/[.\s/_-]+/g, "");
+  if (compact.length >= 3 && text.replace(/[.\s/_-]+/g, "").includes(compact)) {
+    return true;
+  }
+  const escaped = s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`).test(text);
+}
+
+/**
  * Clamp Gemini output to base-resume facts so we always keep a usable tailored PDF.
  * Preserves tailored summary + bullet rewrites; drops invented skills and structural drift.
+ *
+ * When `jdDescription` is supplied, skills that appear in the job description are
+ * also kept (in addition to base-resume skills) so the tailored resume can carry
+ * the JD's requested keywords. The base resume itself is never modified.
  */
-export function sanitizeTailoredResume(base: Resume, tailored: Resume): Resume {
+export function sanitizeTailoredResume(
+  base: Resume,
+  tailored: Resume,
+  jdDescription?: string
+): Resume {
   const tailoredByExpId = new Map(
     (tailored.experience ?? []).map((e) => [e.id, e])
   );
@@ -126,7 +151,11 @@ export function sanitizeTailoredResume(base: Resume, tailored: Resume): Resume {
   );
   let skills = normalizeSkillCategories(tailored.skills ?? [], base.skills ?? [])
     .map((cat) => {
-      const filtered = cat.skills.filter((s) => allowedSkills.has(safeLower(s)));
+      const filtered = cat.skills.filter(
+        (s) =>
+          allowedSkills.has(safeLower(s)) ||
+          (jdDescription ? skillInJobDescription(s, jdDescription) : false)
+      );
       const baseCat = baseSkillsByTitle.get(safeLower(cat.title ?? ""));
       return {
         id: baseCat?.id ?? `skill-${safeLower(cat.title ?? "misc")}`,

@@ -45,18 +45,24 @@ function buildAtsTargetGuidance(targetScore, postResult, attempt, currentScore =
       ? `
 CLOSE TO TARGET (${score}% → need ${targetScore}%): You are within ${targetScore - score} points.
 - Put every recommended keyword in personalInfo.summary (first 2 sentences).
-- Rephrase ALL experience bullets to include JD terms already in the base resume.
+- Rephrase ALL experience bullets to include JD terms.
 - Move the top 12 matching skills to the front of the skills section.
-- Strengthen project descriptions with role-relevant stack terms from the base resume.`
+${ALLOW_NEW_SKILLS ? "- Add any still-missing recommended keywords that appear in the JOB DESCRIPTION to the skills section." : "- Strengthen project descriptions with role-relevant stack terms from the base resume."}`
       : "";
   return `
 ATS TARGET (attempt ${attempt}): Tailored resume MUST score at least ${targetScore}% for this role.
-Current score is below target. Address these gaps naturally using ONLY truthful experience from the base resume:
+Current score is below target. Address these gaps naturally:
 - Key gaps: ${gaps || "—"}
 - Recommended keywords: ${keywords || "—"}
 - Already matched: ${matched || "—"}
-Reorder skills, rewrite summary, and rephrase bullets to surface relevant stack — never invent employers, dates, or technologies.${closeRange}`;
+Reorder skills, rewrite summary, and rephrase bullets to surface relevant stack. ${SKILL_RULE} Never invent employers, dates, or metrics.${closeRange}`;
 }
+
+const ALLOW_NEW_SKILLS = process.env.TAILOR_ALLOW_NEW_SKILLS !== "false";
+
+const SKILL_RULE = ALLOW_NEW_SKILLS
+  ? "You MAY add skills/technologies that are explicitly named in the JOB DESCRIPTION to the skills section, even if they are not in the base resume (the candidate will learn these before any interview). Only add JD-mentioned skills that are plausibly relevant to this role. Do NOT add any skill that does not appear in the job description."
+  : "Only use skills/technologies already present in the base resume — never invent technologies or skills.";
 
 const QUALITY_CHECKLIST = `
 QUALITY CHECKLIST — verify before responding:
@@ -64,7 +70,7 @@ QUALITY CHECKLIST — verify before responding:
 - No headline job title under the candidate's name (personalInfo.title empty)
 - Zero buzzwords: leveraged, spearheaded, synergy, cutting-edge, results-driven, passionate about delivering, thrilled to apply
 - Edited bullets start with strong past-tense verbs; each bullet under ~2 lines
-- Only reorder skills and rephrase bullets — never invent companies, roles, skills, or metrics
+- ${ALLOW_NEW_SKILLS ? "You may add JD-named skills to the skills section, but never invent companies, roles, dates, or metrics" : "Only reorder skills and rephrase bullets — never invent companies, roles, skills, or metrics"}
 - Cover letter: 3 short paragraphs, conversational, mentions one concrete story from the resume`;
 
 function buildTailorPrompt(resume, jobTitle, companyName, jobDescription, extraGuidance = "") {
@@ -80,13 +86,14 @@ Description:
 ${jobDescription.slice(0, 6000)}
 
 RULES — follow every rule strictly
-1. Keep all facts truthful — never invent metrics, technologies, or experiences.
+1. Keep all facts truthful — never invent metrics, companies, dates, or experiences.
 2. Do NOT add a generic headline title under the candidate's name (personalInfo.title must be empty).
 3. Rewrite personalInfo.summary (2–3 sentences) to speak directly to ${companyName}'s focus and the role's key needs. Sound like a real engineer writing to a hiring manager.
 4. Reorder skill categories and skills within each category so the most relevant skills appear first.
-5. For experience bullet points: rephrase EVERY bullet in each role to echo the job description's language naturally — mirror JD keywords using ONLY terms/skills already present in the base resume (no keyword stuffing, no invented facts).
-6. Leave education, project names, dates, and company names unchanged.
-7. coverLetter: 3 paragraphs (opening hook, evidence/stories, close with specific enthusiasm for ${companyName}). Conversational — must NOT sound AI-generated.
+5. Skills: ${SKILL_RULE}
+6. For experience bullet points: rephrase EVERY bullet in each role to echo the job description's language naturally — no keyword stuffing, no invented facts.
+7. Leave education, project names, dates, and company names unchanged.
+8. coverLetter: 3 paragraphs (opening hook, evidence/stories, close with specific enthusiasm for ${companyName}). Conversational — must NOT sound AI-generated.
 ${QUALITY_CHECKLIST}
 ${extraGuidance ? `\nADDITIONAL GUIDANCE:\n${extraGuidance}\n` : ""}
 OUTPUT: respond with ONLY valid JSON, no markdown, no commentary, no code fences.
@@ -201,15 +208,17 @@ function parseTailorJson(raw) {
   }
 }
 
-function normalizeTailored(baseResume, parsed) {
+function normalizeTailored(baseResume, parsed, jobDescription) {
   const shaped = normalizeParsedTailorResponse(baseResume, parsed);
   const coverLetter = shaped.coverLetter ?? "";
   const { coverLetter: _cl, ...resumeOnly } = shaped;
   void _cl;
-  const tailoredResume = sanitizeTailoredResume(baseResume, {
-    ...baseResume,
-    ...resumeOnly,
-  });
+  const allowNewSkills = process.env.TAILOR_ALLOW_NEW_SKILLS !== "false";
+  const tailoredResume = sanitizeTailoredResume(
+    baseResume,
+    { ...baseResume, ...resumeOnly },
+    allowNewSkills ? jobDescription : undefined
+  );
   if (tailoredResume.personalInfo) {
     tailoredResume.personalInfo.title = "";
   }
@@ -295,7 +304,7 @@ export async function tailorResumeForJob(baseResume, { title, company, descripti
     apiKey,
     buildTailorPrompt(baseResume, title, company, description)
   );
-  return normalizeTailored(baseResume, parsed);
+  return normalizeTailored(baseResume, parsed, description);
 }
 
 /**
@@ -334,7 +343,7 @@ export async function tailorResumeWithQualityGate(
       buildTailorPrompt(baseResume, title, company, description, extraGuidance)
     );
   }
-  let { tailoredResume, coverLetter } = normalizeTailored(baseResume, parsed);
+  let { tailoredResume, coverLetter } = normalizeTailored(baseResume, parsed, description);
 
   let postResult = await scoreTailored(title, description, tailoredResume);
   let quality = validateTailoredResume(baseResume, tailoredResume, {
@@ -372,7 +381,7 @@ export async function tailorResumeWithQualityGate(
         atsGaps
       )
     );
-    ({ tailoredResume, coverLetter } = normalizeTailored(baseResume, parsed));
+    ({ tailoredResume, coverLetter } = normalizeTailored(baseResume, parsed, description));
     postResult = await scoreTailored(title, description, tailoredResume);
     quality = validateTailoredResume(baseResume, tailoredResume, {
       company,
