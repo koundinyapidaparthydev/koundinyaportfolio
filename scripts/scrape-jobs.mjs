@@ -104,9 +104,25 @@ const ENGINEERING_KEYWORDS = (process.env.ENGINEERING_KEYWORDS ?? "")
   .map((k) => k.trim().toLowerCase())
   .filter(Boolean);
 
+/** Reject non-software engineering disciplines that slip through the broad "engineer" keyword. */
+const NON_SOFTWARE_TITLE_PATTERNS = [
+  "mechanical", "civil", "geotechnical", "structural",
+  "HVAC", "plumbing", "fire protection",
+  "welding", "weld engineer",
+  "automotive", "aerospace", "petroleum", "marine", "nuclear", "chemical",
+  "biomedical", "materials",
+  "manufacturing", "production", "industrial",
+  "metrology", "calibration", "commissioning",
+  "autocad", "solidworks", "revit", "catia",
+  "PLC", "SCADA",
+  "electrical engineer", "semiconductor manufacturing",
+  "construction", "transportation", "stormwater",
+];
+
 function isEngineeringRole(title = "") {
   if (ENGINEERING_FILTER_OFF) return true;
   const t = title.toLowerCase();
+  if (NON_SOFTWARE_TITLE_PATTERNS.some((k) => t.includes(k))) return false;
   const keywords =
     ENGINEERING_KEYWORDS.length > 0 ? ENGINEERING_KEYWORDS : DEFAULT_ENGINEERING_KEYWORDS;
   return keywords.some((k) => t.includes(k));
