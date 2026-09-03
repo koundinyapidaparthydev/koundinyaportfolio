@@ -16,6 +16,8 @@ export function StoreHydrator() {
     if (hydrated.current) return;
     hydrated.current = true;
 
+    if (process.env.NEXT_PUBLIC_GITHUB_PAGES === "1") return;
+
     fetch("/api/resume")
       .then((res) => {
         if (!res.ok) throw new Error(`/api/resume returned ${res.status}`);

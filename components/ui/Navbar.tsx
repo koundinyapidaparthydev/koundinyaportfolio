@@ -17,6 +17,8 @@ import {
   RESUME_PDF_API_PATH,
 } from "@/lib/resumeDownload";
 
+const isStaticPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "1";
+
 const NAV_LINKS = [
   { label: "Home", id: "hero" },
   { label: "About", id: "about" },
@@ -154,44 +156,46 @@ export default function Navbar() {
 
             {/* Right: account + theme + mobile */}
             <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <div className="flex items-center gap-1 max-md:hidden">
-                {isAdmin ? (
-                  <>
+              {!isStaticPages && (
+                <div className="flex items-center gap-1 max-md:hidden">
+                  {isAdmin ? (
+                    <>
+                      <Link
+                        href="/admin"
+                        className={glassCn(
+                          navLinkClass,
+                          "flex items-center gap-1.5",
+                          isAdminRoute && navLinkActiveClass
+                        )}
+                      >
+                        <LayoutDashboard className="h-4 w-4 opacity-80" />
+                        <span className="hidden lg:inline">Dashboard</span>
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => void signOut({ callbackUrl: "/" })}
+                        aria-label="Logout"
+                        className={glassCn(
+                          navLinkClass,
+                          "flex items-center gap-1.5 text-foreground/55 hover:text-foreground"
+                        )}
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span className="hidden lg:inline">Logout</span>
+                      </button>
+                    </>
+                  ) : (
                     <Link
-                      href="/admin"
-                      className={glassCn(
-                        navLinkClass,
-                        "flex items-center gap-1.5",
-                        isAdminRoute && navLinkActiveClass
-                      )}
+                      href="/login"
+                      aria-label="Admin login"
+                      className={glassCn(navLinkClass, "flex items-center gap-1.5")}
                     >
-                      <LayoutDashboard className="h-4 w-4 opacity-80" />
-                      <span className="hidden lg:inline">Dashboard</span>
+                      <Lock className="h-4 w-4 opacity-80" />
+                      <span className="hidden lg:inline">Admin</span>
                     </Link>
-                    <button
-                      type="button"
-                      onClick={() => void signOut({ callbackUrl: "/" })}
-                      aria-label="Logout"
-                      className={glassCn(
-                        navLinkClass,
-                        "flex items-center gap-1.5 text-foreground/55 hover:text-foreground"
-                      )}
-                    >
-                      <LogOut className="h-4 w-4" />
-                      <span className="hidden lg:inline">Logout</span>
-                    </button>
-                  </>
-                ) : (
-                  <Link
-                    href="/login"
-                    aria-label="Admin login"
-                    className={glassCn(navLinkClass, "flex items-center gap-1.5")}
-                  >
-                    <Lock className="h-4 w-4 opacity-80" />
-                    <span className="hidden lg:inline">Admin</span>
-                  </Link>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               <ThemeToggle className="!h-9 !w-9" />
 
@@ -250,44 +254,46 @@ export default function Navbar() {
                     Resume
                   </a>
 
-                  <div className="mt-2 space-y-0.5 border-t border-foreground/10 pt-2">
-                    {isAdmin ? (
-                      <>
+                  {!isStaticPages && (
+                    <div className="mt-2 space-y-0.5 border-t border-foreground/10 pt-2">
+                      {isAdmin ? (
+                        <>
+                          <Link
+                            href="/admin"
+                            onClick={() => setMenuOpen(false)}
+                            className={glassCn(navLinkClass, "flex items-center gap-2 py-2.5")}
+                          >
+                            <LayoutDashboard className="h-4 w-4" />
+                            Dashboard
+                          </Link>
+                          <button
+                            type="button"
+                            aria-label="Logout"
+                            onClick={() => {
+                              setMenuOpen(false);
+                              void signOut({ callbackUrl: "/" });
+                            }}
+                            className={glassCn(
+                              navLinkClass,
+                              "flex w-full items-center gap-2 py-2.5 text-left"
+                            )}
+                          >
+                            <LogOut className="h-4 w-4" />
+                            Logout
+                          </button>
+                        </>
+                      ) : (
                         <Link
-                          href="/admin"
+                          href="/login"
                           onClick={() => setMenuOpen(false)}
                           className={glassCn(navLinkClass, "flex items-center gap-2 py-2.5")}
                         >
-                          <LayoutDashboard className="h-4 w-4" />
-                          Dashboard
+                          <Lock className="h-4 w-4" />
+                          Admin
                         </Link>
-                        <button
-                          type="button"
-                          aria-label="Logout"
-                          onClick={() => {
-                            setMenuOpen(false);
-                            void signOut({ callbackUrl: "/" });
-                          }}
-                          className={glassCn(
-                            navLinkClass,
-                            "flex w-full items-center gap-2 py-2.5 text-left"
-                          )}
-                        >
-                          <LogOut className="h-4 w-4" />
-                          Logout
-                        </button>
-                      </>
-                    ) : (
-                      <Link
-                        href="/login"
-                        onClick={() => setMenuOpen(false)}
-                        className={glassCn(navLinkClass, "flex items-center gap-2 py-2.5")}
-                      >
-                        <Lock className="h-4 w-4" />
-                        Admin
-                      </Link>
-                    )}
-                  </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
