@@ -25,6 +25,9 @@ cypress/downloads/
 # production
 /build
 
+# static GitHub Pages export (CI only)
+/dist
+
 # misc
 .DS_Store
 *.pem
