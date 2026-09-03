@@ -32,7 +32,7 @@ export default function About() {
   };
 
   return (
-    <section ref={ref} id="about" className="aurora-5 relative py-24 px-6">
+    <section ref={ref} id="about" className="relative py-24 px-6">
         {/* Top aurora radial glow */}
         <div
           aria-hidden="true"
@@ -54,12 +54,12 @@ export default function About() {
         </motion.div>
 
         {/* Bio + stats */}
-        <motion.div {...fadeUp} className="mx-auto max-w-3xl">
+        <motion.div {...fadeUp} className="glass-panel mx-auto max-w-3xl p-8">
             <h3 className="mb-5 text-2xl font-bold text-gray-900 dark:text-white">
               Full-Stack Engineer & AI Builder
             </h3>
 
-            <div className="space-y-4 text-base leading-relaxed text-gray-600 dark:text-slate-400">
+            <div className="space-y-4 text-base leading-relaxed text-gray-700 dark:text-slate-200">
               <p>
                 I&apos;m a Full-Stack Software Engineer with over 5 years of
                 experience designing and shipping production-grade web
@@ -80,12 +80,12 @@ export default function About() {
               <p>
                 Outside of work I built{" "}
                 <a
-                  href="https://aplifyai.vercel.app"
+                  href="https://github.com/koundinyapidaparthydev/Max"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-semibold text-indigo-600 underline underline-offset-2 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
-                  AplifyAI
+                  Max
                 </a>
                 , a production AI SaaS that uses RAG + GPT-4 to tailor
                 resumes and cover letters to job descriptions — now serving

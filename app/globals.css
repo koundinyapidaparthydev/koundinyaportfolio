@@ -655,6 +655,45 @@ section[id] {
   animation: timelinePulse 2s ease-in-out infinite;
 }
 
+/* ── Fixed WebGL sky background ── */
+/* CSS gradient fallback: also the no-JS / no-WebGL look (day → dusk → night) */
+.sky-fallback {
+  background: linear-gradient(
+    180deg,
+    #2a5da8 0%,
+    #7fb0d6 42%,
+    #d99a6c 72%,
+    #1a2140 88%,
+    #070b1d 100%
+  );
+}
+
+/* readability scrim: keeps light text legible over bright day sky
+   without hiding the sky itself */
+.sky-scrim {
+  background:
+    linear-gradient(180deg, rgba(3, 7, 18, 0.14) 0%, rgba(3, 7, 18, 0.05) 18%, rgba(3, 7, 18, 0) 38%),
+    radial-gradient(ellipse 130% 95% at 50% 8%, transparent 42%, rgba(3, 7, 18, 0.32) 100%),
+    radial-gradient(ellipse 80% 60% at 22% 42%, rgba(3, 7, 18, 0.18) 0%, transparent 60%),
+    linear-gradient(180deg, transparent 50%, rgba(3, 7, 18, 0.42) 100%);
+}
+
+.text-shadow-hero {
+  text-shadow:
+    0 2px 28px rgba(0, 0, 0, 0.7),
+    0 1px 9px rgba(0, 0, 0, 0.55);
+}
+
+.hero-text-backdrop::before {
+  content: "";
+  position: absolute;
+  inset: -2rem -3rem -2rem -3rem;
+  z-index: -1;
+  background: radial-gradient(ellipse 70% 120% at 30% 50%, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.25) 45%, transparent 70%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -707,15 +746,10 @@ section[id] {
 
   body {
     @apply bg-background text-foreground;
-    background-image:
-      radial-gradient(ellipse 80% 60% at 20% 0%, hsl(var(--aurora-hue) 70% 70% / 0.08), transparent 55%),
-      radial-gradient(ellipse 70% 50% at 80% 100%, hsl(calc(var(--aurora-hue) + 40) 60% 60% / 0.06), transparent 50%);
-    background-attachment: fixed;
   }
 
-  .dark body {
-    background-image:
-      radial-gradient(ellipse 80% 60% at 15% 0%, hsl(var(--aurora-hue) 60% 40% / 0.12), transparent 55%),
-      radial-gradient(ellipse 70% 50% at 85% 100%, hsl(calc(var(--aurora-hue) + 35) 55% 35% / 0.1), transparent 50%);
+  /* Homepage with the fixed WebGL sky: let the sky show through */
+  body:has(.sky-page) {
+    background-color: transparent;
   }
 }

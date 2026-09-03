@@ -328,11 +328,11 @@ export default function Hero({ personalInfo }: HeroProps) {
       <section
         ref={sectionRef}
         id="hero"
-        className="aurora-0 relative flex min-h-screen overflow-hidden px-6 py-28 bg-white text-slate-900 dark:text-white"
+        className="relative flex min-h-screen overflow-hidden px-6 py-28 text-slate-900 dark:text-white"
       >
         <ParticleField />
 
-        {/* Radial glow behind text column */}
+        {/* Subtle indigo glow behind text column */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute left-1/4 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[700px] w-[700px] rounded-full"
@@ -347,55 +347,58 @@ export default function Hero({ personalInfo }: HeroProps) {
 
           {/* Left: text */}
           <div className="flex flex-1 flex-col items-center text-center lg:items-start lg:text-left">
-            <OpenToWorkBadge />
+            {/* Frosted dark panel behind the hero copy so it stays crisp over the bright day sky */}
+            <div className="rounded-3xl bg-slate-950/30 p-6 backdrop-blur-lg ring-1 ring-white/10 lg:p-8">
+              <OpenToWorkBadge />
 
-            {/* Staggered letter reveal heading */}
-            <motion.h1
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="mb-6 font-bold tracking-tight"
-              style={{ fontSize: "clamp(2.4rem, 5vw, 4rem)", lineHeight: 1.1 }}
-              aria-label={name}
-            >
-              {letters.map((char, i) => (
-                <motion.span
-                  key={i}
-                  variants={letterVariants}
-                  className="inline-block"
-                  style={char === " " ? { width: "0.3em" } : undefined}
-                >
-                  {char === " " ? "\u00A0" : char}
-                </motion.span>
-              ))}
-            </motion.h1>
+              {/* Staggered letter reveal heading */}
+              <motion.h1
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="mb-6 font-bold tracking-tight"
+                style={{ fontSize: "clamp(2.4rem, 5vw, 4rem)", lineHeight: 1.1 }}
+                aria-label={name}
+              >
+                {letters.map((char, i) => (
+                  <motion.span
+                    key={i}
+                    variants={letterVariants}
+                    className="inline-block"
+                    style={char === " " ? { width: "0.3em" } : undefined}
+                  >
+                    {char === " " ? "\u00A0" : char}
+                  </motion.span>
+                ))}
+              </motion.h1>
 
-            {/* Typewriter subtitle */}
-            <motion.div
-              initial={fadeUpInitial}
-              animate={fadeUpAnimate(0.4)}
-              className="mb-6 flex items-center gap-2 text-xl text-slate-500 dark:text-slate-300 sm:text-2xl"
-              aria-live="polite"
-              aria-label={`Role: ${role}`}
-            >
-              <span className="font-mono text-indigo-400">&gt;</span>
-              <span className="font-mono">
-                {role}
-                <span
-                  className="ml-0.5 inline-block w-[2px] animate-pulse bg-indigo-400 align-middle"
-                  style={{ height: "1.1em" }}
-                />
-              </span>
-            </motion.div>
+              {/* Typewriter subtitle */}
+              <motion.div
+                initial={fadeUpInitial}
+                animate={fadeUpAnimate(0.4)}
+                className="mb-6 flex items-center gap-2 text-xl text-slate-300 sm:text-2xl"
+                aria-live="polite"
+                aria-label={`Role: ${role}`}
+              >
+                <span className="font-mono text-indigo-400">&gt;</span>
+                <span className="font-mono">
+                  {role}
+                  <span
+                    className="ml-0.5 inline-block w-[2px] animate-pulse bg-indigo-400 align-middle"
+                    style={{ height: "1.1em" }}
+                  />
+                </span>
+              </motion.div>
 
-            {/* Bio */}
-            <motion.p
-              initial={fadeUpInitial}
-              animate={fadeUpAnimate(0.6)}
-              className="mb-10 max-w-xl text-base leading-relaxed text-slate-600 dark:text-slate-400 sm:text-lg"
-            >
-              {bio}
-            </motion.p>
+              {/* Bio */}
+              <motion.p
+                initial={fadeUpInitial}
+                animate={fadeUpAnimate(0.6)}
+                className="max-w-xl text-base leading-relaxed text-slate-300 sm:text-lg"
+              >
+                {bio}
+              </motion.p>
+            </div>
 
             {/* CTAs */}
             <motion.div

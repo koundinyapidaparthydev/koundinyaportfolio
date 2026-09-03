@@ -91,7 +91,7 @@ export default function EducationSection({ education }: EducationSectionProps) {
     <section
       ref={ref}
       id="education"
-      className="aurora-20 relative bg-white py-24 px-6 dark:bg-[#0a0a0a]"
+      className="relative py-24 px-6"
     >
       <div
         aria-hidden="true"

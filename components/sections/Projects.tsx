@@ -7,7 +7,7 @@
  * Features:
  *  • CSS Grid masonry: 3-col desktop, 2-col tablet, 1-col mobile
  *  • "Filter by tech" row — Framer Motion layout animations on reflow
- *  • Each card: name, live-site badge (AplifyAI), tech pills, bullets,
+ *  • Each card: name, live-site badge (Max), tech pills, bullets,
  *    external-link + GitHub icon buttons
  *  • Cards lift + border brightens on hover
  *  • per-card viewport entry animation via useInView
@@ -249,7 +249,7 @@ export default function Projects() {
     <section
       ref={sectionRef}
       id="projects"
-      className="aurora-20 bg-white py-24 px-6"
+      className="relative py-24 px-6"
     >
       <div className="mx-auto max-w-6xl">
         {/* Heading */}

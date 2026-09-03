@@ -283,7 +283,7 @@ export default function Skills() {
     <section
       ref={sectionRef}
       id="skills"
-      className="aurora-10 relative bg-slate-50 py-24 px-6"
+      className="relative py-24 px-6"
     >
       {/* Top aurora radial glow — dark mode only */}
       <div

@@ -330,7 +330,7 @@ export default function Contact() {
   const inView = useInView(ref, { once: true, amount: 0.1 });
 
   return (
-    <section ref={ref} id="contact" className="aurora-25 relative bg-slate-50 py-24 px-6 dark:bg-[#060606]">
+    <section ref={ref} id="contact" className="relative py-24 px-6">
       {/* Top aurora radial glow */}
       <div
         aria-hidden="true"

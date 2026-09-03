@@ -8,12 +8,14 @@ import Projects from "@/components/sections/Projects";
 import Contact from "@/components/sections/Contact";
 import { FadeInSection } from "@/components/FadeInSection";
 import { AssistantBot } from "@/components/AssistantBot";
+import SkyBackground from "@/components/sky/SkyBackground";
 
 export default function Home() {
   const { personalInfo, education } = resumeData;
 
   return (
-    <main className="min-h-screen bg-background">
+    <main className="sky-page relative min-h-screen">
+      <SkyBackground />
       {/* Hero has its own entrance animations */}
       <Hero personalInfo={personalInfo} />
 

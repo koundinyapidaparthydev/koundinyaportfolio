@@ -300,7 +300,7 @@ export default function Experience() {
     <section
       ref={sectionRef}
       id="experience"
-      className="aurora-15 relative bg-white py-24 px-6"
+      className="relative py-24 px-6"
     >
       {/* Top aurora radial glow — dark mode only */}
       <div
