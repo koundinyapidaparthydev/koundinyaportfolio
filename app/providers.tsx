@@ -7,9 +7,25 @@
  */
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, SessionContext } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, type JSX } from "react";
+
+const isStaticPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "1";
+
+function StaticSessionProvider({ children }: { children: ReactNode }): JSX.Element {
+  return (
+    <SessionContext.Provider
+      value={{
+        data: null,
+        status: "unauthenticated",
+        update: async () => null,
+      }}
+    >
+      {children}
+    </SessionContext.Provider>
+  );
+}
 
 /** Create a stable QueryClient per browser session. */
 function makeQueryClient() {
@@ -39,6 +55,7 @@ function getQueryClient() {
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => getQueryClient());
+  const AuthProvider = isStaticPages ? StaticSessionProvider : SessionProvider;
 
   return (
     <ThemeProvider
@@ -47,9 +64,9 @@ export function Providers({ children }: { children: ReactNode }) {
       enableSystem={false}
       disableTransitionOnChange
     >
-      <SessionProvider>
+      <AuthProvider>
         <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </SessionProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 }

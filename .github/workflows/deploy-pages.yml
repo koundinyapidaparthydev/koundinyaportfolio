@@ -41,7 +41,7 @@ jobs:
       - name: Build static site
         run: npm run build
         env:
-          GITHUB_PAGES: "1"
+          NEXT_PUBLIC_GITHUB_PAGES: "1"
           NEXT_PUBLIC_SITE_URL: https://koundinyapidaparthydev.github.io/koundinyaportfolio
 
       - name: Upload artifact

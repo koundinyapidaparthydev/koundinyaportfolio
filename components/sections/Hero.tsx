@@ -24,6 +24,7 @@ import {
   RESUME_DOWNLOAD_FILENAME,
   RESUME_PDF_API_PATH,
 } from "@/lib/resumeDownload";
+import kpPhoto from "@/public/kp-photo.png";
 
 // ─── Particle data ────────────────────────────────────────────────────────────
 // 50 particles generated deterministically so SSR and CSR produce identical
@@ -172,7 +173,7 @@ function CyberCirclePhoto() {
           style={{ inset: "3px" }}
         >
           <Image
-            src="/kp-photo.png"
+            src={kpPhoto}
             alt="Koundinya Pidaparthy"
             width={294}
             height={294}
