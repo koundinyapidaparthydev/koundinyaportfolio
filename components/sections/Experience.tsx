@@ -22,8 +22,6 @@ function TimelineCard({ exp, side, index }: TimelineCardProps) {
   const isCurrent = exp.endDate === "Present";
   const fromX = side === "left" ? -40 : 40;
 
-  const topPoints = exp.points.slice(0, 3);
-
   return (
     <div
       className={[
@@ -62,15 +60,6 @@ function TimelineCard({ exp, side, index }: TimelineCardProps) {
               </span>
               <span>{exp.location}</span>
             </div>
-
-            <ul className="mb-5 space-y-2">
-              {topPoints.map((pt, i) => (
-                <li key={i} className="flex gap-2 text-sm text-slate-400">
-                  <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
-                  <span>{pt}</span>
-                </li>
-              ))}
-            </ul>
 
             {exp.technologies && exp.technologies.length > 0 && (
               <div className="flex flex-wrap gap-2">
