@@ -156,21 +156,33 @@
   "projects": [
     {
       "id": "project-1",
-      "name": "Max",
-      "stack": ["Next.js 14", "TypeScript", "Google Gemini", "Firebase", "Cloud Run", "Chrome Extension", "Firestore"],
+      "name": "100x",
+      "stack": ["TypeScript", "Next.js", "Node.js", "PII Firewall", "AI Delegation", "Web", "Mobile"],
       "date": "2025 – Present",
-      "description": "End-to-end AI job-application assistant: tailored resumes and cover letters, browser auto-apply, and application tracking across web, extension, desktop, and mobile.",
+      "description": "AI-first work delegation platform — tickets get a configurable AI pass (with PII firewall and policy controls) before a human engineer picks them up.",
       "points": [
-        "Built Gemini-powered resume and cover-letter generation with ATS-oriented LaTeX PDF output, targeting application time under 3 minutes versus 30+ minutes manual.",
-        "Shipped a Chrome extension that detects ATS forms on Greenhouse, Lever, and Workday and auto-fills fields from a master profile.",
-        "Designed cross-platform sync on Firebase Hosting + Cloud Run with Firestore as the shared application and document store.",
-        "Built a centralized tracker dashboard for application status, documents, and analytics across client surfaces."
+        "Built an AI-first ticket pipeline: policy check → AI pass → artifact on the board → human review.",
+        "Implemented a PII firewall and manager policy controls so customer data is blocked from models unless explicitly allowed.",
+        "Designed web control plane for models, clouds, token budgets, and audit, plus mobile triage for AI-first vs human-first routing."
       ],
-      "website": { "url": "https://github.com/koundinyapidaparthydev/Max", "text": "github.com/koundinyapidaparthydev/Max" },
-      "github": "https://github.com/koundinyapidaparthydev/Max"
+      "website": { "url": "https://github.com/koundinyapidaparthydev/100x", "text": "github.com/koundinyapidaparthydev/100x" },
+      "github": "https://github.com/koundinyapidaparthydev/100x"
     },
     {
       "id": "project-2",
+      "name": "Codebird",
+      "stack": ["TypeScript", "Next.js", "Node.js", "Postgres", "Redis", "Sandboxed Tools", "MCP", "Evals"],
+      "date": "2025",
+      "description": "Tool-using code reviewer — sandboxed inspect → findings → precision/recall evals. Optional local MCP.",
+      "points": [
+        "Built a tool-using review agent with read-only sandboxed tools (read_file, grep, list_files, run_lint, git_diff) and path-traversal rejection.",
+        "Queued review jobs over Postgres + Redis, persisted findings and tool calls, and exposed a dashboard for results.",
+        "Added golden-fixture evals that report precision, recall, and F1 against labeled must_fix findings; optional local stdio MCP."
+      ],
+      "github": "https://github.com/koundinyapidaparthydev/codebird"
+    },
+    {
+      "id": "project-3",
       "name": "Asklytics",
       "stack": ["Python", "OpenAI", "SQLite", "Metric Retrieval", "Golden Evals"],
       "date": "2025",
@@ -181,20 +193,6 @@
         "Designed the agent to match internal product-analytics workflows: retrieval first, then grounded answers, then measurable evals."
       ],
       "github": "https://github.com/koundinyapidaparthydev/Asklytics"
-    },
-    {
-      "id": "project-3",
-      "name": "Retro",
-      "stack": ["Next.js", "TypeScript", "GitHub Pages", "Animated Flows"],
-      "date": "2025",
-      "description": "Interview knowledge archive for DSA, high-level design, and low-level design — plain-English definitions, animated flows, and progress tracking.",
-      "points": [
-        "Structured every topic with a plain-English definition, animated flow, and worked example before deeper notes.",
-        "Implemented in-browser progress tracking (Unread / Learning / Known) for interview prep coverage.",
-        "Deployed to GitHub Pages with CI on every push to main."
-      ],
-      "website": { "url": "https://koundinyapidaparthydev.github.io/Retro/", "text": "koundinyapidaparthydev.github.io/Retro" },
-      "github": "https://github.com/koundinyapidaparthydev/Retro"
     }
   ]
 }

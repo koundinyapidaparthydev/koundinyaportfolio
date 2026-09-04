@@ -120,18 +120,31 @@ Git / GitHub, Jira, Figma, Postman, LaunchDarkly, Stripe, Agile / Scrum, Code Re
 
 ## Projects
 
-### Max
+### 100x
 **2025 – Present**  
-[github.com/koundinyapidaparthydev/Max](https://github.com/koundinyapidaparthydev/Max)
+[github.com/koundinyapidaparthydev/100x](https://github.com/koundinyapidaparthydev/100x)
 
-**Stack**: Next.js 14, TypeScript, Google Gemini, Firebase, Cloud Run, Chrome Extension, Firestore
+**Stack**: TypeScript, Next.js, Node.js, PII Firewall, AI Delegation, Web, Mobile
 
-> End-to-end AI job-application assistant: tailored resumes and cover letters, browser auto-apply, and application tracking across web, extension, desktop, and mobile.
+> AI-first work delegation platform — tickets get a configurable AI pass before a human engineer picks them up.
 
-- Gemini-powered resume/cover-letter generation with ATS-oriented LaTeX PDFs
-- Chrome extension auto-fill for Greenhouse, Lever, Workday
-- Firebase + Cloud Run sync across client surfaces
-- Application tracker dashboard for status, documents, and analytics
+- Pipeline: policy check → AI pass → artifact on board → human review
+- PII firewall + manager policy controls for model access
+- Web control plane + mobile triage (AI-first vs human-first)
+
+---
+
+### Codebird
+**2025**  
+[GitHub](https://github.com/koundinyapidaparthydev/codebird)
+
+**Stack**: TypeScript, Next.js, Node.js, Postgres, Redis, Sandboxed Tools, MCP, Evals
+
+> Tool-using code reviewer — sandboxed inspect → findings → precision/recall evals.
+
+- Read-only sandboxed tools with path-traversal rejection
+- Job queue + findings dashboard (Postgres / Redis)
+- Golden-fixture precision/recall/F1 evals; optional local stdio MCP
 
 ---
 
@@ -146,17 +159,3 @@ Git / GitHub, Jira, Figma, Postman, LaunchDarkly, Stripe, Agile / Scrum, Code Re
 - Retrieve → query → answer pipeline over metric catalog + SQLite events
 - Golden-set evals with SQL-only fallback when LLM is unavailable
 - Designed for internal product-analytics agent workflows
-
----
-
-### Retro
-**2025**  
-[Live](https://koundinyapidaparthydev.github.io/Retro/) | [GitHub](https://github.com/koundinyapidaparthydev/Retro)
-
-**Stack**: Next.js, TypeScript, GitHub Pages, Animated Flows
-
-> Interview knowledge archive for DSA, high-level design, and low-level design.
-
-- Plain-English definitions, animated flows, and worked examples
-- In-browser progress tracking (Unread / Learning / Known)
-- GitHub Pages deploy on every push to main
