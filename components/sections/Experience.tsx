@@ -2,9 +2,9 @@
 
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { useExperience, useEducation } from "@/lib/store";
+import { useExperience } from "@/lib/store";
 import { TiltCard } from "@/components/TiltCard";
-import type { Experience, Education } from "@/types/resume";
+import type { Experience } from "@/types/resume";
 
 function formatDate(d: string) {
   return d === "Present" ? "Present" : d;
@@ -22,7 +22,7 @@ function TimelineCard({ exp, side, index }: TimelineCardProps) {
   const isCurrent = exp.endDate === "Present";
   const fromX = side === "left" ? -40 : 40;
 
-  const topPoints = exp.points.slice(0, 4);
+  const topPoints = exp.points.slice(0, 3);
 
   return (
     <div
@@ -102,65 +102,10 @@ function TimelineCard({ exp, side, index }: TimelineCardProps) {
   );
 }
 
-interface EducationCardProps {
-  edu: Education;
-  index: number;
-}
-
-function EducationCard({ edu, index }: EducationCardProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, { once: true, amount: 0.2 });
-
-  return (
-    <motion.div
-      ref={ref}
-      initial={{ opacity: 0, y: 24 }}
-      animate={inView ? { opacity: 1, y: 0 } : {}}
-      transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
-      className="surface p-6"
-    >
-      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-base font-semibold text-white">
-            {edu.degree} — {edu.field}
-          </h3>
-          <p className="accent-gradient text-sm font-medium">{edu.institution}</p>
-        </div>
-        {edu.gpa && (
-          <span className="rounded-full border border-indigo-500/30 bg-indigo-500/10 px-3 py-1 text-[11px] font-semibold text-indigo-300">
-            GPA {edu.gpa}
-          </span>
-        )}
-      </div>
-
-      <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-        <span>{edu.graduationDate}</span>
-        <span>{edu.location}</span>
-      </div>
-
-      {edu.achievements && edu.achievements.length > 0 && (
-        <ul className="space-y-1.5">
-          {edu.achievements.map((a, i) => (
-            <li key={i} className="flex gap-2 text-sm text-slate-400">
-              <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
-              {a}
-            </li>
-          ))}
-        </ul>
-      )}
-    </motion.div>
-  );
-}
-
 export default function Experience() {
   const experience = useExperience();
-  const education = useEducation();
   const sectionRef = useRef<HTMLElement>(null);
   const headingInView = useInView(sectionRef, { once: true, amount: 0.05 });
-
-  const primaryEdu = education.find(
-    (e) => e.degree === "Master of Science" || e.gpa != null
-  );
 
   return (
     <section ref={sectionRef} id="experience" className="relative py-24 px-6">
@@ -195,24 +140,6 @@ export default function Experience() {
           </div>
         </div>
 
-        {primaryEdu && (
-          <div className="mt-20">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={headingInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
-              className="mb-8 text-center"
-            >
-              <h2 className="text-xl font-bold tracking-tight text-white">Education</h2>
-            </motion.div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              {education.map((edu, i) => (
-                <EducationCard key={edu.id} edu={edu} index={i} />
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </section>
   );

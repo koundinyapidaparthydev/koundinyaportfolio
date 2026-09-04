@@ -15,12 +15,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import { Lock, Menu, X, LayoutDashboard, FileDown, LogOut } from "lucide-react";
+import { Lock, Menu, X, LayoutDashboard, LogOut } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
-import {
-  RESUME_DOWNLOAD_FILENAME,
-  RESUME_PDF_API_PATH,
-} from "@/lib/resumeDownload";
 
 const isStaticPages = process.env.NEXT_PUBLIC_GITHUB_PAGES === "1";
 
@@ -120,14 +116,6 @@ export default function Navbar() {
                 {label}
               </button>
             ))}
-            <a
-              href={RESUME_PDF_API_PATH}
-              download={RESUME_DOWNLOAD_FILENAME}
-              className={[linkBase, linkUnderline, "flex items-center gap-1.5"].join(" ")}
-            >
-              <FileDown className="h-3.5 w-3.5 opacity-70" />
-              Resume
-            </a>
           </div>
 
           {/* Right: account + theme + mobile toggle */}
@@ -214,16 +202,6 @@ export default function Navbar() {
                   {label}
                 </button>
               ))}
-
-              <a
-                href={RESUME_PDF_API_PATH}
-                download={RESUME_DOWNLOAD_FILENAME}
-                onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-base font-medium text-foreground/80 transition-colors hover:bg-foreground/[0.06] hover:text-foreground"
-              >
-                <FileDown className="h-4 w-4" />
-                Resume
-              </a>
 
               {!isStaticPages && (
                 <div className="mt-2 space-y-0.5 border-t border-foreground/10 pt-2">

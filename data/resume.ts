@@ -285,31 +285,6 @@ export const resumeData: Resume = {
     },
     {
       id: "project-2",
-      name: "Harmony AI",
-      stack: [
-        "React",
-        "Node.js",
-        "Express",
-        "OpenAI Whisper",
-        "GPT-4",
-        "MongoDB",
-        "AWS S3",
-        "Socket.io",
-      ],
-      date: "Aug 2024 – Dec 2024",
-      description:
-        "An AI-driven music collaboration platform that transcribes, analyzes, and provides real-time feedback on musical performances using speech-to-text and LLMs.",
-      points: [
-        "Built a real-time audio transcription pipeline using OpenAI Whisper API, processing audio streams in 200ms chunks to deliver sub-second transcription latency.",
-        "Developed an LLM-based music feedback engine with GPT-4 that analyzes tempo, melody, and lyrics from transcribed sessions, providing structured coaching suggestions.",
-        "Implemented WebSocket rooms via Socket.io enabling live collaboration between multiple musicians, with cursor presence, synchronized playback, and conflict-free edits.",
-        "Engineered audio file upload and storage pipeline using AWS S3 pre-signed URLs, reducing server load by offloading uploads directly from the browser.",
-        "Designed a session history and analytics dashboard with MongoDB aggregation pipelines, surfacing practice trends and progress over time.",
-      ],
-      github: "https://github.com/koundinyapidaparthy2/harmony-ai",
-    },
-    {
-      id: "project-3",
       name: "AI Exam Prep Platform",
       stack: [
         "Next.js",
