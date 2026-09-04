@@ -12,13 +12,13 @@ Full content catalogue of what is shown on the live portfolio.
 | Title | Full Stack Software Engineer |
 | Email | koundinyapidaparthy@gmail.com |
 | Phone | 551-229-8660 |
-| Location | Thousand Oaks, CA |
+| Location | New York, NY |
 | LinkedIn | linkedin.com/in/koundinyap |
-| GitHub | github.com/koundinyapidaparthydev |
+| GitHub | github.com/koundinyapidaparthy2 |
 | Portfolio | koundinyapidaparthy.com |
 
 **Summary**:
-> Full-stack Software Engineer specializing in JavaScript and TypeScript (React, Next.js, Node.js) with production experience shipping web apps, REST/GraphQL APIs, and cloud services. Strong at performance work, incident response, and building AI-assisted products with agents and eval loops. MS in Computer Science (GPA 3.95).
+> Full Stack Software Engineer with 3+ years of experience building scalable web applications. Proficient in React, Next.js, Node.js, TypeScript, and cloud platforms (AWS, GCP). Passionate about crafting performant, user-first products and integrating AI-powered features.
 
 ---
 
@@ -120,42 +120,48 @@ Git / GitHub, Jira, Figma, Postman, LaunchDarkly, Stripe, Agile / Scrum, Code Re
 
 ## Projects
 
-### 100x
-**2025 – Present**  
-[github.com/koundinyapidaparthydev/100x](https://github.com/koundinyapidaparthydev/100x)
+### AplifyAI
+**Jan 2025 – May 2025**  
+[aplifyai.com](https://aplifyai.com) | [GitHub](https://github.com/koundinyapidaparthy2/aplifyai)
 
-**Stack**: TypeScript, Next.js, Node.js, PII Firewall, AI Delegation, Web, Mobile
+**Stack**: Next.js 14, TypeScript, OpenAI GPT-4, LangChain, Pinecone, Supabase, Tailwind CSS, Stripe
 
-> AI-first work delegation platform — tickets get a configurable AI pass before a human engineer picks them up.
+> AI-powered job application platform that auto-tailors resumes and cover letters to specific job descriptions using RAG and GPT-4.
 
-- Pipeline: policy check → AI pass → artifact on board → human review
-- PII firewall + manager policy controls for model access
-- Web control plane + mobile triage (AI-first vs human-first)
-
----
-
-### Codebird
-**2025**  
-[GitHub](https://github.com/koundinyapidaparthydev/codebird)
-
-**Stack**: TypeScript, Next.js, Node.js, Postgres, Redis, Sandboxed Tools, MCP, Evals
-
-> Tool-using code reviewer — sandboxed inspect → findings → precision/recall evals.
-
-- Read-only sandboxed tools with path-traversal rejection
-- Job queue + findings dashboard (Postgres / Redis)
-- Golden-fixture precision/recall/F1 evals; optional local stdio MCP
+- RAG pipeline with LangChain + Pinecone (60% relevance improvement)
+- GPT-4 integration for ATS-optimised bullets & cover letters (< 8 seconds/request)
+- Multi-tenant SaaS on Supabase (Free/Pro/Enterprise tiers via Stripe)
+- Real-time PDF editor with live preview using @react-pdf/renderer
+- 98 Lighthouse performance score
 
 ---
 
-### Asklytics
-**2025**  
-[GitHub](https://github.com/koundinyapidaparthydev/Asklytics)
+### Harmony AI
+**Aug 2024 – Dec 2024**  
+[GitHub](https://github.com/koundinyapidaparthy2/harmony-ai)
 
-**Stack**: Python, OpenAI, SQLite, Metric Retrieval, Golden Evals
+**Stack**: React, Node.js, Express, OpenAI Whisper, GPT-4, MongoDB, AWS S3, Socket.io
 
-> Analytics Q&A agent that retrieves the right metric, answers from event data, and scores correctness against golden questions.
+> AI-driven music collaboration platform that transcribes, analyzes, and provides real-time feedback on musical performances.
 
-- Retrieve → query → answer pipeline over metric catalog + SQLite events
-- Golden-set evals with SQL-only fallback when LLM is unavailable
-- Designed for internal product-analytics agent workflows
+- Real-time audio transcription with OpenAI Whisper (200ms chunks, sub-second latency)
+- LLM-based music feedback engine (tempo, melody, lyrics analysis)
+- WebSocket rooms with live collaboration, cursor presence, synchronized playback
+- AWS S3 pre-signed URL upload pipeline
+- MongoDB aggregation dashboard for practice analytics
+
+---
+
+### AI Exam Prep Platform
+**Mar 2024 – Jul 2024**  
+[ai-exam-prep.vercel.app](https://ai-exam-prep.vercel.app) | [GitHub](https://github.com/koundinyapidaparthy2/ai-exam-prep)
+
+**Stack**: Next.js, TypeScript, OpenAI GPT-4, Prisma, PostgreSQL, Tailwind CSS, React Query, Vercel
+
+> Adaptive exam preparation platform that generates personalized practice questions, evaluates answers, and tracks mastery using AI.
+
+- Adaptive question generation with GPT-4 + SM-2 spaced-repetition algorithm
+- Natural-language answer evaluation with rubric scoring
+- Prisma + PostgreSQL schema with efficient indexing
+- Performance analytics dashboard with Chart.js
+- p95 latency < 1.2 seconds for question generation (Vercel edge functions)
