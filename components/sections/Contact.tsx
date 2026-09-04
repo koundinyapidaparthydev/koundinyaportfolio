@@ -1,19 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { motion, useInView, AnimatePresence } from "framer-motion";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useRef } from "react";
+import { motion, useInView } from "framer-motion";
 import { resumeData } from "@/data/resume";
-
-const contactSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Enter a valid email address"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
-});
-
-type ContactFormData = z.infer<typeof contactSchema>;
 
 const stripProtocol = (url: string) => url.replace(/^https?:\/\//, "");
 const ensureHttps = (url: string) =>
@@ -103,204 +92,13 @@ const CONTACT_ITEMS = [
   },
 ] as const;
 
-type ToastState = { type: "success" | "error"; message: string } | null;
-
-function Toast({ toast }: { toast: ToastState }) {
-  return (
-    <AnimatePresence>
-      {toast && (
-        <motion.div
-          key={toast.type + toast.message}
-          initial={{ opacity: 0, y: -12, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -12, scale: 0.95 }}
-          transition={{ duration: 0.25, ease: "easeOut" }}
-          role="alert"
-          className={[
-            "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium",
-            toast.type === "success"
-              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-              : "border-red-500/30 bg-red-500/10 text-red-300",
-          ].join(" ")}
-        >
-          {toast.type === "success" ? (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="M20 6 9 17l-5-5" />
-            </svg>
-          ) : (
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" x2="12" y1="8" y2="12" />
-              <line x1="12" x2="12.01" y1="16" y2="16" />
-            </svg>
-          )}
-          {toast.message}
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-function ContactForm() {
-  const [toast, setToast] = useState<ToastState>(null);
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<ContactFormData>({
-    resolver: zodResolver(contactSchema),
-  });
-
-  const showToast = (t: ToastState) => {
-    setToast(t);
-    setTimeout(() => setToast(null), 5000);
-  };
-
-  const onSubmit = async (data: ContactFormData) => {
-    try {
-      const res = await fetch("/api/contact", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-
-      if (!res.ok) throw new Error("Server error");
-
-      showToast({
-        type: "success",
-        message: "Message sent! I'll get back to you soon.",
-      });
-      reset();
-    } catch {
-      showToast({
-        type: "error",
-        message: "Something went wrong. Please try emailing directly.",
-      });
-    }
-  };
-
-  const inputCls =
-    "w-full rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 outline-none transition-all duration-200 focus:border-indigo-500/50 focus:bg-slate-950/80 focus:ring-2 focus:ring-indigo-500/15";
-  const errorCls = "mt-1 text-xs text-red-400";
-
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-      <div>
-        <label htmlFor="contact-name" className="mb-1 block text-xs font-medium text-slate-400">
-          Name
-        </label>
-        <input
-          id="contact-name"
-          type="text"
-          autoComplete="name"
-          placeholder="Your name"
-          {...register("name")}
-          className={inputCls}
-          aria-invalid={!!errors.name}
-        />
-        {errors.name && <p className={errorCls}>{errors.name.message}</p>}
-      </div>
-
-      <div>
-        <label htmlFor="contact-email" className="mb-1 block text-xs font-medium text-slate-400">
-          Email
-        </label>
-        <input
-          id="contact-email"
-          type="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          {...register("email")}
-          className={inputCls}
-          aria-invalid={!!errors.email}
-        />
-        {errors.email && <p className={errorCls}>{errors.email.message}</p>}
-      </div>
-
-      <div>
-        <label htmlFor="contact-message" className="mb-1 block text-xs font-medium text-slate-400">
-          Message
-        </label>
-        <textarea
-          id="contact-message"
-          rows={5}
-          placeholder="Tell me about your project or just say hi."
-          {...register("message")}
-          className={[inputCls, "resize-none"].join(" ")}
-          aria-invalid={!!errors.message}
-        />
-        {errors.message && <p className={errorCls}>{errors.message.message}</p>}
-      </div>
-
-      <Toast toast={toast} />
-
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="btn-primary mt-1 w-full gap-2 disabled:cursor-not-allowed disabled:opacity-60"
-      >
-        {isSubmitting ? (
-          <>
-            <svg
-              className="h-4 w-4 animate-spin"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-              />
-            </svg>
-            Sending…
-          </>
-        ) : (
-          "Send message"
-        )}
-      </button>
-    </form>
-  );
-}
-
 export default function Contact() {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.1 });
 
   return (
     <section ref={ref} id="contact" className="relative py-24 px-6">
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto max-w-3xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
@@ -313,67 +111,53 @@ export default function Contact() {
           </p>
         </motion.div>
 
-        <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
-          <motion.div
-            initial={{ opacity: 0, x: -24 }}
-            animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-            className="surface flex flex-col gap-3 p-6"
-          >
-            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">
-              Contact details
-            </p>
-            {CONTACT_ITEMS.map(({ id, label, value, href, icon }, i) => (
-              <motion.a
-                key={id}
-                href={href}
-                target={id === "linkedin" || id === "github" ? "_blank" : undefined}
-                rel={id === "linkedin" || id === "github" ? "noopener noreferrer" : undefined}
-                initial={{ opacity: 0, x: -16 }}
-                animate={inView ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.4, delay: 0.15 + i * 0.06, ease: "easeOut" }}
-                className="group flex items-center gap-3.5 rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 transition-all duration-200 hover:border-slate-700 hover:bg-slate-800/40"
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={inView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+          className="surface flex flex-col gap-3 p-6"
+        >
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">
+            Contact details
+          </p>
+          {CONTACT_ITEMS.map(({ id, label, value, href, icon }, i) => (
+            <motion.a
+              key={id}
+              href={href}
+              target={id === "linkedin" || id === "github" ? "_blank" : undefined}
+              rel={id === "linkedin" || id === "github" ? "noopener noreferrer" : undefined}
+              initial={{ opacity: 0, x: -16 }}
+              animate={inView ? { opacity: 1, x: 0 } : {}}
+              transition={{ duration: 0.4, delay: 0.15 + i * 0.06, ease: "easeOut" }}
+              className="group flex items-center gap-3.5 rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 transition-all duration-200 hover:border-slate-700 hover:bg-slate-800/40"
+            >
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 text-slate-400 transition-colors group-hover:text-indigo-400">
+                {icon}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
+                  {label}
+                </p>
+                <p className="truncate text-sm font-medium text-slate-200 transition-colors group-hover:text-white">
+                  {value}
+                </p>
+              </div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="ml-auto h-4 w-4 shrink-0 text-slate-500 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-indigo-400"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 text-slate-400 transition-colors group-hover:text-indigo-400">
-                  {icon}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-                    {label}
-                  </p>
-                  <p className="truncate text-sm font-medium text-slate-200 transition-colors group-hover:text-white">
-                    {value}
-                  </p>
-                </div>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="ml-auto h-4 w-4 shrink-0 text-slate-500 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-indigo-400"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                >
-                  <path d="m9 18 6-6-6-6" />
-                </svg>
-              </motion.a>
-            ))}
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, x: 24 }}
-            animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
-            className="surface p-6 lg:p-7"
-          >
-            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-slate-500">
-              Send a message
-            </p>
-            <ContactForm />
-          </motion.div>
-        </div>
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </motion.a>
+          ))}
+        </motion.div>
       </div>
     </section>
   );
