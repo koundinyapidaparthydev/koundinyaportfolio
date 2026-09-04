@@ -10,12 +10,24 @@
 import { useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { glass } from "@/lib/glass";
+import { resumeData } from "@/data/resume";
 
-// ─── Stat card data ───────────────────────────────────────────────────────────
+// ─── Derived data ─────────────────────────────────────────────────────────────
+
+const currentRole = resumeData.experience[0];
+const firstProject = resumeData.projects[0];
+
+const yearsExperience = (() => {
+  const earliestYear = resumeData.experience.reduce((min, exp) => {
+    const year = parseInt(exp.startDate.split(" ").pop() || "2026", 10);
+    return year < min ? year : min;
+  }, 2026);
+  return Math.max(1, 2026 - earliestYear);
+})();
 
 const STATS = [
-  { value: "5+", label: "Years experience" },
-  { value: "10+", label: "Projects shipped" },
+  { value: `${yearsExperience}+`, label: "Years experience" },
+  { value: resumeData.projects.length.toString(), label: "Projects shipped" },
   { value: "99.9%", label: "Uptime systems" },
 ] as const;
 
@@ -56,41 +68,34 @@ export default function About() {
         {/* Bio + stats */}
         <motion.div {...fadeUp} className="glass-panel mx-auto max-w-3xl p-8">
             <h3 className="mb-5 text-2xl font-bold text-gray-900 dark:text-white">
-              Full-Stack Engineer & AI Builder
+              {currentRole.role} & AI Builder
             </h3>
 
             <div className="space-y-4 text-base leading-relaxed text-gray-700 dark:text-slate-200">
+              <p>{resumeData.personalInfo.summary}</p>
               <p>
-                I&apos;m a Full-Stack Software Engineer with over 5 years of
-                experience designing and shipping production-grade web
-                applications. My work spans the entire stack — from designing
-                scalable system architectures to crafting pixel-perfect UIs that
-                delight users.
-              </p>
-              <p>
-                I&apos;m currently at{" "}
+                I&apos;m currently a{" "}
                 <span className="font-semibold text-indigo-600 dark:text-indigo-400">
-                  Anchor Operating System
+                  {currentRole.role}
                 </span>{" "}
-                where I architect AI-first modules — including real-time
-                collaboration engines, model context protocol (MCP) servers, and
-                a plugin marketplace — powering the next generation of operating
-                system experiences.
+                at{" "}
+                <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+                  {currentRole.companyName}
+                </span>
+                . {currentRole.points[0]}
               </p>
               <p>
                 Outside of work I built{" "}
                 <a
-                  href="https://github.com/koundinyapidaparthydev/Max"
+                  href={firstProject.website?.url || firstProject.github}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-semibold text-indigo-600 underline underline-offset-2 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300"
                 >
-                  Max
+                  {firstProject.name}
                 </a>
-                , a production AI SaaS that uses RAG + GPT-4 to tailor
-                resumes and cover letters to job descriptions — now serving
-                real users. I love turning ambitious ideas into reliable,
-                performant software.
+                , {firstProject.description}{" "}
+                I love turning ambitious ideas into reliable, performant software.
               </p>
             </div>
 

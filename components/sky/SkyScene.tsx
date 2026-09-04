@@ -692,21 +692,27 @@ function BirdFlock({ offset, baseY, z, speed, size }: { offset: number; baseY: n
         transparent: true,
         depthWrite: false,
         side: THREE.DoubleSide,
-        color: "#141b2a",
+        color: "#1b2435",
       }),
     [birdTex]
   );
 
-  const birds = useMemo(() => {
+  const { birds, geo } = useMemo(() => {
     const geo = new THREE.PlaneGeometry(2.4, 1.2);
-    return FLOCK_OFFSETS.slice(0, IS_MOBILE ? 5 : FLOCK_OFFSETS.length).map(([dx, dy, dz], i) => ({
-      mesh: new THREE.Mesh(geo, material),
-      dx: dx * size,
-      dy: dy * size,
-      dz: dz * size,
-      phase: i * 1.7 + offset * 5,
-      geo,
-    }));
+    const birds = FLOCK_OFFSETS.slice(0, IS_MOBILE ? 5 : FLOCK_OFFSETS.length).map(([dx, dy, dz], i) => {
+      const baseScale = size * (0.72 + 0.38 * Math.abs(Math.sin(i * 2.3 + offset * 7)));
+      const wingSpeed = 2.2 + 1.3 * Math.abs(Math.cos(i * 1.7 + offset * 5));
+      return {
+        mesh: new THREE.Mesh(geo, material),
+        dx: dx * baseScale,
+        dy: dy * baseScale,
+        dz: dz * baseScale,
+        phase: i * 1.7 + offset * 5,
+        baseScale,
+        wingSpeed,
+      };
+    });
+    return { birds, geo };
   }, [material, offset, size]);
 
   useEffect(() => {
@@ -714,12 +720,10 @@ function BirdFlock({ offset, baseY, z, speed, size }: { offset: number; baseY: n
     if (!g) return;
     for (const b of birds) g.add(b.mesh);
     return () => {
-      for (const b of birds) {
-        g.remove(b.mesh);
-        b.geo.dispose();
-      }
+      for (const b of birds) g.remove(b.mesh);
+      geo.dispose();
     };
-  }, [birds]);
+  }, [birds, geo]);
 
   useEffect(
     () => () => {
@@ -741,10 +745,21 @@ function BirdFlock({ offset, baseY, z, speed, size }: { offset: number; baseY: n
     const x = THREE.MathUtils.lerp(-80, 80, progress);
     const y = baseY + Math.sin(progress * Math.PI * 2 + offset * 9) * 3.5;
     g.position.set(x, y, z);
-    g.rotation.z = Math.sin(progress * Math.PI * 2) * 0.12;
+    // gentle banking as the flock follows its sinusoidal path
+    g.rotation.z = Math.sin(progress * Math.PI * 2) * 0.08;
+    g.rotation.y = Math.cos(progress * Math.PI * 2) * 0.06;
     for (const b of birds) {
-      b.mesh.position.set(b.dx, b.dy + Math.sin(clock.elapsedTime * 0.7 + b.phase) * 0.4, b.dz);
-      b.mesh.scale.y = 1 + 0.5 * Math.sin(clock.elapsedTime * (5.5 + b.phase * 0.15) + b.phase);
+      b.mesh.position.set(b.dx, b.dy + Math.sin(clock.elapsedTime * 0.7 + b.phase) * 0.35, b.dz);
+      const flap = Math.sin(clock.elapsedTime * b.wingSpeed + b.phase);
+      // vertical scale simulates the wings stroking up/down; slight horizontal shrink keeps the body compact
+      b.mesh.scale.set(
+        b.baseScale * (1 - 0.08 * Math.abs(flap)),
+        b.baseScale * (1 + 0.42 * flap),
+        1
+      );
+      // bank and pitch individual birds with each flap
+      b.mesh.rotation.z = flap * 0.18;
+      b.mesh.rotation.x = flap * 0.12;
     }
   });
 

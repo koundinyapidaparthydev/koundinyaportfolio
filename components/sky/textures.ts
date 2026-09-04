@@ -160,22 +160,44 @@ export function makeCloudTexture(size = 256): THREE.CanvasTexture {
   return tex;
 }
 
-/** gull silhouette ("M" shape), white on transparent — tinted by material color */
+/** stylised soaring bird silhouette, white on transparent — tinted by material color.
+ *  Drawn as a shallow V-shaped wings + forked tail so it reads as a real bird at a distance.
+ */
 export function makeBirdTexture(width = 128, height = 64): THREE.CanvasTexture {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("2d context unavailable");
-  ctx.strokeStyle = "#ffffff";
-  ctx.lineWidth = 7;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+  ctx.fillStyle = "#ffffff";
+
+  const cx = width / 2;
+  const cy = height * 0.62;
+
   ctx.beginPath();
-  ctx.moveTo(8, 46);
-  ctx.quadraticCurveTo(34, 8, 64, 42);
-  ctx.quadraticCurveTo(94, 8, 120, 46);
-  ctx.stroke();
+  // left wingtip
+  ctx.moveTo(4, 14);
+  // leading edge to shoulder
+  ctx.quadraticCurveTo(cx - 22, 46, cx - 10, cy - 2);
+  // forked tail - left feather
+  ctx.quadraticCurveTo(cx - 6, cy + 10, cx - 12, height - 6);
+  ctx.lineTo(cx - 2, cy + 6);
+  // forked tail - right feather
+  ctx.lineTo(cx + 12, height - 6);
+  ctx.quadraticCurveTo(cx + 6, cy + 10, cx + 10, cy - 2);
+  // leading edge to right wingtip
+  ctx.quadraticCurveTo(cx + 22, 46, width - 4, 14);
+  // trailing edge back to centre
+  ctx.quadraticCurveTo(cx + 18, 38, cx, 34);
+  ctx.quadraticCurveTo(cx - 18, 38, 4, 14);
+  ctx.closePath();
+  ctx.fill();
+
+  // small head
+  ctx.beginPath();
+  ctx.ellipse(cx, cy - 8, 5, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;

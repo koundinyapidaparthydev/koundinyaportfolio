@@ -14,6 +14,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { glass, glassCn } from "@/lib/glass";
+import { resumeData } from "@/data/resume";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -27,12 +28,20 @@ type ContactFormData = z.infer<typeof contactSchema>;
 
 // ─── Contact info ─────────────────────────────────────────────────────────────
 
+const stripProtocol = (url: string) => url.replace(/^https?:\/\//, "");
+const ensureHttps = (url: string) =>
+  url.startsWith("http://") || url.startsWith("https://")
+    ? url
+    : `https://${url}`;
+
+const { personalInfo } = resumeData;
+
 const CONTACT_ITEMS = [
   {
     id: "email",
     label: "Email",
-    value: "koundinyapidaparthy@gmail.com",
-    href: "mailto:koundinyapidaparthy@gmail.com",
+    value: personalInfo.email,
+    href: `mailto:${personalInfo.email}`,
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -53,8 +62,8 @@ const CONTACT_ITEMS = [
   {
     id: "phone",
     label: "Phone",
-    value: "551-229-8660",
-    href: "tel:5512298660",
+    value: personalInfo.phone,
+    href: `tel:${personalInfo.phone.replace(/\D/g, "")}`,
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -74,8 +83,8 @@ const CONTACT_ITEMS = [
   {
     id: "linkedin",
     label: "LinkedIn",
-    value: "linkedin.com/in/koundinyap",
-    href: "https://linkedin.com/in/koundinyap",
+    value: stripProtocol(personalInfo.linkedin),
+    href: ensureHttps(personalInfo.linkedin),
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -91,8 +100,8 @@ const CONTACT_ITEMS = [
   {
     id: "github",
     label: "GitHub",
-    value: "github.com/koundinyapidaparthy2",
-    href: "https://github.com/koundinyapidaparthy2",
+    value: stripProtocol(personalInfo.github),
+    href: ensureHttps(personalInfo.github),
     icon: (
       <svg
         xmlns="http://www.w3.org/2000/svg"

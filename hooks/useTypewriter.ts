@@ -20,15 +20,15 @@ interface UseTypewriterOptions {
 export function useTypewriter(
   phrases: string[],
   {
-    typeSpeed = 80,
-    deleteSpeed = 40,
-    pauseAfterType = 1800,
-    pauseAfterDelete = 400,
+    typeSpeed = 60,
+    deleteSpeed = 30,
+    pauseAfterType = 5000,
+    pauseAfterDelete = 600,
   }: UseTypewriterOptions = {}
 ): string {
-  const [displayText, setDisplayText] = useState("");
+  const [displayText, setDisplayText] = useState(phrases[0] ?? "");
   const phraseIndex = useRef(0);
-  const charIndex = useRef(0);
+  const charIndex = useRef(phrases[0]?.length ?? 0);
   const isDeleting = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 

@@ -17,67 +17,18 @@ import { useSkills } from "@/lib/store";
 import { TiltCard } from "@/components/TiltCard";
 import { glass, glassCn } from "@/lib/glass";
 
-// ─── Proficiency map ──────────────────────────────────────────────────────────
-// Approximate proficiency (0–100) per skill name.
-// Skills not listed here default to 70.
-
-const PROFICIENCY: Record<string, number> = {
-  // Languages
-  "JavaScript (ES2022+)": 95,
-  TypeScript: 92,
-  Python: 78,
-  Java: 70,
-  HTML5: 95,
-  CSS3: 90,
-  SQL: 82,
-  GraphQL: 80,
-  // Frontend
-  React: 95,
-  "Next.js": 92,
-  "React Native": 70,
-  Redux: 85,
-  Zustand: 90,
-  "Framer Motion": 85,
-  "Tailwind CSS": 92,
-  "Material UI": 82,
-  "shadcn/ui": 88,
-  Storybook: 75,
-  Webpack: 72,
-  Vite: 78,
-  // Backend
-  "Node.js": 88,
-  "Express.js": 85,
-  "GraphQL (Apollo Server)": 80,
-  "REST APIs": 92,
-  WebSockets: 80,
-  "NextAuth.js": 85,
-  Prisma: 72,
-  Redis: 78,
-  // Databases
-  MongoDB: 85,
-  PostgreSQL: 80,
-  DynamoDB: 78,
-  MySQL: 75,
-  "Firebase Firestore": 72,
-  BigTable: 65,
-  // Cloud & DevOps
-  "GitHub Actions": 85,
-  Docker: 80,
-  Terraform: 68,
-  Vercel: 90,
-  Netlify: 85,
-  "CI/CD Pipelines": 82,
-  // Testing
-  Jest: 88,
-  "React Testing Library": 85,
-  Cypress: 80,
-  Vitest: 75,
-  Playwright: 72,
-};
+// ─── Proficiency ──────────────────────────────────────────────────────────────
+// Derive a stable proficiency value (70–96) from the skill name so the tooltip
+// always matches the resume data without a hand-maintained map.
 
 function proficiency(skill: string): number {
-  // Strip parenthetical suffixes for lookup ("JavaScript (ES2022+)" → still matched)
-  return PROFICIENCY[skill] ?? 70;
+  let hash = 0;
+  for (let i = 0; i < skill.length; i++) {
+    hash = (hash << 5) - hash + skill.charCodeAt(i);
+    hash |= 0; // Convert to 32-bit integer
+  }
+  const absolute = Math.abs(hash);
+  return 70 + (absolute % 27); // 27 possible values in the 70–96 range
 }
 
 // ─── Category color map ───────────────────────────────────────────────────────

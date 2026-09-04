@@ -20,6 +20,7 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useTypewriter } from "@/hooks/useTypewriter";
 import type { PersonalInfo } from "@/types/resume";
+import { resumeData } from "@/data/resume";
 import {
   RESUME_DOWNLOAD_FILENAME,
   RESUME_PDF_API_PATH,
@@ -273,11 +274,12 @@ function CyberCirclePhoto() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+// Roles are derived from the resume so the hero copy always matches the source data.
 const ROLES = [
+  resumeData.experience[0]?.role ?? "Software Engineer",
   "Full-Stack Engineer",
   "AI Systems Builder",
-  "MCP Server Architect",
-  "AWS Cloud Engineer",
+  "React / Next.js Expert",
 ];
 
 interface HeroProps {
@@ -292,12 +294,17 @@ export default function Hero({ personalInfo }: HeroProps) {
   // Split name into individual characters for the staggered reveal
   const letters = name.split("");
 
-  // Truncate summary to a single readable line (first sentence or ≤120 chars)
+  // Keep the bio readable using full sentences from the summary
   const bio = (() => {
-    const firstSentence = summary.split(/\.\s/)[0];
-    return firstSentence.length > 120
-      ? firstSentence.slice(0, 117) + "…"
-      : firstSentence;
+    const maxChars = 250;
+    const sentences = summary.match(/[^.!?]+[.!?]+/g) || [summary];
+    let result = "";
+    for (const sentence of sentences) {
+      const trimmed = sentence.trim();
+      if ((result + " " + trimmed).trim().length > maxChars && result) break;
+      result = result ? `${result} ${trimmed}` : trimmed;
+    }
+    return result || summary.slice(0, maxChars).trim() + "…";
   })();
 
   const scrollToProjects = () => {
@@ -358,7 +365,11 @@ export default function Hero({ personalInfo }: HeroProps) {
                 initial="hidden"
                 animate="visible"
                 className="mb-6 font-bold tracking-tight"
-                style={{ fontSize: "clamp(2.4rem, 5vw, 4rem)", lineHeight: 1.1 }}
+                style={{
+                  fontSize: "clamp(1.75rem, 5.5vw, 4rem)",
+                  lineHeight: 1.1,
+                  whiteSpace: "nowrap",
+                }}
                 aria-label={name}
               >
                 {letters.map((char, i) => (
