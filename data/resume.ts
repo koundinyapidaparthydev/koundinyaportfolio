@@ -10,7 +10,7 @@ export const resumeData: Resume = {
     github: "github.com/koundinyapidaparthy2",
     portfolio: "koundinyapidaparthy.com",
     summary:
-      "Software engineer with 3+ years of experience building scalable web applications. Proficient in React, Next.js, Node.js, TypeScript, and cloud platforms (AWS, GCP). Passionate about crafting performant, user-first products and integrating AI-powered features.",
+      "Software engineer with 5+ years of experience building scalable web applications. Proficient in React, Next.js, Node.js, TypeScript, and cloud platforms (AWS, GCP). Passionate about crafting performant, user-first products and integrating AI-powered features.",
   },
 
   education: [
@@ -70,7 +70,7 @@ export const resumeData: Resume = {
     {
       id: "exp-2",
       companyName: "Anchor Operating System",
-      role: "Software Engineer Intern",
+      role: "Software Engineer Co-op",
       location: "California (Remote)",
       date: "May 2024 – Sep 2024",
       startDate: "May 2024",
@@ -256,7 +256,7 @@ export const resumeData: Resume = {
   projects: [
     {
       id: "project-1",
-      name: "AplifyAI",
+      name: "Max",
       stack: [
         "Next.js 14",
         "TypeScript",
@@ -278,10 +278,10 @@ export const resumeData: Resume = {
         "Achieved 98 Lighthouse performance score through Next.js App Router streaming, React Suspense boundaries, and edge caching on Vercel.",
       ],
       website: {
-        url: "https://aplifyai.com",
-        text: "aplifyai.com",
+        url: "https://github.com/koundinyapidaparthydev/Max",
+        text: "github.com/koundinyapidaparthydev/Max",
       },
-      github: "https://github.com/koundinyapidaparthy2/aplifyai",
+      github: "https://github.com/koundinyapidaparthydev/Max",
     },
     {
       id: "project-2",
