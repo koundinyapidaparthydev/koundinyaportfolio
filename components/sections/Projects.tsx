@@ -1,74 +1,10 @@
 "use client";
 
-/**
- * Projects.tsx — Masonry-style project showcase.
- *
- * Reads projects from the Zustand store.
- * Features:
- *  • CSS Grid masonry: 3-col desktop, 2-col tablet, 1-col mobile
- *  • "Filter by tech" row — Framer Motion layout animations on reflow
- *  • Each card: name, live-site badge (Max), tech pills, bullets,
- *    external-link + GitHub icon buttons
- *  • Cards lift + border brightens on hover
- *  • per-card viewport entry animation via useInView
- */
-
 import { useState, useRef } from "react";
 import { motion, AnimatePresence, useInView } from "framer-motion";
 import { useProjects } from "@/lib/store";
 import { TiltCard } from "@/components/TiltCard";
 import type { Project } from "@/types/resume";
-import { glass, glassCn } from "@/lib/glass";
-
-// ─── Tech pill colour map ─────────────────────────────────────────────────────
-
-const TECH_COLORS: Record<string, string> = {
-  // Blues
-  "Next.js 14":    "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30",
-  "Next.js":       "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/15 dark:text-blue-300 dark:border-blue-500/30",
-  TypeScript:      "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-600/15 dark:text-blue-300 dark:border-blue-600/30",
-  React:           "bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-500/15 dark:text-sky-300 dark:border-sky-500/30",
-  "React Query":   "bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-500/15 dark:text-sky-300 dark:border-sky-500/30",
-  Socket:          "bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-600/15 dark:text-sky-300 dark:border-sky-600/30",
-  "Socket.io":     "bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-600/15 dark:text-sky-300 dark:border-sky-600/30",
-  "Tailwind CSS":  "bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30",
-  Vercel:          "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30",
-  // Yellows / Oranges
-  Python:          "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/15 dark:text-yellow-300 dark:border-yellow-500/30",
-  JavaScript:      "bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-400/15 dark:text-yellow-300 dark:border-yellow-400/30",
-  Firebase:        "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-500/30",
-  "AWS S3":        "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-500/30",
-  AWS:             "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-500/15 dark:text-orange-300 dark:border-orange-500/30",
-  // Greens
-  "Node.js":       "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30",
-  Express:         "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30",
-  Supabase:        "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-600/15 dark:text-emerald-300 dark:border-emerald-600/30",
-  Prisma:          "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-700/15 dark:text-emerald-300 dark:border-emerald-700/30",
-  PostgreSQL:      "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30",
-  MongoDB:         "bg-green-100 text-green-700 border-green-200 dark:bg-green-500/15 dark:text-green-300 dark:border-green-500/30",
-  // Purples / Pinks
-  "OpenAI GPT-4":  "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-500/15 dark:text-violet-300 dark:border-violet-500/30",
-  "GPT-4":         "bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-500/15 dark:text-violet-300 dark:border-violet-500/30",
-  LangChain:       "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30",
-  Pinecone:        "bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-600/15 dark:text-purple-300 dark:border-purple-600/30",
-  "OpenAI Whisper":"bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200 dark:bg-fuchsia-500/15 dark:text-fuchsia-300 dark:border-fuchsia-500/30",
-  Stripe:          "bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-500/15 dark:text-indigo-300 dark:border-indigo-500/30",
-};
-
-const DEFAULT_PILL =
-  "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-500/15 dark:text-slate-300 dark:border-slate-500/30";
-
-function techPillClass(tech: string) {
-  // Partial match for long names like "AWS S3"
-  const exact = TECH_COLORS[tech];
-  if (exact) return exact;
-  const partial = Object.keys(TECH_COLORS).find(
-    (k) => tech.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(tech.toLowerCase())
-  );
-  return partial ? TECH_COLORS[partial] : DEFAULT_PILL;
-}
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
 
 function ExternalLinkIcon({ className }: { className?: string }) {
   return (
@@ -104,13 +40,6 @@ function GitHubIcon({ className }: { className?: string }) {
   );
 }
 
-// ─── Live site IDs ─────────────────────────────────────────────────────────────
-// Project IDs that have a production live site badge.
-
-const LIVE_SITE_IDS = new Set(["project-1"]);
-
-// ─── ProjectCard ──────────────────────────────────────────────────────────────
-
 interface ProjectCardProps {
   project: Project;
   index: number;
@@ -119,87 +48,66 @@ interface ProjectCardProps {
 function ProjectCard({ project, index }: ProjectCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.1 });
-  const isLive = LIVE_SITE_IDS.has(project.id);
+  const hasWebsite = Boolean(project.website);
+  const keyPoints = project.points.slice(0, 3);
 
   return (
     <motion.div
       ref={ref}
       layout
-      initial={{ opacity: 0, y: 30 }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.5, delay: index * 0.08, ease: "easeOut" }}
+      initial={{ opacity: 0, y: 24 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
+      exit={{ opacity: 0, scale: 0.98 }}
+      transition={{ duration: 0.45, delay: index * 0.06, ease: "easeOut" }}
       style={{ breakInside: "avoid" }}
     >
-      <TiltCard
-        className={glassCn(
-          glass.sectionCard,
-          "group relative flex flex-col overflow-hidden transition-all duration-300 hover:border-indigo-500/40 dark:hover:border-white/15"
-        )}
-      >
-
-      <div className="relative flex flex-1 flex-col p-6">
-        {/* ── Card header ── */}
-        <div className="mb-4 flex items-start justify-between gap-3">
+      <TiltCard className="surface group flex flex-col overflow-hidden p-6 transition-colors duration-300 hover:border-slate-700">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-lg font-bold text-gray-900 leading-snug dark:text-white">
-              {project.name}
-            </h3>
-            <p className="mt-1 text-xs text-gray-400 dark:text-slate-500">{project.date}</p>
+            <h3 className="text-base font-semibold text-white">{project.name}</h3>
+            <p className="mt-0.5 text-xs text-slate-500">{project.date}</p>
           </div>
-
-          <div className="flex shrink-0 flex-col items-end gap-1.5">
-            {isLive && (
-              <span className="flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-400">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                </span>
-                Live
+          {hasWebsite && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-400">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-500" />
               </span>
-            )}
-          </div>
+              Live
+            </span>
+          )}
         </div>
 
-        {/* ── Description ── */}
-        <p className="mb-4 text-sm leading-relaxed text-gray-600 dark:text-slate-400">
-          {project.description}
-        </p>
+        <p className="mb-4 text-sm text-slate-400">{project.description}</p>
 
-        {/* ── Tech stack pills ── */}
-        <div className="mb-5 flex flex-wrap gap-1.5">
+        <div className="mb-4 flex flex-wrap gap-2">
           {project.stack.map((tech) => (
             <span
               key={tech}
-              className={[
-                "rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-opacity",
-                techPillClass(tech),
-              ].join(" ")}
+              className="rounded-full border border-slate-700/60 bg-slate-900/60 px-2.5 py-0.5 text-[11px] font-medium text-slate-400"
             >
               {tech}
             </span>
           ))}
         </div>
 
-        {/* ── Bullet points ── */}
         <ul className="mb-6 flex-1 space-y-2">
-          {project.points.map((pt, i) => (
-            <li key={i} className="flex gap-2 text-sm text-gray-600 dark:text-slate-400">
-              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-500" />
+          {keyPoints.map((pt, i) => (
+            <li key={i} className="flex gap-2 text-sm text-slate-400">
+              <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-indigo-400" />
               <span>{pt}</span>
             </li>
           ))}
         </ul>
 
-        {/* ── Action buttons ── */}
-        <div className="flex items-center gap-3 border-t border-white/6 pt-4">
+        <div className="mt-auto flex flex-wrap items-center gap-3 border-t border-slate-800/60 pt-4">
           {project.website && (
             <a
               href={project.website.url}
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Open ${project.name} live site`}
-              className="glass-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-300"
+              className="btn-secondary px-3 py-1.5 text-xs"
             >
               <ExternalLinkIcon className="h-3.5 w-3.5" />
               {project.website.text}
@@ -211,20 +119,17 @@ function ProjectCard({ project, index }: ProjectCardProps) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label={`Open ${project.name} on GitHub`}
-              className="glass-btn flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium"
+              className="btn-secondary px-3 py-1.5 text-xs"
             >
               <GitHubIcon className="h-3.5 w-3.5" />
               GitHub
             </a>
           )}
         </div>
-      </div>
       </TiltCard>
     </motion.div>
   );
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 const ALL_FILTER = "All";
 
@@ -233,11 +138,7 @@ export default function Projects() {
   const sectionRef = useRef<HTMLElement>(null);
   const headingInView = useInView(sectionRef, { once: true, amount: 0.1 });
 
-  // Build a deduplicated sorted list of all tech across all projects
-  const allTech = Array.from(
-    new Set(projects.flatMap((p) => p.stack))
-  ).sort();
-
+  const allTech = Array.from(new Set(projects.flatMap((p) => p.stack))).sort();
   const [activeTech, setActiveTech] = useState<string>(ALL_FILTER);
 
   const visible =
@@ -246,59 +147,48 @@ export default function Projects() {
       : projects.filter((p) => p.stack.includes(activeTech));
 
   return (
-    <section
-      ref={sectionRef}
-      id="projects"
-      className="relative py-24 px-6"
-    >
+    <section ref={sectionRef} id="projects" className="relative py-24 px-6">
       <div className="mx-auto max-w-6xl">
-        {/* Heading */}
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={headingInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="mb-12 text-center"
         >
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
-            Projects
-          </h2>
-          <div className="mx-auto mt-3 h-1 w-16 rounded-full bg-indigo-500" />
-          <p className="mx-auto mt-4 max-w-xl text-sm text-gray-500 dark:text-slate-500">
-            AI-powered products built end-to-end — from architecture to
-            production deployment.
+          <h2 className="section-heading heading-gradient">Projects</h2>
+          <p className="section-subheading mx-auto">
+            AI-powered products built end-to-end — from architecture to production deployment.
           </p>
         </motion.div>
 
-        {/* Filter row */}
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={headingInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+          transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
           className="mb-10 flex flex-wrap justify-center gap-2"
           role="group"
           aria-label="Filter projects by technology"
         >
-          {[ALL_FILTER, ...allTech].map((tech) => (
-            <button
-              key={tech}
-              onClick={() => setActiveTech(tech)}
-              className={glassCn(
-                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400",
-                activeTech === tech
-                  ? glassCn(glass.pillActive, "text-indigo-600 dark:text-indigo-300")
-                  : glass.pill
-              )}
-            >
-              {tech}
-            </button>
-          ))}
+          {[ALL_FILTER, ...allTech].map((tech) => {
+            const active = activeTech === tech;
+            return (
+              <button
+                key={tech}
+                onClick={() => setActiveTech(tech)}
+                className={[
+                  "inline-flex items-center rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400",
+                  active
+                    ? "border border-indigo-500/40 bg-indigo-500/15 text-indigo-300"
+                    : "border border-slate-700 bg-slate-900/50 text-slate-400 hover:border-slate-500 hover:bg-slate-800/60 hover:text-white",
+                ].join(" ")}
+              >
+                {tech}
+              </button>
+            );
+          })}
         </motion.div>
 
-        {/* Grid */}
-        <motion.div
-          layout
-          className="columns-1 gap-6 sm:columns-2 lg:columns-3"
-        >
+        <motion.div layout className="columns-1 gap-6 sm:columns-2 lg:columns-3">
           <AnimatePresence mode="popLayout">
             {visible.map((project, i) => (
               <div key={project.id} className="mb-6 break-inside-avoid">
@@ -308,15 +198,13 @@ export default function Projects() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Empty state */}
         {visible.length === 0 && (
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="mt-8 text-center text-sm text-gray-400 dark:text-slate-600"
+            className="mt-8 text-center text-sm text-slate-600"
           >
-            No projects use{" "}
-            <span className="text-indigo-400">{activeTech}</span> yet.
+            No projects use <span className="text-indigo-400">{activeTech}</span> yet.
           </motion.p>
         )}
       </div>

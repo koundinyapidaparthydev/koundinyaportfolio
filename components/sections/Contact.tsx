@@ -1,22 +1,11 @@
 "use client";
 
-/**
- * Contact.tsx — Dark contact section.
- *
- * Left: clickable contact info cards (email, phone, LinkedIn, GitHub)
- * Right: react-hook-form + zod contact form → POST /api/contact
- *        with success / error toast feedback
- */
-
 import { useRef, useState } from "react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { glass, glassCn } from "@/lib/glass";
 import { resumeData } from "@/data/resume";
-
-// ─── Schema ───────────────────────────────────────────────────────────────────
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -25,8 +14,6 @@ const contactSchema = z.object({
 });
 
 type ContactFormData = z.infer<typeof contactSchema>;
-
-// ─── Contact info ─────────────────────────────────────────────────────────────
 
 const stripProtocol = (url: string) => url.replace(/^https?:\/\//, "");
 const ensureHttps = (url: string) =>
@@ -116,8 +103,6 @@ const CONTACT_ITEMS = [
   },
 ] as const;
 
-// ─── Toast ────────────────────────────────────────────────────────────────────
-
 type ToastState = { type: "success" | "error"; message: string } | null;
 
 function Toast({ toast }: { toast: ToastState }) {
@@ -132,7 +117,7 @@ function Toast({ toast }: { toast: ToastState }) {
           transition={{ duration: 0.25, ease: "easeOut" }}
           role="alert"
           className={[
-            "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg",
+            "flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium",
             toast.type === "success"
               ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
               : "border-red-500/30 bg-red-500/10 text-red-300",
@@ -176,8 +161,6 @@ function Toast({ toast }: { toast: ToastState }) {
   );
 }
 
-// ─── Contact form ─────────────────────────────────────────────────────────────
-
 function ContactForm() {
   const [toast, setToast] = useState<ToastState>(null);
 
@@ -218,14 +201,14 @@ function ContactForm() {
     }
   };
 
-  const inputCls = glassCn(glass.input, glass.inputCompact);
+  const inputCls =
+    "w-full rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 outline-none transition-all duration-200 focus:border-indigo-500/50 focus:bg-slate-950/80 focus:ring-2 focus:ring-indigo-500/15";
   const errorCls = "mt-1 text-xs text-red-400";
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
-      {/* Name */}
       <div>
-        <label htmlFor="contact-name" className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
+        <label htmlFor="contact-name" className="mb-1 block text-xs font-medium text-slate-400">
           Name
         </label>
         <input
@@ -240,9 +223,8 @@ function ContactForm() {
         {errors.name && <p className={errorCls}>{errors.name.message}</p>}
       </div>
 
-      {/* Email */}
       <div>
-        <label htmlFor="contact-email" className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
+        <label htmlFor="contact-email" className="mb-1 block text-xs font-medium text-slate-400">
           Email
         </label>
         <input
@@ -257,15 +239,14 @@ function ContactForm() {
         {errors.email && <p className={errorCls}>{errors.email.message}</p>}
       </div>
 
-      {/* Message */}
       <div>
-        <label htmlFor="contact-message" className="mb-1 block text-xs font-medium text-slate-600 dark:text-slate-400">
+        <label htmlFor="contact-message" className="mb-1 block text-xs font-medium text-slate-400">
           Message
         </label>
         <textarea
           id="contact-message"
           rows={5}
-          placeholder="Tell me about your project or just say hi!"
+          placeholder="Tell me about your project or just say hi."
           {...register("message")}
           className={[inputCls, "resize-none"].join(" ")}
           aria-invalid={!!errors.message}
@@ -278,10 +259,7 @@ function ContactForm() {
       <button
         type="submit"
         disabled={isSubmitting}
-        className={glassCn(
-          glass.btnPrimary,
-          "group mt-1 flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-        )}
+        className="btn-primary mt-1 w-full gap-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {isSubmitting ? (
           <>
@@ -309,30 +287,12 @@ function ContactForm() {
             Sending…
           </>
         ) : (
-          <>
-            Send message
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-4 w-4 transition-transform group-hover:translate-x-0.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d="m22 2-7 20-4-9-9-4 20-7z" />
-              <path d="M22 2 11 13" />
-            </svg>
-          </>
+          "Send message"
         )}
       </button>
     </form>
   );
 }
-
-// ─── Main component ───────────────────────────────────────────────────────────
 
 export default function Contact() {
   const ref = useRef<HTMLElement>(null);
@@ -340,39 +300,27 @@ export default function Contact() {
 
   return (
     <section ref={ref} id="contact" className="relative py-24 px-6">
-      {/* Top aurora radial glow */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-56 opacity-30 dark:opacity-100"
-        style={{ background: "radial-gradient(ellipse at 50% -10%, rgba(124,58,237,0.15) 0%, transparent 65%)" }}
-      />
-      <div className="mx-auto max-w-6xl">
-        {/* Heading */}
+      <div className="mx-auto max-w-5xl">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={inView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="mb-12 text-center"
         >
-          <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
-            Get In Touch
-          </h2>
-          <div className="mx-auto mt-3 h-1 w-16 rounded-full bg-indigo-500" />
-          <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed text-slate-600 dark:text-slate-400">
-            Have a project in mind or just want to connect? I&apos;d love to
-            hear from you.
+          <h2 className="section-heading heading-gradient">Get In Touch</h2>
+          <p className="section-subheading mx-auto">
+            Have a project in mind or just want to connect? I&apos;d love to hear from you.
           </p>
         </motion.div>
 
         <div className="grid gap-8 lg:grid-cols-2 lg:gap-10">
-          {/* ── Left: contact cards ── */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -24 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
-            className="flex flex-col gap-3"
+            transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+            className="surface flex flex-col gap-3 p-6"
           >
-            <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-slate-500">
               Contact details
             </p>
             {CONTACT_ITEMS.map(({ id, label, value, href, icon }, i) => (
@@ -381,25 +329,25 @@ export default function Contact() {
                 href={href}
                 target={id === "linkedin" || id === "github" ? "_blank" : undefined}
                 rel={id === "linkedin" || id === "github" ? "noopener noreferrer" : undefined}
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: -16 }}
                 animate={inView ? { opacity: 1, x: 0 } : {}}
-                transition={{ duration: 0.45, delay: 0.15 + i * 0.08, ease: "easeOut" }}
-                className={glassCn(glass.contactRow, "group")}
+                transition={{ duration: 0.4, delay: 0.15 + i * 0.06, ease: "easeOut" }}
+                className="group flex items-center gap-3.5 rounded-xl border border-slate-800/60 bg-slate-900/40 px-4 py-3 transition-all duration-200 hover:border-slate-700 hover:bg-slate-800/40"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200/80 bg-white/60 text-slate-500 transition-all duration-200 group-hover:border-indigo-500/35 group-hover:bg-indigo-500/10 group-hover:text-indigo-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-400 dark:group-hover:border-indigo-400/35 dark:group-hover:text-indigo-400">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-900/60 text-slate-400 transition-colors group-hover:text-indigo-400">
                   {icon}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-500">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
                     {label}
                   </p>
-                  <p className="mt-0.5 truncate text-sm font-medium text-slate-700 transition-colors group-hover:text-indigo-600 dark:text-slate-200 dark:group-hover:text-white">
+                  <p className="truncate text-sm font-medium text-slate-200 transition-colors group-hover:text-white">
                     {value}
                   </p>
                 </div>
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="ml-auto h-4 w-4 shrink-0 text-slate-400 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-indigo-400"
+                  className="ml-auto h-4 w-4 shrink-0 text-slate-500 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-indigo-400"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -414,14 +362,13 @@ export default function Contact() {
             ))}
           </motion.div>
 
-          {/* ── Right: form ── */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 24 }}
             animate={inView ? { opacity: 1, x: 0 } : {}}
-            transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-            className={glassCn(glass.contactForm, "p-6 lg:p-7")}
+            transition={{ duration: 0.5, delay: 0.15, ease: "easeOut" }}
+            className="surface p-6 lg:p-7"
           >
-            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-slate-500 dark:text-slate-400">
+            <p className="mb-5 text-xs font-semibold uppercase tracking-widest text-slate-500">
               Send a message
             </p>
             <ContactForm />
