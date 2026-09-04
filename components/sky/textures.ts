@@ -38,6 +38,11 @@ export function makeGlowTexture(size = 256, hardness = 0.0): THREE.CanvasTexture
 
 /** procedural moon surface: gray base, maria blotches, craters with lit rims */
 export function makeMoonTexture(width = 512, height = 256): THREE.CanvasTexture {
+  return makeMoonTextures(width, height).map;
+}
+
+/** color map + grayscale bump map derived from the same procedural surface */
+export function makeMoonTextures(width = 512, height = 256): { map: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture } {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -98,10 +103,22 @@ export function makeMoonTexture(width = 512, height = 256): THREE.CanvasTexture 
     ctx.fillRect(x, y, 1.4, 1.4);
   }
 
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 4;
-  return tex;
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.anisotropy = 4;
+
+  // derive bump map from the same surface: darker craters = lower
+  const bumpCanvas = document.createElement("canvas");
+  bumpCanvas.width = width;
+  bumpCanvas.height = height;
+  const bCtx = bumpCanvas.getContext("2d");
+  if (!bCtx) throw new Error("2d context unavailable");
+  bCtx.filter = "grayscale(100%)";
+  bCtx.drawImage(canvas, 0, 0);
+  const bumpMap = new THREE.CanvasTexture(bumpCanvas);
+  bumpMap.colorSpace = THREE.NoColorSpace;
+
+  return { map, bumpMap };
 }
 
 /** puffy cloud sprite: overlapping soft blobs shaped by a radial mask */

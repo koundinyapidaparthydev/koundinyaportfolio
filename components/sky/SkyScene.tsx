@@ -8,7 +8,7 @@ import {
   makeBirdTexture,
   makeCloudTexture,
   makeGlowTexture,
-  makeMoonTexture,
+  makeMoonTextures,
   makeRidgeTexture,
   makeStreakTexture,
 } from "./textures";
@@ -24,16 +24,19 @@ const CLOUD_LAYERS: Array<{ count: number; yMin: number; yMax: number; z: number
   { count: IS_MOBILE ? 16 : 36, yMin: 2, yMax: 22, z: -85, scale: 24, speed: 0.3, opacity: 0.6 },
 ];
 
-const DOME_RADIUS = 220;
 const tmpVec = new THREE.Vector3();
+const sunDir = new THREE.Vector3();
 
 /* ── scroll-driven clock ───────────────────────────────────────────── */
 function TimeDriver() {
-  useFrame((_, dt) => {
+  useFrame(({ gl }, dt) => {
     const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
     skyClock.target = THREE.MathUtils.clamp(window.scrollY / max, 0, 1);
-    const k = 1 - Math.exp(-Math.min(dt, 0.1) * 2.4);
+    const clamped = Math.min(dt, 0.05);
+    const k = 1 - Math.exp(-clamped * 4.0);
     skyClock.t += (skyClock.target - skyClock.t) * k;
+    const s = sampleSky(skyClock.t);
+    gl.toneMappingExposure = THREE.MathUtils.lerp(0.25, 0.15, s.starOpacity);
   });
   return null;
 }
@@ -50,27 +53,31 @@ function CameraRig() {
     return () => window.removeEventListener("pointermove", onMove);
   }, []);
 
-  useFrame(({ camera, clock }) => {
+  useFrame(({ camera, clock }, dt) => {
     let tx: number;
     let ty: number;
     if (IS_MOBILE) {
       tx = Math.sin(clock.elapsedTime * 0.12) * 0.55;
       ty = Math.cos(clock.elapsedTime * 0.09) * 0.3;
     } else {
-      skyClock.pointerX += (skyClock.pointerTargetX - skyClock.pointerX) * 0.055;
-      skyClock.pointerY += (skyClock.pointerTargetY - skyClock.pointerY) * 0.055;
+      const clamped = Math.min(dt, 0.05);
+      const k = 1 - Math.exp(-clamped * 9.0);
+      skyClock.pointerX += (skyClock.pointerTargetX - skyClock.pointerX) * k;
+      skyClock.pointerY += (skyClock.pointerTargetY - skyClock.pointerY) * k;
       tx = skyClock.pointerX;
       ty = skyClock.pointerY;
     }
     camera.position.x = tx * 0.9;
     camera.position.y = 1.2 - ty * 0.55;
-    camera.lookAt(0, 1.5, -40);
+    camera.lookAt(0, 16.0, -40);
   });
   return null;
 }
 
-/* ── gradient sky dome ─────────────────────────────────────────────── */
-function Dome() {
+/* ── custom atmospheric sky dome ───────────────────────────────────── */
+const DOME_RADIUS = 280;
+
+function Atmosphere() {
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -79,6 +86,10 @@ function Dome() {
         uniforms: {
           uTop: { value: new THREE.Color("#2a5da8") },
           uHorizon: { value: new THREE.Color("#8fc3e4") },
+          uSunDir: { value: new THREE.Vector3(0, 1, 0) },
+          uSunColor: { value: new THREE.Color("#fff6de") },
+          uSunIntensity: { value: 1 },
+          uStarOpacity: { value: 0 },
         },
         vertexShader: /* glsl */ `
           varying vec3 vDir;
@@ -90,30 +101,62 @@ function Dome() {
         fragmentShader: /* glsl */ `
           uniform vec3 uTop;
           uniform vec3 uHorizon;
+          uniform vec3 uSunDir;
+          uniform vec3 uSunColor;
+          uniform float uSunIntensity;
+          uniform float uStarOpacity;
           varying vec3 vDir;
+
           void main() {
-            float y = vDir.y;
+            vec3 dir = normalize(vDir);
+            float y = dir.y;
+
+            // base gradient: horizon to zenith
             float up = clamp(y, 0.0, 1.0);
-            vec3 col = mix(uTop, uHorizon, pow(1.0 - up, 1.7));
-            // darken below the horizon so ridges sit on solid ground
-            col = mix(col, uHorizon * 0.45, smoothstep(0.02, -0.18, y));
+            vec3 col = mix(uHorizon, uTop, pow(up, 0.78));
+
+            // darken below horizon (ground haze)
+            col = mix(col, uHorizon * 0.32, smoothstep(0.04, -0.2, y));
+
+            // mie glow around the sun
+            float sunDot = max(0.0, dot(dir, uSunDir));
+            float mie = pow(sunDot, 24.0) * uSunIntensity * 0.65;
+            float mieWide = pow(sunDot, 6.0) * uSunIntensity * 0.18;
+            col += uSunColor * (mie + mieWide);
+
+            // horizon glow that follows the sun
+            float horizGlow = pow(max(0.0, sunDot * (1.0 - up)), 3.2) * uSunIntensity * 0.4;
+            col += uSunColor * horizGlow;
+
+            // night desaturation / shift toward deep blue-black
+            col = mix(col, col * 0.15 + vec3(0.02, 0.03, 0.08), uStarOpacity * 0.88);
+
+            // subtle vignette at screen edges (view direction away from up)
+            float vignette = 1.0 - 0.12 * (1.0 - up) * (1.0 - uStarOpacity);
+            col *= vignette;
+
             gl_FragColor = vec4(col, 1.0);
           }
         `,
       }),
     []
   );
+
   useEffect(() => () => material.dispose(), [material]);
 
   useFrame(() => {
     const s = sampleSky(skyClock.t);
     (material.uniforms.uTop.value as THREE.Color).copy(s.top);
     (material.uniforms.uHorizon.value as THREE.Color).copy(s.horizon);
+    material.uniforms.uSunDir.value.copy(domePosition(s.sunElev, s.sunAz, 1, sunDir));
+    (material.uniforms.uSunColor.value as THREE.Color).copy(s.sunColor);
+    material.uniforms.uSunIntensity.value = s.sunIntensity;
+    material.uniforms.uStarOpacity.value = s.starOpacity;
   });
 
   return (
     <mesh material={material} renderOrder={-10} frustumCulled={false}>
-      <sphereGeometry args={[DOME_RADIUS, 32, 24]} />
+      <sphereGeometry args={[DOME_RADIUS, 48, 32]} />
     </mesh>
   );
 }
@@ -171,7 +214,6 @@ function Stars() {
     const tints = new Float32Array(STAR_COUNT);
     const R = 190;
     for (let i = 0; i < STAR_COUNT; i++) {
-      // dome distribution, biased toward the upper sky
       const az = Math.random() * Math.PI * 2;
       const el = Math.asin(Math.pow(Math.random(), 0.75));
       positions[i * 3] = R * Math.cos(el) * Math.sin(az);
@@ -224,11 +266,10 @@ function SkyLights() {
       sun.current.intensity = s.sunIntensity * 1.3;
     }
     if (moon.current) {
-      // light from upper-left-front of the moon so the camera-facing
-      // hemisphere is lit and craters cast subtle shadows
       domePosition(s.moonElev, s.moonAz, 150, tmpVec);
       moon.current.position.set(tmpVec.x - 55, tmpVec.y + 38, tmpVec.z + 100);
-      moon.current.intensity = s.moonIntensity * 1.8;
+      moon.current.color.set("#a8bcff");
+      moon.current.intensity = s.moonIntensity * 4.0;
     }
   });
 
@@ -241,30 +282,35 @@ function SkyLights() {
   );
 }
 
-/* ── sun: hot core + wide additive glow ────────────────────────────── */
+/* ── sun: bright core + multi-layer corona ─────────────────────────── */
 function Sun() {
+  const corona = useRef<THREE.Sprite>(null);
   const glow = useRef<THREE.Sprite>(null);
   const core = useRef<THREE.Sprite>(null);
 
-  const glowTex = useMemo(() => makeGlowTexture(256), []);
-  const coreTex = useMemo(() => makeGlowTexture(256, 0.5), []);
+  const coronaTex = useMemo(() => makeGlowTexture(256, 0.0), []);
+  const glowTex = useMemo(() => makeGlowTexture(256, 0.35), []);
+  const coreTex = useMemo(() => makeGlowTexture(256, 0.75), []);
 
   useEffect(
     () => () => {
+      coronaTex.dispose();
       glowTex.dispose();
       coreTex.dispose();
     },
-    [glowTex, coreTex]
+    [coronaTex, glowTex, coreTex]
   );
 
   useFrame(() => {
     const s = sampleSky(skyClock.t);
     domePosition(s.sunElev, s.sunAz, 170, tmpVec);
-    const horizonFade = THREE.MathUtils.smoothstep(s.sunElev, -0.1, 0.04);
-    const intensity = s.sunIntensity * horizonFade;
-    for (const [ref, scale, baseOpacity] of [
-      [glow, 42, 0.55],
-      [core, 13, 0.95],
+    const horizonFade = THREE.MathUtils.smoothstep(s.sunElev, -0.12, 0.06);
+    const intensity = Math.min(1.1, s.sunIntensity * horizonFade * 1.7);
+    const sunColor = s.sunColor;
+    for (const [ref, scale, baseOpacity, color] of [
+      [corona, 32, 0.22, sunColor],
+      [glow, 14, 0.62, sunColor],
+      [core, 4.2, 0.98, new THREE.Color("#ffffff")],
     ] as const) {
       const sp = ref.current;
       if (!sp) continue;
@@ -272,12 +318,15 @@ function Sun() {
       const sc = scale * Math.max(0.001, intensity);
       sp.scale.set(sc, sc, 1);
       (sp.material as THREE.SpriteMaterial).opacity = baseOpacity * Math.min(1, intensity);
-      (sp.material as THREE.SpriteMaterial).color.copy(s.sunColor);
+      (sp.material as THREE.SpriteMaterial).color.copy(color);
     }
   });
 
   return (
     <>
+      <sprite ref={corona}>
+        <spriteMaterial map={coronaTex} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+      </sprite>
       <sprite ref={glow}>
         <spriteMaterial map={glowTex} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </sprite>
@@ -288,36 +337,127 @@ function Sun() {
   );
 }
 
-/* ── moon: procedural craters + halo ───────────────────────────────── */
+/* ── moon: procedural craters + sphere lighting ────────────────────── */
+const moonLightDir = new THREE.Vector3(-0.42, 0.35, 0.84).normalize();
+const moonLightColor = new THREE.Color("#c8d8ff");
+const moonAmbientDay = new THREE.Color("#4a4e66");
+const moonAmbientNight = new THREE.Color("#1a1d2e");
+const tmpMoonAmb = new THREE.Color();
+
 function Moon() {
   const mesh = useRef<THREE.Mesh>(null);
+  const moonTex = useMemo(() => makeMoonTextures(512, 256), []);
+
+  const material = useMemo(
+    () =>
+      new THREE.ShaderMaterial({
+        uniforms: {
+          uMap: { value: moonTex.map },
+          uBumpMap: { value: moonTex.bumpMap },
+          uLightDir: { value: moonLightDir.clone() },
+          uLightColor: { value: moonLightColor.clone() },
+          uAmbient: { value: new THREE.Color("#2a2a35") },
+          uFade: { value: 0 },
+        },
+        vertexShader: /* glsl */ `
+          varying vec2 vUv;
+          varying vec3 vWorldNormal;
+          varying vec3 vViewDir;
+          void main() {
+            vUv = uv;
+            vec4 worldPos = modelMatrix * vec4(position, 1.0);
+            vWorldNormal = normalize(mat3(modelMatrix) * normal);
+            vViewDir = normalize(cameraPosition - worldPos.xyz);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `,
+        fragmentShader: /* glsl */ `
+          uniform sampler2D uMap;
+          uniform sampler2D uBumpMap;
+          uniform vec3 uLightDir;
+          uniform vec3 uLightColor;
+          uniform vec3 uAmbient;
+          uniform float uFade;
+          varying vec2 vUv;
+          varying vec3 vWorldNormal;
+          varying vec3 vViewDir;
+
+          void main() {
+            if (uFade < 0.004) discard;
+            vec3 col = texture2D(uMap, vUv).rgb;
+            float bump = texture2D(uBumpMap, vUv).r;
+
+            vec3 n = normalize(vWorldNormal);
+            float diff = max(0.0, dot(n, uLightDir));
+
+            // rim light on the terminator for 3D roundness
+            float rim = pow(1.0 - max(0.0, dot(n, vViewDir)), 2.5) * 0.18;
+
+            // craters: low bump values darken, high values are raised and lit
+            float crater = 0.5 + 0.5 * smoothstep(0.22, 0.78, bump);
+            float cavity = 1.0 - 0.55 * (1.0 - smoothstep(0.2, 0.5, bump)) * diff;
+
+            vec3 lit = uAmbient + uLightColor * diff * crater * cavity * 4.0 + vec3(rim);
+            gl_FragColor = vec4(col * lit, uFade);
+          }
+        `,
+      }),
+    [moonTex]
+  );
+
+  useEffect(
+    () => () => {
+      moonTex.map.dispose();
+      moonTex.bumpMap.dispose();
+      material.dispose();
+    },
+    [moonTex, material]
+  );
+
+  useFrame(({ clock }) => {
+    const s = sampleSky(skyClock.t);
+    const drift = Math.sin(clock.elapsedTime * 0.015) * 0.03;
+    domePosition(s.moonElev, s.moonAz + drift, 150, tmpVec);
+    if (mesh.current) {
+      mesh.current.position.copy(tmpVec);
+      mesh.current.rotation.y = clock.elapsedTime * 0.003;
+    }
+    const fade = THREE.MathUtils.smoothstep(0, 0.08, s.moonIntensity);
+    material.uniforms.uFade.value = fade;
+    if (mesh.current) mesh.current.visible = fade > 0.001;
+    material.uniforms.uLightColor.value.copy(moonLightColor).multiplyScalar(0.45 + s.moonIntensity * 3.2);
+    // keep moon ambient cool/neutral so it stays moon-like during warm sunsets
+    tmpMoonAmb.copy(moonAmbientDay).lerp(moonAmbientNight, s.starOpacity);
+    material.uniforms.uAmbient.value.copy(tmpMoonAmb).multiplyScalar(0.55 + s.ambientIntensity * 0.35);
+  });
+
+  return (
+    <mesh ref={mesh} material={material}>
+      <sphereGeometry args={[4.6, 64, 48]} />
+    </mesh>
+  );
+}
+
+function MoonGlow() {
   const halo = useRef<THREE.Sprite>(null);
   const outer = useRef<THREE.Sprite>(null);
-
-  const moonTex = useMemo(() => makeMoonTexture(512, 256), []);
   const haloTex = useMemo(() => makeGlowTexture(256), []);
   const outerTex = useMemo(() => makeGlowTexture(256), []);
 
   useEffect(
     () => () => {
-      moonTex.dispose();
       haloTex.dispose();
       outerTex.dispose();
     },
-    [moonTex, haloTex, outerTex]
+    [haloTex, outerTex]
   );
 
-  useFrame(({ clock }) => {
+  useFrame(() => {
     const s = sampleSky(skyClock.t);
-    const drift = Math.sin(clock.elapsedTime * 0.02) * 0.04;
-    domePosition(s.moonElev, s.moonAz + drift, 150, tmpVec);
-    if (mesh.current) {
-      mesh.current.position.copy(tmpVec);
-      mesh.current.rotation.y = clock.elapsedTime * 0.008 + 2.1;
-    }
+    domePosition(s.moonElev, s.moonAz, 150, tmpVec);
     for (const [ref, scale, baseOpacity] of [
-      [halo, 12, 0.32],
-      [outer, 34, 0.12],
+      [halo, 16, 0.5],
+      [outer, 46, 0.28],
     ] as const) {
       const sp = ref.current;
       if (!sp) continue;
@@ -336,16 +476,6 @@ function Moon() {
       <sprite ref={halo} renderOrder={-4}>
         <spriteMaterial map={haloTex} transparent depthWrite={false} blending={THREE.AdditiveBlending} color="#cdd8ff" />
       </sprite>
-      <mesh ref={mesh}>
-        <sphereGeometry args={[2.7, 48, 32]} />
-        <meshPhongMaterial
-          map={moonTex}
-          emissive="#34363f"
-          emissiveIntensity={0.55}
-          shininess={6}
-          specular="#3a3a44"
-        />
-      </mesh>
     </>
   );
 }
@@ -383,6 +513,10 @@ function CloudLayer({ yMin, yMax, z, scale, speed, opacity, count }: CloudLayerP
         uSpan: { value: SPAN },
         uSpeed: { value: speed },
         uLayerOpacity: { value: opacity },
+        uSunDir: { value: new THREE.Vector3(0, 1, 0) },
+        uSunColor: { value: new THREE.Color("#fff6de") },
+        uSunIntensity: { value: 1 },
+        uAmbient: { value: new THREE.Color("#555555") },
       },
       vertexShader: /* glsl */ `
         attribute float aSeed;
@@ -391,11 +525,13 @@ function CloudLayer({ yMin, yMax, z, scale, speed, opacity, count }: CloudLayerP
         uniform float uSpeed;
         varying vec2 vUv;
         varying float vAlpha;
+        varying vec3 vWorldNormal;
         void main() {
           vUv = uv;
           vAlpha = 0.4 + 0.6 * fract(aSeed * 3.71);
           vec3 center = vec3(instanceMatrix[3]);
           vec3 local = (instanceMatrix * vec4(position, 0.0)).xyz;
+          vWorldNormal = normalize((instanceMatrix * vec4(normal, 0.0)).xyz);
           float s = uSpeed * (0.5 + 0.9 * fract(aSeed * 7.13));
           float wrapped = mod(center.x + uTime * s + uSpan * 0.5, uSpan) - uSpan * 0.5;
           vec3 world = vec3(wrapped, center.y, center.z) + local;
@@ -405,16 +541,36 @@ function CloudLayer({ yMin, yMax, z, scale, speed, opacity, count }: CloudLayerP
       fragmentShader: /* glsl */ `
         uniform sampler2D uMap;
         uniform vec3 uTint;
+        uniform vec3 uSunDir;
+        uniform vec3 uSunColor;
+        uniform vec3 uAmbient;
+        uniform float uSunIntensity;
         uniform float uOpacity;
         uniform float uLayerOpacity;
         varying vec2 vUv;
         varying float vAlpha;
+        varying vec3 vWorldNormal;
         void main() {
           vec4 tex = texture2D(uMap, vUv);
-          float shade = mix(0.7, 1.06, vUv.y);
-          vec3 col = uTint * shade + vec3(0.07) * smoothstep(0.6, 0.95, vUv.y);
           float a = tex.a * vAlpha * uOpacity * uLayerOpacity;
           if (a < 0.004) discard;
+
+          vec3 n = normalize(vWorldNormal);
+          float diff = max(0.0, dot(n, uSunDir));
+
+          // bottom of cloud is darker (fake ambient occlusion)
+          float ao = mix(0.45, 1.0, vUv.y);
+          // soft self-shadow on the side away from sun
+          float shadow = mix(0.55, 1.0, diff);
+
+          vec3 amb = uAmbient + vec3(0.18);
+          vec3 sunLit = uSunColor * diff * uSunIntensity * 1.7;
+          vec3 col = uTint * ao * shadow * (amb + sunLit);
+
+          // silver lining when sun is behind the cloud
+          float backLit = pow(max(0.0, -dot(n, uSunDir)), 2.0) * uSunIntensity * 0.35;
+          col += uSunColor * backLit;
+
           gl_FragColor = vec4(col, a);
         }
       `,
@@ -456,6 +612,12 @@ function CloudLayer({ yMin, yMax, z, scale, speed, opacity, count }: CloudLayerP
     const s = sampleSky(skyClock.t);
     (material.uniforms.uTint.value as THREE.Color).copy(s.cloudTint);
     material.uniforms.uOpacity.value = s.cloudOpacity;
+    material.uniforms.uSunDir.value.copy(domePosition(s.sunElev, s.sunAz, 1, sunDir));
+    (material.uniforms.uSunColor.value as THREE.Color).copy(s.sunColor);
+    material.uniforms.uSunIntensity.value = s.sunIntensity;
+    (material.uniforms.uAmbient.value as THREE.Color)
+      .copy(s.ambientColor)
+      .multiplyScalar(s.ambientIntensity * 1.0);
   });
 
   return <instancedMesh ref={mesh} args={[geometry, material, count]} frustumCulled={false} renderOrder={2} />;
@@ -617,7 +779,6 @@ function ShootingStar({ seedOffset }: { seedOffset: number }) {
         const elev = THREE.MathUtils.degToRad(28 + Math.random() * 32);
         const az = (Math.random() - 0.5) * 2.2;
         domePosition(elev, az, 130, st.from);
-        // mostly-horizontal tangent with a slight downward slope
         st.dir
           .set(Math.cos(az) * (Math.random() > 0.5 ? 1 : -1), -0.25 - Math.random() * 0.4, Math.sin(az) * 0.3)
           .normalize();
@@ -661,16 +822,17 @@ export default function SkyScene({ paused }: { paused: boolean }) {
       style={{ position: "absolute", inset: 0 }}
       dpr={[1, 1.75]}
       frameloop={paused ? "never" : "always"}
-      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+      gl={{ antialias: true, alpha: false, powerPreference: "high-performance", toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
       camera={{ fov: 60, position: [0, 1.2, 10], near: 0.1, far: 600 }}
     >
       <TimeDriver />
       <CameraRig />
       <SkyLights />
-      <Dome />
+      <Atmosphere />
       <Stars />
       <Sun />
       <Moon />
+      <MoonGlow />
       {CLOUD_LAYERS.map((layer, i) => (
         <CloudLayer key={i} {...layer} />
       ))}
