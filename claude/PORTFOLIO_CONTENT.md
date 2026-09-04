@@ -12,13 +12,13 @@ Full content catalogue of what is shown on the live portfolio.
 | Title | Full Stack Software Engineer |
 | Email | koundinyapidaparthy@gmail.com |
 | Phone | 551-229-8660 |
-| Location | New York, NY |
+| Location | Thousand Oaks, CA |
 | LinkedIn | linkedin.com/in/koundinyap |
-| GitHub | github.com/koundinyapidaparthy2 |
+| GitHub | github.com/koundinyapidaparthydev |
 | Portfolio | koundinyapidaparthy.com |
 
 **Summary**:
-> Full Stack Software Engineer with 3+ years of experience building scalable web applications. Proficient in React, Next.js, Node.js, TypeScript, and cloud platforms (AWS, GCP). Passionate about crafting performant, user-first products and integrating AI-powered features.
+> Full-stack Software Engineer specializing in JavaScript and TypeScript (React, Next.js, Node.js) with production experience shipping web apps, REST/GraphQL APIs, and cloud services. Strong at performance work, incident response, and building AI-assisted products with agents and eval loops. MS in Computer Science (GPA 3.95).
 
 ---
 
@@ -120,48 +120,43 @@ Git / GitHub, Jira, Figma, Postman, LaunchDarkly, Stripe, Agile / Scrum, Code Re
 
 ## Projects
 
-### AplifyAI
-**Jan 2025 – May 2025**  
-[aplifyai.com](https://aplifyai.com) | [GitHub](https://github.com/koundinyapidaparthy2/aplifyai)
+### Max
+**2025 – Present**  
+[github.com/koundinyapidaparthydev/Max](https://github.com/koundinyapidaparthydev/Max)
 
-**Stack**: Next.js 14, TypeScript, OpenAI GPT-4, LangChain, Pinecone, Supabase, Tailwind CSS, Stripe
+**Stack**: Next.js 14, TypeScript, Google Gemini, Firebase, Cloud Run, Chrome Extension, Firestore
 
-> AI-powered job application platform that auto-tailors resumes and cover letters to specific job descriptions using RAG and GPT-4.
+> End-to-end AI job-application assistant: tailored resumes and cover letters, browser auto-apply, and application tracking across web, extension, desktop, and mobile.
 
-- RAG pipeline with LangChain + Pinecone (60% relevance improvement)
-- GPT-4 integration for ATS-optimised bullets & cover letters (< 8 seconds/request)
-- Multi-tenant SaaS on Supabase (Free/Pro/Enterprise tiers via Stripe)
-- Real-time PDF editor with live preview using @react-pdf/renderer
-- 98 Lighthouse performance score
-
----
-
-### Harmony AI
-**Aug 2024 – Dec 2024**  
-[GitHub](https://github.com/koundinyapidaparthy2/harmony-ai)
-
-**Stack**: React, Node.js, Express, OpenAI Whisper, GPT-4, MongoDB, AWS S3, Socket.io
-
-> AI-driven music collaboration platform that transcribes, analyzes, and provides real-time feedback on musical performances.
-
-- Real-time audio transcription with OpenAI Whisper (200ms chunks, sub-second latency)
-- LLM-based music feedback engine (tempo, melody, lyrics analysis)
-- WebSocket rooms with live collaboration, cursor presence, synchronized playback
-- AWS S3 pre-signed URL upload pipeline
-- MongoDB aggregation dashboard for practice analytics
+- Gemini-powered resume/cover-letter generation with ATS-oriented LaTeX PDFs
+- Chrome extension auto-fill for Greenhouse, Lever, Workday
+- Firebase + Cloud Run sync across client surfaces
+- Application tracker dashboard for status, documents, and analytics
 
 ---
 
-### AI Exam Prep Platform
-**Mar 2024 – Jul 2024**  
-[ai-exam-prep.vercel.app](https://ai-exam-prep.vercel.app) | [GitHub](https://github.com/koundinyapidaparthy2/ai-exam-prep)
+### Asklytics
+**2025**  
+[GitHub](https://github.com/koundinyapidaparthydev/Asklytics)
 
-**Stack**: Next.js, TypeScript, OpenAI GPT-4, Prisma, PostgreSQL, Tailwind CSS, React Query, Vercel
+**Stack**: Python, OpenAI, SQLite, Metric Retrieval, Golden Evals
 
-> Adaptive exam preparation platform that generates personalized practice questions, evaluates answers, and tracks mastery using AI.
+> Analytics Q&A agent that retrieves the right metric, answers from event data, and scores correctness against golden questions.
 
-- Adaptive question generation with GPT-4 + SM-2 spaced-repetition algorithm
-- Natural-language answer evaluation with rubric scoring
-- Prisma + PostgreSQL schema with efficient indexing
-- Performance analytics dashboard with Chart.js
-- p95 latency < 1.2 seconds for question generation (Vercel edge functions)
+- Retrieve → query → answer pipeline over metric catalog + SQLite events
+- Golden-set evals with SQL-only fallback when LLM is unavailable
+- Designed for internal product-analytics agent workflows
+
+---
+
+### Retro
+**2025**  
+[Live](https://koundinyapidaparthydev.github.io/Retro/) | [GitHub](https://github.com/koundinyapidaparthydev/Retro)
+
+**Stack**: Next.js, TypeScript, GitHub Pages, Animated Flows
+
+> Interview knowledge archive for DSA, high-level design, and low-level design.
+
+- Plain-English definitions, animated flows, and worked examples
+- In-browser progress tracking (Unread / Learning / Known)
+- GitHub Pages deploy on every push to main

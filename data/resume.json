@@ -5,9 +5,9 @@
     "phone": "551-229-8660",
     "location": "Thousand Oaks, CA",
     "linkedin": "linkedin.com/in/koundinyap",
-    "github": "github.com/koundinyapidaparthy2",
+    "github": "github.com/koundinyapidaparthydev",
     "portfolio": "koundinyapidaparthy.com",
-    "summary": "Software engineer with 5+ years of experience building scalable web applications. Proficient in React, Next.js, Node.js, TypeScript, and cloud platforms (AWS, GCP). Passionate about crafting performant, user-first products and integrating AI-powered features."
+    "summary": "Full-stack Software Engineer specializing in JavaScript and TypeScript (React, Next.js, Node.js) with production experience shipping web apps, REST/GraphQL APIs, and cloud services. Strong at performance work, incident response, and building AI-assisted products with agents and eval loops. MS in Computer Science (GPA 3.95)."
   },
   "education": [
     {
@@ -157,49 +157,44 @@
     {
       "id": "project-1",
       "name": "Max",
-      "stack": ["Next.js 14", "TypeScript", "OpenAI GPT-4", "LangChain", "Pinecone", "Supabase", "Tailwind CSS", "Stripe"],
-      "date": "Jan 2025 – May 2025",
-      "description": "An AI-powered job application platform that auto-tailors resumes and cover letters to specific job descriptions using RAG and GPT-4.",
+      "stack": ["Next.js 14", "TypeScript", "Google Gemini", "Firebase", "Cloud Run", "Chrome Extension", "Firestore"],
+      "date": "2025 – Present",
+      "description": "End-to-end AI job-application assistant: tailored resumes and cover letters, browser auto-apply, and application tracking across web, extension, desktop, and mobile.",
       "points": [
-        "Built a Retrieval-Augmented Generation (RAG) pipeline using LangChain and Pinecone vector database to semantically match resume sections to job descriptions, improving relevance scores by 60%.",
-        "Integrated OpenAI GPT-4 API to generate context-aware, ATS-optimized resume bullets and cover letters in under 8 seconds per request.",
-        "Designed a multi-tenant SaaS architecture on Supabase (PostgreSQL + Row Level Security) with Stripe billing supporting Free, Pro, and Enterprise tiers.",
-        "Implemented a real-time PDF editor using @react-pdf/renderer with live preview, enabling users to see AI edits side-by-side before exporting.",
-        "Achieved 98 Lighthouse performance score through Next.js App Router streaming, React Suspense boundaries, and edge caching on Vercel."
+        "Built Gemini-powered resume and cover-letter generation with ATS-oriented LaTeX PDF output, targeting application time under 3 minutes versus 30+ minutes manual.",
+        "Shipped a Chrome extension that detects ATS forms on Greenhouse, Lever, and Workday and auto-fills fields from a master profile.",
+        "Designed cross-platform sync on Firebase Hosting + Cloud Run with Firestore as the shared application and document store.",
+        "Built a centralized tracker dashboard for application status, documents, and analytics across client surfaces."
       ],
       "website": { "url": "https://github.com/koundinyapidaparthydev/Max", "text": "github.com/koundinyapidaparthydev/Max" },
       "github": "https://github.com/koundinyapidaparthydev/Max"
     },
     {
       "id": "project-2",
-      "name": "Harmony AI",
-      "stack": ["React", "Node.js", "Express", "OpenAI Whisper", "GPT-4", "MongoDB", "AWS S3", "Socket.io"],
-      "date": "Aug 2024 – Dec 2024",
-      "description": "An AI-driven music collaboration platform that transcribes, analyzes, and provides real-time feedback on musical performances using speech-to-text and LLMs.",
+      "name": "Asklytics",
+      "stack": ["Python", "OpenAI", "SQLite", "Metric Retrieval", "Golden Evals"],
+      "date": "2025",
+      "description": "Analytics Q&A agent that retrieves the right metric, answers from event data, and scores correctness against golden questions.",
       "points": [
-        "Built a real-time audio transcription pipeline using OpenAI Whisper API, processing audio streams in 200ms chunks to deliver sub-second transcription latency.",
-        "Developed an LLM-based music feedback engine with GPT-4 that analyzes tempo, melody, and lyrics from transcribed sessions, providing structured coaching suggestions.",
-        "Implemented WebSocket rooms via Socket.io enabling live collaboration between multiple musicians, with cursor presence, synchronized playback, and conflict-free edits.",
-        "Engineered audio file upload and storage pipeline using AWS S3 pre-signed URLs, reducing server load by offloading uploads directly from the browser.",
-        "Designed a session history and analytics dashboard with MongoDB aggregation pipelines, surfacing practice trends and progress over time."
+        "Built a retrieve → query → answer pipeline over a metric catalog and SQLite event store so the agent picks the correct KPI before answering.",
+        "Added golden-set evals that score answer correctness even when the LLM is unavailable (SQL-only fallback path).",
+        "Designed the agent to match internal product-analytics workflows: retrieval first, then grounded answers, then measurable evals."
       ],
-      "github": "https://github.com/koundinyapidaparthy2/harmony-ai"
+      "github": "https://github.com/koundinyapidaparthydev/Asklytics"
     },
     {
       "id": "project-3",
-      "name": "AI Exam Prep Platform",
-      "stack": ["Next.js", "TypeScript", "OpenAI GPT-4", "Prisma", "PostgreSQL", "Tailwind CSS", "React Query", "Vercel"],
-      "date": "Mar 2024 – Jul 2024",
-      "description": "An adaptive exam preparation platform that generates personalized practice questions, evaluates answers, and tracks mastery using AI.",
+      "name": "Retro",
+      "stack": ["Next.js", "TypeScript", "GitHub Pages", "Animated Flows"],
+      "date": "2025",
+      "description": "Interview knowledge archive for DSA, high-level design, and low-level design — plain-English definitions, animated flows, and progress tracking.",
       "points": [
-        "Developed an adaptive question-generation engine powered by GPT-4 that dynamically adjusts difficulty based on a student's historical performance using a spaced-repetition algorithm (SM-2).",
-        "Built a natural-language answer evaluation system that compares free-text student responses to model answers and returns a structured rubric score with GPT-4.",
-        "Designed the database schema with Prisma and PostgreSQL supporting multi-subject topic trees, question banks, and per-user attempt history with efficient indexing.",
-        "Implemented a study-mode dashboard with real-time performance analytics using React Query and Chart.js, visualizing accuracy trends per topic and time spent.",
-        "Deployed on Vercel with edge functions for AI inference endpoints, achieving p95 latency of under 1.2 seconds for question generation."
+        "Structured every topic with a plain-English definition, animated flow, and worked example before deeper notes.",
+        "Implemented in-browser progress tracking (Unread / Learning / Known) for interview prep coverage.",
+        "Deployed to GitHub Pages with CI on every push to main."
       ],
-      "website": { "url": "https://ai-exam-prep.vercel.app", "text": "ai-exam-prep.vercel.app" },
-      "github": "https://github.com/koundinyapidaparthy2/ai-exam-prep"
+      "website": { "url": "https://koundinyapidaparthydev.github.io/Retro/", "text": "koundinyapidaparthydev.github.io/Retro" },
+      "github": "https://github.com/koundinyapidaparthydev/Retro"
     }
   ]
 }

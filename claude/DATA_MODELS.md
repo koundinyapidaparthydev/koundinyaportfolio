@@ -30,7 +30,7 @@ interface PersonalInfo {
   phone: string;          // "551-229-8660"
   location: string;       // "New York, NY"
   linkedin: string;       // "linkedin.com/in/koundinyap"
-  github: string;         // "github.com/koundinyapidaparthy2"
+  github: string;         // "github.com/koundinyapidaparthydev"
   portfolio: string;      // "koundinyapidaparthy.com"
   summary: string;        // Multi-sentence bio
 }
@@ -122,8 +122,8 @@ interface Project {
   description: string;      // One-line summary
   points: string[];         // Technical bullet points
   website?: {
-    url: string;            // "https://aplifyai.com"
-    text: string;           // "aplifyai.com"
+    url: string;            // "https://github.com/koundinyapidaparthydev/Max"
+    text: string;           // "github.com/koundinyapidaparthydev/Max"
   };
   github?: string;          // GitHub URL
 }
@@ -132,7 +132,7 @@ interface Project {
 Current projects (3 total):
 | id | Name | Period |
 |----|------|--------|
-| project-1 | AplifyAI | Jan–May 2025 |
+| project-1 | Max | Jan–May 2025 |
 | project-2 | Harmony AI | Aug–Dec 2024 |
 | project-3 | AI Exam Prep Platform | Mar–Jul 2024 |
 

@@ -28,7 +28,7 @@ export function ConditionalFooter() {
 
         <div className="flex items-center gap-6">
           <a
-            href="https://github.com/koundinyapidaparthy2"
+            href="https://github.com/koundinyapidaparthydev"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub"
