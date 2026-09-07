@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { StoreHydrator } from "@/components/StoreHydrator";
-import { AuroraScrollInit } from "@/components/AuroraScrollInit";
 import { Providers } from "./providers";
 import {
   ConditionalNavbar,
@@ -17,24 +16,24 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://koundinyapidaparth
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Koundinya Pidaparthy — Full Stack Engineer",
+    default: "Koundinya Pidaparthy — Software Engineer",
     template: "%s | Koundinya Pidaparthy",
   },
   description:
-    "Portfolio of Koundinya Pidaparthy — Full Stack Software Engineer specializing in React, Next.js, Node.js, and AI-powered applications.",
+    "Resume of Koundinya Pidaparthy — Software Engineer with experience in React, Next.js, Node.js, TypeScript, and cloud platforms.",
   keywords: [
     "Koundinya Pidaparthy",
-    "Full Stack Engineer",
+    "Software Engineer",
     "React",
     "Next.js",
     "TypeScript",
-    "Software Engineer Portfolio",
+    "Resume",
   ],
   authors: [{ name: "Koundinya Pidaparthy", url: SITE_URL }],
   openGraph: {
-    title: "Koundinya Pidaparthy — Full Stack Engineer",
+    title: "Koundinya Pidaparthy — Software Engineer",
     description:
-      "Portfolio of Koundinya Pidaparthy — Full Stack Software Engineer specializing in React, Next.js, Node.js, and AI-powered applications.",
+      "Resume of Koundinya Pidaparthy — Software Engineer with experience in React, Next.js, Node.js, TypeScript, and cloud platforms.",
     type: "website",
     locale: "en_US",
     url: SITE_URL,
@@ -43,9 +42,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Koundinya Pidaparthy — Full Stack Engineer",
+    title: "Koundinya Pidaparthy — Software Engineer",
     description:
-      "Portfolio of Koundinya Pidaparthy — Full Stack Software Engineer.",
+      "Resume of Koundinya Pidaparthy — Software Engineer.",
     creator: "@koundinyap",
   },
   robots: {
@@ -72,7 +71,6 @@ export default function RootLayout({
     <html lang="en" className={inter.variable} suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased">
         <Providers>
-          <AuroraScrollInit />
           <StoreHydrator />
           <ConditionalNavbar />
           {children}

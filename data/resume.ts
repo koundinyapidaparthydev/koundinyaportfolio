@@ -10,7 +10,7 @@ export const resumeData: Resume = {
     github: "github.com/koundinyapidaparthy2",
     portfolio: "koundinyapidaparthy.com",
     summary:
-      "Software engineer with 5+ years of experience building scalable web applications. Proficient in React, Next.js, Node.js, TypeScript, and cloud platforms (AWS, GCP). Passionate about crafting performant, user-first products and integrating AI-powered features.",
+      "Software engineer with experience building scalable web applications, APIs, and cloud-based products. Proficient in React, Next.js, Node.js, TypeScript, and cloud platforms (AWS, GCP)."
   },
 
   education: [
@@ -269,7 +269,7 @@ export const resumeData: Resume = {
       ],
       date: "Aug 2026 – Present",
       description:
-        "AI-first work delegation platform. AI completes a configurable share of each ticket before a human engineer picks it up, with PII firewall and audit trails.",
+        "Work delegation platform for engineering teams. Configurable automated passes on tickets with manager triage, security policies, and audit trails.",
       points: [
         "Configurable AI-first pass on tickets with manager triage and policy-driven model/cloud selection.",
         "Multi-layer PII firewall keeps customer data safe before it reaches any model.",
@@ -293,7 +293,7 @@ export const resumeData: Resume = {
       ],
       date: "Sep 2026 – Present",
       description:
-        "A bird-themed, tool-using AI code reviewer that reads workspaces, scores quality, and surfaces actionable findings.",
+        "Code review tool that analyzes commits and uploaded workspaces, scores quality, and surfaces actionable findings.",
       points: [
         "Plan-driven read-only tool calls (read_file, grep, lint, git_diff) for safe code review.",
         "Bull/Redis job queue with eval runner that scores labeled fixtures for precision/recall.",
@@ -315,7 +315,7 @@ export const resumeData: Resume = {
       ],
       date: "Jan 2025 – May 2025",
       description:
-        "End-to-end AI job application assistant that tailors resumes, writes cover letters, and auto-fills forms across web, extension, desktop, and mobile.",
+        "Job application automation platform that tailors resumes, writes cover letters, and auto-fills forms across web, extension, desktop, and mobile.",
       points: [
         "AI resume and cover letter generation tailored to job descriptions.",
         "Browser extension auto-detects and fills application forms on LinkedIn, Indeed, Greenhouse, and Lever.",
@@ -329,7 +329,7 @@ export const resumeData: Resume = {
       stack: ["Python", "FastAPI", "SQLite", "Docker", "OpenAI"],
       date: "Sep 2026 – Present",
       description:
-        "Analytics Q&A agent that retrieves metrics from a catalog, writes sandboxed SQL, and scores answers against a golden eval set.",
+        "Analytics Q&A tool that retrieves metrics from a catalog, writes sandboxed SQL, and scores answers against a golden eval set.",
       points: [
         "In-process TF-IDF retrieval over a YAML metric catalog — no hosted vector DB required.",
         "Sandboxed SQLite execution rejects writes and scores answers with exact result-set matching.",
